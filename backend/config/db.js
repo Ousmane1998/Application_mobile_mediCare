@@ -1,16 +1,11 @@
 import mongoose from "mongoose";
 
-const connectDB = async () => {
+export const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ Base de données MongoDB connectée avec succès");
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("✅ Base de données connectée");
   } catch (error) {
-    console.error("❌ Erreur de connexion MongoDB :", error.message);
+    console.error("❌ Erreur de connexion à la base de données", error);
     process.exit(1);
   }
 };
-
-export default connectDB;
