@@ -1,6 +1,6 @@
-// swagger.js
-const swaggerJSDoc = require("swagger-jsdoc");
-const swaggerUi = require("swagger-ui-express");
+// config/swagger.js
+import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
 
 const options = {
   definition: {
@@ -12,19 +12,17 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5000", // adapte selon ton port
+        url: "http://localhost:5000",
         description: "Local server",
       },
     ],
   },
-  apis: ["./routes/*.js"], // chemin vers tes routes Express
+  apis: ["./routes/*.js"],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
 
-function swaggerDocs(app) {
+export function swaggerDocs(app) {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   console.log("✅ Swagger Docs available at: http://localhost:5000/api-docs");
 }
-
-module.exports = swaggerDocs;
