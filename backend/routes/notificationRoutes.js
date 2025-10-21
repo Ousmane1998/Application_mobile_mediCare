@@ -1,7 +1,7 @@
 // routes/notificationRoutes.js
 import express from "express";
 import { createNotification, getNotifications } from "../controllers/notificationController.js";
-import Notification from "../models/Notification.js";
+import Notification from "../Models/Notification.js";
 
 /**
  * @openapi
