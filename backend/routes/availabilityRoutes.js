@@ -11,13 +11,18 @@ import { setAvailability, getAvailability } from "../controllers/availabilityCon
  *   post:
  *     tags: [Availability]
  *     summary: Définir la disponibilité
+ *     consumes:
+ *       - multipart/form-data
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             additionalProperties: true
+ *             properties:
+ *               definitionImport:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
  *         description: Disponibilité enregistrée
@@ -28,6 +33,7 @@ import { setAvailability, getAvailability } from "../controllers/availabilityCon
  *       200:
  *         description: Liste des disponibilités
  */
+
 const router = express.Router();
 
 router.post("/", setAvailability);

@@ -28,13 +28,34 @@ export const getAppointments = async (req, res) => {
   }
 };
 
-export const updateAppointmentStatus = async (req, res) => {
+export const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { statut } = req.body;
-    const appointment = await Appointment.findByIdAndUpdate(id, { statut }, { new: true });
-    res.json(appointment);
+    const { statut, date, heure } = req.body;
+
+    const updateData = {};
+    if (statut) {
+      if (!["en_attente", "confirme", "annule"].includes(statut)) {
+        return res.status(400).json({ message: "Statut invalide" });
+      }
+      updateData.statut = statut;
+    }
+    if (date) updateData.date = date;
+    if (heure) updateData.heure = heure;
+
+    const appointment = await Appointment.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Rendez-vous non trouvé" });
+    }
+
+    res.status(200).json({
+      message: "Rendez-vous mis à jour avec succès",
+      appointment,
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 };

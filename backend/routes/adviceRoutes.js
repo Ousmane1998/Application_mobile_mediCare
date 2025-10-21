@@ -9,14 +9,29 @@ import { createAdvice, getAdvice } from "../controllers/adviceController.js";
  * /api/advices:
  *   post:
  *     tags: [Advices]
- *     summary: Créer un conseil
+ *     summary: Créer un conseil (JSON ou fichier)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             additionalProperties: true
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               file:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
  *         description: Conseil créé
@@ -27,6 +42,7 @@ import { createAdvice, getAdvice } from "../controllers/adviceController.js";
  *       200:
  *         description: Liste des conseils
  */
+
 const router = express.Router();
 
 router.post("/", createAdvice);

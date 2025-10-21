@@ -3,7 +3,6 @@ import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
 import path from "path";
-
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -13,22 +12,13 @@ const options = {
       description: "API documentation for the Public Service Assistant project (using RAG)",
     },
     servers: [
-      {
-        url: "http://localhost:5000",
-        description: "Local server",
-      },
+      { url: "http://localhost:5000", description: "Local server" },
     ],
     components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        },
-      },
+      securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" } },
     },
   },
-  apis: ["../routes/*.js"],
+  apis: [path.resolve("./routes/*.js")], // chemin absolu
 };
 
 const swaggerSpec = swaggerJSDoc(options);
