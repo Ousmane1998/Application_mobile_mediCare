@@ -30,6 +30,21 @@ import authMiddleware from "../middlewares/authMiddleware.js";
  *               specialite: { type: string }
  *               hopital: { type: string }
  *             required: [telephone, password, nom]
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nom: { type: string }
+ *               prenom: { type: string }
+ *               telephone: { type: string }
+ *               email: { type: string }
+ *               adresse: { type: string }
+ *               age: { type: integer }
+ *               password: { type: string }
+ *               role: { type: string }
+ *               specialite: { type: string }
+ *               hopital: { type: string }
+ *             required: [telephone, password, nom]
  *     responses:
  *       201:
  *         description: Utilisateur créé avec succès
@@ -43,6 +58,16 @@ import authMiddleware from "../middlewares/authMiddleware.js";
  *       required: true
  *       content:
  *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               identifiant:
+ *                 type: string
+ *                 description: Email ou téléphone
+ *               password:
+ *                 type: string
+ *             required: [identifiant, password]
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:

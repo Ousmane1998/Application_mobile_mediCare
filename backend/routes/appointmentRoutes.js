@@ -18,6 +18,10 @@ import { createAppointment, getAppointments, updateAppointmentStatus } from "../
  *           schema:
  *             type: object
  *             additionalProperties: true
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             additionalProperties: true
  *     responses:
  *       201:
  *         description: Rendez-vous créé
@@ -40,6 +44,12 @@ import { createAppointment, getAppointments, updateAppointmentStatus } from "../
  *       required: true
  *       content:
  *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:

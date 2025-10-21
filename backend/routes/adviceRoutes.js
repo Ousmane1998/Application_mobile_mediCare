@@ -17,6 +17,10 @@ import { createAdvice, getAdvice } from "../controllers/adviceController.js";
  *           schema:
  *             type: object
  *             additionalProperties: true
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             additionalProperties: true
  *     responses:
  *       201:
  *         description: Conseil créé

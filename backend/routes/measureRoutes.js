@@ -21,6 +21,10 @@ import authMiddleware from "../middlewares/authMiddleware.js";
  *           schema:
  *             type: object
  *             additionalProperties: true
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             additionalProperties: true
  *     responses:
  *       201:
  *         description: Mesure ajoutée

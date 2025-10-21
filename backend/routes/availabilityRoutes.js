@@ -18,6 +18,10 @@ import { setAvailability, getAvailability } from "../controllers/availabilityCon
  *           schema:
  *             type: object
  *             additionalProperties: true
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             additionalProperties: true
  *     responses:
  *       201:
  *         description: Disponibilité enregistrée

@@ -19,6 +19,10 @@ import Notification from "../models/Notification.js";
  *           schema:
  *             type: object
  *             additionalProperties: true
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             additionalProperties: true
  *     responses:
  *       201:
  *         description: Notification créée
