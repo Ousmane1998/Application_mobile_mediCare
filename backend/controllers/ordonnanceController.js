@@ -1,5 +1,5 @@
 // controllers/OrdonnanceController.js
-import Ordonnance from "../Models/Ordonnance.js";
+import Ordonnance from "../models/Ordonnance.js";
 
 /**
  * Obtenir toutes les ordonnances
