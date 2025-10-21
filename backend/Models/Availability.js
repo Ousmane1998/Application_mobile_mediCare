@@ -9,5 +9,6 @@ const AvailabilitySchema = new mongoose.Schema({
   disponible: { type: Boolean, default: true },
 });
 
+
 const Availability = mongoose.model("Availability", AvailabilitySchema);
 export default Availability;

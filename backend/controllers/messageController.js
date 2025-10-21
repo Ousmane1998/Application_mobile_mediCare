@@ -3,17 +3,22 @@ import Message from "../models/Message.js";
 
 export const sendMessage = async (req, res) => {
   try {
-    const { senderId, receiverId, content } = req.body;
+    const { senderId, receiverId, text, isRead, createdAt } = req.body; // extraire text
+
     const message = await Message.create({
       senderId,
       receiverId,
-      text: content,
+      text,                     // ✅ correspond au champ JSON
+      isRead: isRead || false,  // optionnel, par défaut false
+      createdAt: createdAt || Date.now(), // optionnel, par défaut date actuelle
     });
+
     res.status(201).json({ message: "Message envoyé", data: message });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 export const getMessages = async (req, res) => {
   try {

@@ -4,11 +4,38 @@ import { addMeasure, getHistory } from "../controllers/measureController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 /**
- * @openapi
- * tags:
- *   - name: Measures
- *     description: Mesures de santé
- * /api/measures:
+ * @swagger
+ * components:
+ *   schemas:
+ *     Measure:
+ *       type: object
+ *       properties:
+ *         patientId:
+ *           type: string
+ *           description: ID du patient
+ *         type:
+ *           type: string
+ *           enum: [tension, glycemie, poids, pouls, temperature]
+ *           description: Type de mesure
+ *         value:
+ *           type: string
+ *           description: Valeur de la mesure
+ *         date:
+ *           type: string
+ *           format: date-time
+ *           description: Date de la mesure
+ *         synced:
+ *           type: boolean
+ *           description: Synchronisé ou non
+ *       required:
+ *         - patientId
+ *         - type
+ *         - value
+ */
+
+/**
+ * @swagger
+ * /api/mesures:
  *   post:
  *     tags: [Measures]
  *     summary: Ajouter une mesure pour l'utilisateur connecté
@@ -19,34 +46,12 @@ import authMiddleware from "../middlewares/authMiddleware.js";
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             additionalProperties: true
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             additionalProperties: true
+ *             $ref: '#/components/schemas/Measure'
  *     responses:
  *       201:
  *         description: Mesure ajoutée
- *       401:
- *         description: Non authentifié
- * /api/measures/history/{patientId}:
- *   get:
- *     tags: [Measures]
- *     summary: Historique des mesures d'un patient
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: patientId
- *         required: true
- *         schema: { type: string }
- *     responses:
- *       200:
- *         description: Historique retourné
- *       401:
- *         description: Non authentifié
  */
+
 const router = express.Router();
 
 router.post("/", authMiddleware, addMeasure);

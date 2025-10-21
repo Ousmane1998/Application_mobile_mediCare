@@ -96,7 +96,49 @@ import authMiddleware from "../middlewares/authMiddleware.js";
  */
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Gestion des utilisateurs
+ */
+
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Inscription d’un nouvel utilisateur
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nom:
+ *                 type: string
+ *                 example: Faye
+ *               prenom:
+ *                 type: string
+ *                 example: Ousmane
+ *               telephone:
+ *                 type: string
+ *                 example: "771234567"
+ *               email:
+ *                 type: string
+ *                 example: ousmane@gmail.com
+ *               password:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       201:
+ *         description: Utilisateur créé avec succès.
+ *       400:
+ *         description: Erreur de validation.
+ */
 router.post("/register", register);
+
 router.post("/login", login);
 router.get("/profile", authMiddleware, profile);
 

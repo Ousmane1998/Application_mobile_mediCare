@@ -18,8 +18,726 @@
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
+    },
+    "schemas": {
+      "FicheDeSante": {
+        "type": "object",
+        "properties": {
+          "patientId": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "Ordonnance": {
+        "type": "object",
+        "properties": {
+          "patientId": { "type": "string" },
+          "medicaments": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
     }
   },
-  "paths": {},
-  "tags": []
+  "paths": {
+   "/api/advices": {
+  "post": {
+    "tags": ["Advices"],
+    "summary": "Créer un conseil",
+    "description": "Permet à un médecin de créer un conseil pour un patient.",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "medecinId": {
+                "type": "string",
+                "description": "Identifiant du médecin (ObjectId)"
+              },
+              "patientId": {
+                "type": "string",
+                "description": "Identifiant du patient (ObjectId)"
+              },
+              "titre": {
+                "type": "string",
+                "description": "Titre du conseil"
+              },
+              "contenu": {
+                "type": "string",
+                "description": "Contenu du conseil"
+              },
+              "categorie": {
+                "type": "string",
+                "description": "Catégorie du conseil (ex: nutrition, sport, etc.)"
+              }
+            },
+            "required": ["medecinId", "patientId", "titre", "contenu"]
+          }
+        }
+      }
+    },
+    "responses": {
+      "201": { "description": "Conseil créé avec succès" },
+      "400": { "description": "Données invalides" },
+      "500": { "description": "Erreur interne du serveur" }
+    }
+  },
+  "get": {
+    "tags": ["Advices"],
+    "summary": "Récupérer la liste des conseils",
+    "description": "Récupère tous les conseils enregistrés dans le système.",
+    "responses": {
+      "200": { "description": "Liste des conseils récupérée avec succès" },
+      "500": { "description": "Erreur interne du serveur" }
+    }
+  }
+}
+,
+    "/api/appointments": {
+      "post": {
+  "tags": ["Appointments"],
+  "summary": "Créer un rendez-vous",
+  "description": "Permet de créer un nouveau rendez-vous entre un patient et un médecin.",
+  "requestBody": {
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "required": ["patientId", "medecinId", "date"],
+          "properties": {
+            "patientId": {
+              "type": "string",
+              "description": "ID du patient (référence à un utilisateur)",
+              "example": "6528b5e8b21f4c001f7a12a3"
+            },
+            "medecinId": {
+              "type": "string",
+              "description": "ID du médecin (référence à un utilisateur)",
+              "example": "6528b5e8b21f4c001f7a12a4"
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "Date du rendez-vous (format YYYY-MM-DD)",
+              "example": "2025-11-05"
+            },
+            "heure": {
+              "type": "string",
+              "description": "Heure du rendez-vous",
+              "example": "14:30"
+            },
+            "statut": {
+              "type": "string",
+              "enum": ["en_attente", "confirme", "annule"],
+              "description": "Statut du rendez-vous",
+              "example": "en_attente"
+            }
+          }
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "Rendez-vous créé avec succès"
+    },
+    "400": {
+      "description": "Requête invalide — données manquantes ou incorrectes"
+    },
+    "500": {
+      "description": "Erreur interne du serveur"
+    }
+  }
+}
+,
+      "get": {
+        "tags": ["Appointments"],
+        "summary": "Lister les rendez-vous",
+        "responses": {
+          "200": { "description": "Liste des rendez-vous" }
+        }
+      }
+    },
+ "/api/appointments/{id}": {
+  "put": {
+    "tags": ["Appointments"],
+    "summary": "Mettre à jour un rendez-vous (statut, date, heure)",
+    "description": "Permet de modifier le statut, la date ou l'heure d'un rendez-vous",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "Identifiant unique du rendez-vous"
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "statut": {
+                "type": "string",
+                "enum": ["en_attente", "confirme", "annule"],
+                "description": "Nouveau statut du rendez-vous"
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "description": "Nouvelle date du rendez-vous"
+              },
+              "heure": {
+                "type": "string",
+                "description": "Nouvelle heure du rendez-vous"
+              }
+            }
+          },
+          "example": {
+            "statut": "confirme",
+            "date": "2025-10-25",
+            "heure": "14:30"
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Rendez-vous mis à jour avec succès",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Appointment"
+            }
+          }
+        }
+      },
+      "400": {
+        "description": "Requête invalide (statut incorrect ou manquant)"
+      },
+      "404": {
+        "description": "Rendez-vous non trouvé"
+      },
+      "500": {
+        "description": "Erreur interne du serveur"
+      }
+    }
+  }
+}
+
+,
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Inscription d'un utilisateur",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nom": { "type": "string" },
+                  "prenom": { "type": "string" },
+                  "telephone": { "type": "string" },
+                  "email": { "type": "string" },
+                  "adresse": { "type": "string" },
+                  "age": { "type": "integer" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string" },
+                  "specialite": { "type": "string" },
+                  "hopital": { "type": "string" }
+                },
+                "required": ["nom", "telephone", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Utilisateur créé avec succès" },
+          "400": { "description": "Requête invalide" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Connexion via email ou téléphone",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "identifiant": { "type": "string", "description": "Email ou téléphone" },
+                  "password": { "type": "string" }
+                },
+                "required": ["identifiant", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Connexion réussie" },
+          "400": { "description": "Identifiants invalides" }
+        }
+      }
+    },
+    "/api/auth/profile": {
+  "get": {
+    "tags": ["Auth"],
+    "summary": "Profil de l'utilisateur connecté",
+    "description": "Récupère les informations du profil de l'utilisateur connecté. Nécessite un token JWT dans l'en-tête Authorization.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Profil retourné avec succès",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "example": "68f6dcd72f59da4b705da0ac" },
+                "nom": { "type": "string", "example": "Faye" },
+                "prenom": { "type": "string", "example": "Ousmane" },
+                "telephone": { "type": "string", "example": "771234567" },
+                "email": { "type": "string", "example": "ousmane@gmail.com" },
+                "adresse": { "type": "string", "example": "Dakar" },
+                "age": { "type": "integer", "example": 25 },
+                "role": { "type": "string", "example": "medecin" },
+                "specialite": { "type": "string", "example": "cardiologie" },
+                "hopital": { "type": "string", "example": "Hôpital X" }
+              }
+            }
+          }
+        }
+      },
+      "401": {
+        "description": "Non authentifié ou token manquant",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": { "type": "string", "example": "No token" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+,
+    "/api/availability": {
+  "post": {
+    "tags": ["Availability"],
+    "summary": "Définir la disponibilité d'un médecin",
+    "security": [
+      { "bearerAuth": [] }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "medecinId": { "type": "string", "description": "ID du médecin" },
+              "jour": { "type": "string", "description": "Jour de disponibilité (ex: Lundi)" },
+              "heureDebut": { "type": "string", "description": "Heure de début (ex: 08:00)" },
+              "heureFin": { "type": "string", "description": "Heure de fin (ex: 16:00)" },
+              "disponible": { "type": "boolean", "description": "Disponible ou non", "default": true }
+            },
+            "required": ["medecinId", "jour", "heureDebut", "heureFin"]
+          }
+        }
+      }
+    },
+    "responses": {
+      "201": { "description": "Disponibilité enregistrée" },
+      "500": { "description": "Erreur interne du serveur" }
+    }
+  },
+  "get": {
+    "tags": ["Availability"],
+    "summary": "Récupérer les disponibilités d'un médecin",
+    "parameters": [
+      {
+        "in": "query",
+        "name": "medecinId",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "ID du médecin"
+      }
+    ],
+    "responses": {
+      "200": { "description": "Liste des disponibilités" },
+      "500": { "description": "Erreur interne du serveur" }
+    }
+  }
+}
+,
+    "/api/fiches": {
+      
+      "get": {
+        "tags": ["FichesDeSante"],
+        "summary": "Récupérer toutes les fiches de santé",
+        "responses": { "200": { "description": "Liste des fiches" } }
+      },
+     "post": {
+    "tags": ["FichesDeSante"],
+    "summary": "Créer une nouvelle fiche de santé",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "patient": {
+                "type": "string",
+                "description": "ID du patient (ObjectId)"
+              },
+              "maladies": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Liste des maladies du patient"
+              },
+              "traitements": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Liste des traitements en cours"
+              },
+              "allergies": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Liste des allergies"
+              },
+              "antecedents": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Antécédents médicaux"
+              },
+              "groupeSanguin": {
+                "type": "string",
+                "description": "Groupe sanguin du patient"
+              }
+            },
+            "required": ["patient"]
+          },
+          "example": {
+            "patient": "68f6dcd72f59da4b705da0ac",
+            "maladies": ["Hypertension", "Diabète"],
+            "traitements": ["Metformine 500mg", "Ramipril 10mg"],
+            "allergies": ["Pollen"],
+            "antecedents": ["Asthme"],
+            "groupeSanguin": "O+"
+          }
+        }
+      }
+    },
+    "responses": {
+      "201": { "description": "Fiche créée avec succès" },
+      "400": { "description": "Erreur lors de la création de la fiche" }
+    }
+  }
+    },
+   "/api/fiches/{id}": {
+  "put": {
+    "tags": ["FichesDeSante"],
+    "summary": "Mettre à jour une fiche de santé",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "ID de la fiche de santé"
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/FicheDeSante"
+          },
+          "example": {
+            "patient": "68f6dcd72f59da4b705da0ac",
+            "maladies": ["Hypertension"],
+            "traitements": ["Metformine 500mg"],
+            "allergies": ["Pollen"],
+            "antecedents": ["Asthme"],
+            "groupeSanguin": "B+"
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Fiche mise à jour avec succès",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FicheDeSante"
+            }
+          }
+        }
+      },
+      "404": { "description": "Fiche non trouvée" },
+      "400": { "description": "Erreur lors de la mise à jour" }
+    }
+  },
+  "delete": {
+    "tags": ["FichesDeSante"],
+    "summary": "Supprimer une fiche de santé",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    ],
+    "responses": { "200": { "description": "Fiche supprimée" } }
+  }
+}
+,
+   "/api/geolocation": {
+  "get": {
+    "tags": ["Geolocation"],
+    "summary": "Récupérer les informations de géolocalisation",
+    "parameters": [
+      {
+        "in": "query",
+        "name": "latitude",
+        "required": true,
+        "schema": { "type": "number" },
+        "description": "Latitude de la position"
+      },
+      {
+        "in": "query",
+        "name": "longitude",
+        "required": true,
+        "schema": { "type": "number" },
+        "description": "Longitude de la position"
+      }
+    ],
+    "responses": {
+      "200": { "description": "Informations de géolocalisation" },
+      "400": { "description": "Coordonnées manquantes" },
+      "500": { "description": "Erreur interne du serveur" }
+    }
+  }
+}
+,
+    "/api/measures": {
+      "post": {
+        "tags": ["Measures"],
+        "summary": "Ajouter une mesure pour l'utilisateur connecté",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+  "type": "object",
+  "properties": {
+    "patientId": { "type": "string", "description": "ID du patient" },
+    "type": {
+      "type": "string",
+      "enum": ["tension", "glycemie", "poids", "pouls", "temperature"],
+      "description": "Type de mesure"
+    },
+    "value": { "type": "string", "description": "Valeur de la mesure" },
+    "date": { "type": "string", "format": "date-time", "description": "Date de la mesure" },
+    "synced": { "type": "boolean", "description": "Synchronisé ou non" }
+  },
+  "required": ["patientId", "type", "value"]
+}
+ } }
+        },
+        "responses": {
+          "201": { "description": "Mesure ajoutée" },
+          "401": { "description": "Non authentifié" }
+        }
+      }
+    },
+    "/api/measures/history/{patientId}": {
+      "get": {
+        "tags": ["Measures"],
+        "summary": "Historique des mesures d'un patient",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "patientId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Historique retourné" },
+          "401": { "description": "Non authentifié" }
+        }
+      }
+    },
+    "/api/messages": {
+      "post": {
+  "tags": ["Messages"],
+  "summary": "Envoyer un message",
+  "requestBody": {
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "senderId": { "type": "string", "description": "ID de l'expéditeur" },
+            "receiverId": { "type": "string", "description": "ID du destinataire" },
+            "text": { "type": "string", "description": "Contenu du message" },
+            "isRead": { "type": "boolean", "description": "Indique si le message a été lu" },
+            "createdAt": { "type": "string", "format": "date-time", "description": "Date de création" }
+          },
+          "required": ["senderId", "receiverId", "text"]
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": { "description": "Message envoyé" }
+  }
+}
+
+    },
+    "/api/notifications": {
+      "post": {
+  "tags": ["Notifications"],
+  "summary": "Créer une notification",
+  "requestBody": {
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "userId": { "type": "string", "example": "68f6ee076134e5443b9e4459" },
+            "type": { "type": "string", "example": "message" },
+            "message": { "type": "string", "example": "Vous avez un nouveau message" },
+            "isRead": { "type": "boolean", "example": false },
+            "data": { "type": "object", "example": { "extra": "info" } },
+            "createdAt": { "type": "string", "format": "date-time", "example": "2025-10-21T02:42:22.746Z" }
+          },
+          "required": ["userId", "message"]
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": { "description": "Notification créée" }
+  }
+}
+,
+      "get": {
+  "tags": ["Notifications"],
+  "summary": "Lister les notifications d'un utilisateur",
+  "parameters": [
+    {
+      "in": "query",
+      "name": "userId",
+      "schema": { "type": "string" },
+      "required": true,
+      "description": "ID de l'utilisateur"
+    }
+  ],
+  "responses": {
+    "200": { "description": "Liste des notifications" }
+  }
+}
+
+    },
+    "/api/notifications/{id}/read": {
+      "put": {
+        "tags": ["Notifications"],
+        "summary": "Marquer une notification comme lue",
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Notification mise à jour" } }
+      }
+    },
+    "/api/notifications/{id}": {
+      "delete": {
+        "tags": ["Notifications"],
+        "summary": "Supprimer une notification",
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Notification supprimée" } }
+      }
+    },
+    "/api/ordonnance": {
+      "get": {
+        "tags": ["Ordonnances"],
+        "summary": "Récupérer toutes les ordonnances",
+        "responses": { "200": { "description": "Liste des ordonnances" } }
+      },
+     "post": {
+  "tags": ["Ordonnances"],
+  "summary": "Créer une nouvelle ordonnance",
+  "requestBody": {
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "patient": { "type": "string" },
+            "medecin": { "type": "string" },
+            "prescriptions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "medicament": { "type": "string" },
+                  "dosage": { "type": "string" },
+                  "frequence": { "type": "string" },
+                  "duree": { "type": "string" }
+                },
+                "required": ["medicament"]
+              }
+            },
+            "dateEmission": { "type": "string", "format": "date-time" },
+            "fichierPDF": { "type": "string" }
+          },
+          "required": ["patient", "medecin", "prescriptions"]
+        }
+      }
+    }
+  },
+  "responses": { "201": { "description": "Ordonnance créée" } }
+}
+
+    },
+    "/api/ordonnance/{id}": {
+      "delete": {
+        "tags": ["Ordonnances"],
+        "summary": "Supprimer une ordonnance",
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Ordonnance supprimée" } }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Advices", "description": "Conseils médicaux" },
+    { "name": "Appointments", "description": "Gestion des rendez-vous" },
+    { "name": "Auth", "description": "Endpoints d'authentification" },
+    { "name": "Availability", "description": "Disponibilités des médecins" },
+    { "name": "FichesDeSante", "description": "Gestion des fiches de santé" },
+    { "name": "Geolocation", "description": "Géolocalisation et services associés" },
+    { "name": "Measures", "description": "Mesures de santé" },
+    { "name": "Messages", "description": "Messagerie entre utilisateurs" },
+    { "name": "Notifications", "description": "Gestion des notifications" },
+    { "name": "Ordonnances", "description": "Gestion des ordonnances médicales" }
+  ]
 }

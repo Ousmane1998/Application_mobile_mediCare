@@ -20,9 +20,16 @@ import adviceRoutes from "./routes/adviceRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import availabilityRoutes from "./routes/availabilityRoutes.js";
 import geolocationRoutes from "./routes/geolocationRoutes.js";
+import ficheRoutes from "./routes/ficheDeSanteRoutes.js";
+import ordonnanceRoutes from "./routes/ordonnanceRoutes.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
 import { setupSocketIO } from "./utils/sendNotification.js";
+import swaggerUi from "swagger-ui-express";
+import fs from "fs";
+
+const swaggerDocument = JSON.parse(fs.readFileSync("./swagger.json", "utf8"));
+
 
 // App & server
 const app = express();
@@ -39,6 +46,7 @@ const io = new Server(server, {
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 // Routes
@@ -50,6 +58,8 @@ app.use("/api/advices", adviceRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/geolocation", geolocationRoutes);
+app.use("/api/fiches", ficheRoutes);
+app.use("/api/ordonnance", ordonnanceRoutes);
 
 // Error handler
 app.use(errorHandler);
@@ -58,8 +68,7 @@ app.use(errorHandler);
 setupSocketIO(io);
 
 // Swagger docs
-swaggerDocs(app);
-
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Start server
 const PORT = process.env.PORT || 5000;
 connectDB(process.env.MONGODB_URI).then(() => {

@@ -1,10 +1,10 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const FicheDeSanteSchema = new mongoose.Schema({
   patient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
   },
   maladies: [{ type: String }], // ex: ["Hypertension", "Diabète"]
   traitements: [{ type: String }], // ex: ["Metformine 500mg", "Ramipril 10mg"]
@@ -14,4 +14,6 @@ const FicheDeSanteSchema = new mongoose.Schema({
   derniereMiseAJour: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('FicheDeSante', FicheDeSanteSchema);
+const FicheDeSante = mongoose.model("FicheDeSante", FicheDeSanteSchema);
+
+export default FicheDeSante;

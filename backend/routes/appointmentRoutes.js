@@ -1,15 +1,19 @@
 // routes/appointmentRoutes.js
 import express from "express";
-import { createAppointment, getAppointments, updateAppointmentStatus } from "../controllers/appointmentController.js";
+import { createAppointment, getAppointments, updateAppointment } from "../controllers/appointmentController.js";
+
+const router = express.Router();
 
 /**
  * @openapi
  * tags:
  *   - name: Appointments
  *     description: Gestion des rendez-vous
+ *
  * /api/appointments:
  *   post:
- *     tags: [Appointments]
+ *     tags:
+ *       - Appointments
  *     summary: Créer un rendez-vous
  *     requestBody:
  *       required: true
@@ -25,21 +29,27 @@ import { createAppointment, getAppointments, updateAppointmentStatus } from "../
  *     responses:
  *       201:
  *         description: Rendez-vous créé
+ *
  *   get:
- *     tags: [Appointments]
+ *     tags:
+ *       - Appointments
  *     summary: Lister les rendez-vous
  *     responses:
  *       200:
  *         description: Liste des rendez-vous
- * /api/appointments/{id}/status:
+ *
+ * /api/appointments/{id}:
  *   put:
- *     tags: [Appointments]
- *     summary: Mettre à jour le statut d'un rendez-vous
+ *     tags:
+ *       - Appointments
+ *     summary: Mettre à jour un rendez-vous (statut, date, heure)
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema:
+ *           type: string
+ *         description: Identifiant unique du rendez-vous
  *     requestBody:
  *       required: true
  *       content:
@@ -47,22 +57,23 @@ import { createAppointment, getAppointments, updateAppointmentStatus } from "../
  *           schema:
  *             type: object
  *             properties:
- *               status:
+ *               statut:
  *                 type: string
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               status:
+ *                 description: "en_attente | confirme | annule"
+ *               date:
  *                 type: string
+ *                 format: date
+ *                 description: "Nouvelle date du rendez-vous"
+ *               heure:
+ *                 type: string
+ *                 description: "Nouvelle heure du rendez-vous"
  *     responses:
  *       200:
- *         description: Statut mis à jour
+ *         description: Rendez-vous mis à jour
  */
-const router = express.Router();
 
 router.post("/", createAppointment);
 router.get("/", getAppointments);
-router.put("/:id/status", updateAppointmentStatus);
+router.put("/:id", updateAppointment);
 
 export default router;
