@@ -2,6 +2,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
 const signToken = (user) => {
   // @ts-ignore
@@ -114,10 +115,13 @@ export async function profile(req, res) {
   return res.json({ user: req.user });
 }
 
-// GET /api/auth/logout
 export async function logout(req, res) {
-  // Optionnel : tu peux invalider le token côté serveur si tu utilises une blacklist
-  return res.json({ message: "Déconnexion réussie (token à supprimer côté client)." });
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(400).json({ message: "No token" });
+
+  const token = authHeader.split(" ")[1];
+  tokenBlacklist.push(token); // ajoute le token à la blacklist
+  res.json({ message: "Déconnexion réussie, token invalidé côté serveur." });
 }
 
 // POST /api/auth/modifyPassword

@@ -898,7 +898,7 @@
         "summary": "Récupérer toutes les ordonnances",
         "responses": { "200": { "description": "Liste des ordonnances" } }
       },
-     "post": {
+"post": {
   "tags": ["Ordonnances"],
   "summary": "Créer une nouvelle ordonnance",
   "requestBody": {
@@ -908,8 +908,8 @@
         "schema": {
           "type": "object",
           "properties": {
-            "patient": { "type": "string" },
-            "medecin": { "type": "string" },
+            "patient": { "type": "string", "description": "ID du patient (ObjectId)" },
+            "medecin": { "type": "string", "description": "ID du médecin (ObjectId)" },
             "prescriptions": {
               "type": "array",
               "items": {
@@ -923,15 +923,33 @@
                 "required": ["medicament"]
               }
             },
-            "dateEmission": { "type": "string", "format": "date-time" },
-            "fichierPDF": { "type": "string" }
+            "dateEmission": { "type": "string", "format": "date-time", "description": "Date d'émission de l'ordonnance" },
+            "fichierPDF": { "type": "string", "description": "Nom ou chemin du fichier PDF" }
           },
-          "required": ["patient", "medecin", "prescriptions"]
+          "required": ["patient", "medecin", "prescriptions"],
+          "example": {
+            "patient": "68f6ee076134e5443b9e445",
+            "medecin": "68f6ee076134e5443b9e446",
+            "prescriptions": [
+              {
+                "medicament": "paracetamol",
+                "dosage": "500mg",
+                "frequence": "2 fois/jour",
+                "duree": "7 jours"
+              }
+            ],
+            "dateEmission": "2025-10-22T12:50:38.278Z",
+            "fichierPDF": "ordonnance_001.pdf"
+          }
         }
       }
     }
   },
-  "responses": { "201": { "description": "Ordonnance créée" } }
+  "responses": {
+    "201": { "description": "Ordonnance créée avec succès" },
+    "400": { "description": "Erreur de validation ou ObjectId invalide" },
+    "500": { "description": "Erreur serveur" }
+  }
 }
 
     },
