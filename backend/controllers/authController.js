@@ -164,4 +164,3 @@ export async function modifyProfile(req, res) {
     return res.status(500).json({ message: "Erreur lors de la modification du profil." });
   }
 }
-  
