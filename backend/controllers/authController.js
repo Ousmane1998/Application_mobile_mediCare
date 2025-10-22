@@ -68,6 +68,7 @@ export async function register(req, res) {
   }
 }
 
+// POST /api/auth/googleLogin
 export async function googleLogin(req, res) {
   try {
     const idToken = req.body?.idToken;
@@ -94,10 +95,13 @@ export async function googleLogin(req, res) {
         telephone: "",
         adresse: "",
         age: undefined,
+        // @ts-ignore
         password: await bcrypt.hash(jwt.sign({ s: payload.sub }, process.env.JWT_SECRET), 10),
         role: "patient",
       });
     }
+    
+    // @ts-ignore
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
     return res.json({
       message: "Connexion Google réussie",
@@ -169,8 +173,8 @@ export async function logout(req, res) {
   return res.json({ message: "Déconnexion réussie" });
 }
 
-// POST /api/auth/modifyPassword
-export async function modifyPassword(req, res) {
+// POST /api/auth/changePassword
+export async function changePassword(req, res) {
   try {
     const { password } = req.body || {};
     if (!password) {
