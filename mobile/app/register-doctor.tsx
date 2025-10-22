@@ -75,7 +75,7 @@ export default function RegisterDoctorScreen() {
         <Text style={styles.label}>Spécialité</Text>
         <TextInput
           style={styles.input}
-          placeholder="Cardiologue, dermatologue..."
+          placeholder="Cardiologue, generaliste,..."
           value={specialty}
           onChangeText={setSpecialty}
         />
@@ -84,7 +84,7 @@ export default function RegisterDoctorScreen() {
       <Text style={styles.sectionTitle}>Informations Professionnelles</Text>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Numéro d'agrément</Text>
+        <Text style={styles.label}>Numéro d&apos;agrément</Text>
         <TextInput
           style={styles.input}
           placeholder="Entrez votre numéro d'agrément"
@@ -94,17 +94,17 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Adresse du cabinet</Text>
+        <Text style={styles.label}>Nom de l&apos;hôpital ou du cabinet</Text>
         <TextInput
           style={styles.input}
-          placeholder="Entrez l'adresse de votre cabinet"
+          placeholder="Entrez le nom de l'hôpital ou du cabinet ou vous etes rattaché"
           value={clinicAddress}
           onChangeText={setClinicAddress}
         />
       </View>
 
       <TouchableOpacity style={styles.primaryBtn} onPress={onSubmit}>
-        <Text style={styles.primaryBtnText}>S'inscrire</Text>
+        <Text style={styles.primaryBtnText}>S&apos;inscrire</Text>
       </TouchableOpacity>
 
       <View style={styles.footer}>
@@ -113,7 +113,7 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <Text style={styles.terms}>
-        En vous inscrivant, vous acceptez notre Politique de confidentialité et nos Conditions d'utilisation.
+        En vous inscrivant, vous acceptez notre Politique de confidentialité et nos Conditions d&apos;utilisation.
       </Text>
     </ScrollView>
   );

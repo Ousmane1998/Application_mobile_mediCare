@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { API_URL } from '../utils/api';
 
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -12,6 +18,19 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gLoading, setGLoading] = useState(false);
+
+  const expoClientId = process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID || '';
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: expoClientId || undefined,
+    iosClientId: iosClientId || undefined,
+    androidClientId: androidClientId || undefined,
+    responseType: 'id_token',
+    scopes: ['profile', 'email'],
+  });
 
   const onLogin = async () => {
     if (!emailOrPhone || !password) {
@@ -53,6 +72,57 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const handle = async () => {
+      if (response?.type === 'success') {
+        try {
+          setGLoading(true);
+          setError(null);
+          const idToken = response.authentication?.idToken as string | undefined;
+          if (!idToken) {
+            setError('Connexion Google invalide.');
+            return;
+          }
+          const res = await fetch(`${API_URL}/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const msg = (data && (data.message || data.error)) || 'Échec de la connexion Google.';
+            setError(String(msg));
+            return;
+          }
+          const token: string | undefined = data?.token || data?.accessToken;
+          const roleRaw: string | undefined = data?.user?.role || data?.role;
+          if (token) await AsyncStorage.setItem('authToken', token);
+          if (roleRaw) await AsyncStorage.setItem('userRole', roleRaw);
+          const role = (roleRaw || '').toLowerCase();
+          if (role === 'admin') {
+            router.replace('/Admin/dashboard');
+          } else if (role === 'doctor' || role === 'medecin') {
+            router.replace('/Doctor/dashboard');
+          } else if (role === 'patient') {
+            router.replace('/Patient/dashboard');
+          } else {
+            setError("Rôle d'utilisateur inconnu.");
+          }
+        } catch (e: any) {
+          setError('Impossible de contacter le serveur.');
+        } finally {
+          setGLoading(false);
+        }
+      }
+    };
+    handle();
+  }, [response]);
+
+  const onGoogleLogin = async () => {
+    setError(null);
+    await promptAsync();
   };
 
   return (
@@ -115,14 +185,14 @@ export default function LoginScreen() {
         <View style={styles.separator} />
       </View>
 
-      <TouchableOpacity style={styles.googleBtn}>
+      <TouchableOpacity style={[styles.googleBtn, (loading || gLoading) && { opacity: 0.7 }]} disabled={loading || gLoading} onPress={onGoogleLogin}>
         <Image source={require('../assets/images/google.png')} style={{width: 24, height: 24}} />
-        <Text style={styles.googleText}>Google</Text>
+        <Text style={styles.googleText}>{gLoading ? 'Connexion…' : 'Google'}</Text>
       </TouchableOpacity>
 
       <View style={styles.footerRow}>
         <Text style={styles.footerText}>Pas encore de compte ? </Text>
-        <Text style={styles.signup} onPress={() => router.push('/register-doctor')}>S`&apos;inscrire</Text>
+        <Text style={styles.signup} onPress={() => router.push('/register-doctor')}>S&apos;inscrire</Text>
       </View>
     </View>
     </ScrollView>
@@ -262,5 +332,10 @@ const styles = StyleSheet.create({
   signup: {
     color: '#2ccdd2',
     fontSize: 14,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    marginTop: 8,
   },
 });

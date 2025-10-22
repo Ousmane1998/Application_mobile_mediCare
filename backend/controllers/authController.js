@@ -68,6 +68,58 @@ export async function register(req, res) {
   }
 }
 
+// POST /api/auth/googleLogin
+export async function googleLogin(req, res) {
+  try {
+    const idToken = req.body?.idToken;
+    if (!idToken) return res.status(400).json({ message: "idToken requis." });
+
+    const idsRaw = process.env.GOOGLE_CLIENT_IDS || "";
+    const audiences = (idsRaw ? idsRaw.split(",") : []).map((s) => s.trim()).filter(Boolean);
+    const singleId = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID.trim();
+    if (!audiences.length && singleId) audiences.push(singleId);
+    if (!audiences.length) return res.status(500).json({ message: "Configuration Google manquante (GOOGLE_CLIENT_ID[S])." });
+
+    const client = new OAuth2Client(audiences[0]);
+    const ticket = await client.verifyIdToken({ idToken, audience: audiences });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) return res.status(400).json({ message: "Token Google invalide." });
+
+    const email = payload.email.toLowerCase();
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        nom: (payload.family_name || "").trim() || "",
+        prenom: (payload.given_name || "").trim() || "",
+        email,
+        telephone: "",
+        adresse: "",
+        age: undefined,
+        // @ts-ignore
+        password: await bcrypt.hash(jwt.sign({ s: payload.sub }, process.env.JWT_SECRET), 10),
+        role: "patient",
+      });
+    }
+    
+    // @ts-ignore
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    return res.json({
+      message: "Connexion Google réussie",
+      token,
+      user: {
+        id: user._id,
+        nom: user.nom,
+        prenom: user.prenom,
+        email: user.email,
+        telephone: user.telephone,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Erreur lors de la connexion Google." });
+  }
+}
+
 // POST /api/auth/login
 export async function login(req, res) {
   try {
@@ -124,8 +176,8 @@ export async function logout(req, res) {
   res.json({ message: "Déconnexion réussie, token invalidé côté serveur." });
 }
 
-// POST /api/auth/modifyPassword
-export async function modifyPassword(req, res) {
+// POST /api/auth/changePassword
+export async function changePassword(req, res) {
   try {
     const { password } = req.body || {};
     if (!password) {
@@ -151,7 +203,7 @@ export async function modifyProfile(req, res) {
   try {
     const { nom, prenom, email, adresse, age, telephone } = req.body || {};
     if (!nom || !prenom || !email || !adresse || !age || !telephone) {
-      return res.status(400).json({ message: "Champs requis manquants (nom, prenom, email, adresse, age, telephone)." });
+      return res.status(400).json({ message: "Remplir tous les champs." });
     }
     const user = await User.findById(req.user._id);
     if (!user) {

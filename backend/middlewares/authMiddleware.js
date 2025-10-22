@@ -14,6 +14,7 @@ const authMiddleware = async (req, res, next) => {
     return res.status(401).json({ message: "Token invalide (déconnecté)" });
   }
   try {
+    // @ts-ignore
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id).select("-password");
     next();

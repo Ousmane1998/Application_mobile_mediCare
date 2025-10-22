@@ -305,7 +305,7 @@
         }
       }
     },
-    "/api/auth/modifyPassword": {
+    "/api/auth/changePassword": {
   "post": {
     "tags": ["Auth"],
     "summary": "Modifier le mot de passe",

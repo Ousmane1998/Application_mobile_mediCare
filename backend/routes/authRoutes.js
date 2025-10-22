@@ -1,6 +1,6 @@
 // routes/authRoutes.js
 import express from "express";
-import { register, login, profile, modifyPassword, modifyProfile, logout } from "../controllers/authController.js";
+import { register, login, profile, changePassword, modifyProfile, logout, googleLogin } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 /**
@@ -140,8 +140,35 @@ const router = express.Router();
 router.post("/register", register);
 router.post("/login", login);
 router.get("/profile", authMiddleware, profile);
-router.post("/modifyPassword", authMiddleware, modifyPassword);
+router.post("/changePassword", authMiddleware, changePassword);
 router.post("/modifyProfile", authMiddleware, modifyProfile);
 router.get("/logout", authMiddleware, logout);
+
+/**
+ * @openapi
+ * /api/auth/google:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Connexion via Google (id_token)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Jeton ID Google retourné par OAuth
+ *             required: [idToken]
+ *     responses:
+ *       200:
+ *         description: Connexion Google réussie
+ *       400:
+ *         description: Requête invalide
+ *       500:
+ *         description: Erreur serveur
+ */
+router.post("/google", googleLogin);
 
 export default router;
