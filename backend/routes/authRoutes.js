@@ -142,6 +142,6 @@ router.post("/login", login);
 router.get("/profile", authMiddleware, profile);
 router.post("/modifyPassword", authMiddleware, modifyPassword);
 router.post("/modifyProfile", authMiddleware, modifyProfile);
-router.post("/logout", authMiddleware, logout);
+router.get("/logout", authMiddleware, logout);
 
 export default router;
