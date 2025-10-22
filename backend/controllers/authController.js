@@ -146,7 +146,7 @@ export async function modifyProfile(req, res) {
   try {
     const { nom, prenom, email, adresse, age, telephone } = req.body || {};
     if (!nom || !prenom || !email || !adresse || !age || !telephone) {
-      return res.status(400).json({ message: "Champs requis manquants (nom, prenom, email, adresse, age, telephone)." });
+      return res.status(400).json({ message: "Remplir tous les champs." });
     }
     const user = await User.findById(req.user.id);
     if (!user) {
