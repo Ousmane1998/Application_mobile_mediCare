@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import Header from '../../components/header';
+import { useRouter } from 'expo-router';
 
 export default function PatientDashboardScreen() {
+  const router = useRouter();
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
      <Header />
@@ -19,7 +21,7 @@ export default function PatientDashboardScreen() {
         </View>
         <Text style={styles.bigValue}>120 mg/dL</Text>
         <Text style={styles.statusOk}>Stable</Text>
-        <TouchableOpacity style={styles.smallBtn}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
       </View>
 
       <View style={styles.card}>
@@ -29,7 +31,7 @@ export default function PatientDashboardScreen() {
         </View>
         <Text style={styles.bigValue}>130/85 mmHg</Text>
         <Text style={styles.statusWarn}>Légère hausse</Text>
-        <TouchableOpacity style={styles.smallBtn}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
       </View>
 
       <View style={styles.block}>
@@ -43,7 +45,7 @@ export default function PatientDashboardScreen() {
         <Text style={styles.blockTitle}>Prochain rendez-vous</Text>
         <Text style={styles.blockLine}>Dr. Martin - 15/05/2024 à 10h30</Text>
         <Text style={styles.blockLine}>Hôpital Central, 123 Rue de la Santé</Text>
-        <TouchableOpacity style={styles.blockBtn}><Text style={styles.blockBtnText}>Voir les rendez-vous</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-new')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
       </View>
 
       <View style={styles.block}>
@@ -52,7 +54,7 @@ export default function PatientDashboardScreen() {
           Nouveau message du Dr. Dubois
         </Text>
         <Text style={[styles.blockLine, { fontStyle: 'italic', color: '#6B7280' }]}>"Bonjour, n'oubliez pas de prendre votre tension demain matin."</Text>
-        <TouchableOpacity style={styles.blockBtn}><Text style={styles.blockBtnText}>Ouvrir le chat</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/chat')}><Text style={styles.blockBtnText}>Ouvrir le chat</Text></TouchableOpacity>
       </View>
 
       <View style={{ height: 16 }} />

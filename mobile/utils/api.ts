@@ -50,3 +50,19 @@ export async function updateProfile(payload: Partial<UserProfile>) {
 export async function changePassword(oldPassword: string, password: string) {
   return authFetch('/auth/changePassword', { method: 'POST', body: JSON.stringify({ oldPassword, password }) });
 }
+
+// Measures
+export type MeasureType = 'tension' | 'glycemie' | 'poids' | 'pouls' | 'temperature';
+export async function addMeasure(payload: { patientId: string; type: MeasureType; value: string; date?: string; synced?: boolean }) {
+  return authFetch('/measures', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// Appointments
+export async function createAppointment(payload: { patientId: string; medecinId: string; date: string; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule' }) {
+  return authFetch('/appointments', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// Messages
+export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }) {
+  return authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
+}
