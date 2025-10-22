@@ -17,6 +17,7 @@ export default function PatientMeasureAddScreen() {
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
   const [me, setMe] = useState<UserProfile | null>(null);
   const [time, setTime] = useState('');
+  const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [dateObj, setDateObj] = useState<Date | null>(null);
@@ -125,7 +126,7 @@ export default function PatientMeasureAddScreen() {
     try {
       setSaving(true);
       setError(null);
-      await addMeasure({ patientId: me.id, type, value: value.trim().replace(',', '.'), date: dateISO });
+      await addMeasure({ patientId: me.id, type, value: value.trim().replace(',', '.'), heure: dateISO, notes: notes.trim() || undefined });
       setSnack({ visible: true, message: 'Mesure ajoutée.', type: 'success' });
       setTimeout(() => router.back(), 800);
     } catch (e: any) {
@@ -138,7 +139,7 @@ export default function PatientMeasureAddScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Ajouter une mesure</Text>
+      <Text style={styles.title}>Quel type de mesure souhaitez-vous ajouter ?</Text>
 
       <View style={styles.group}><Text style={styles.label}>Type</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -151,21 +152,9 @@ export default function PatientMeasureAddScreen() {
       </View>
 
       <View style={styles.group}>
-        <Text style={styles.label}>Valeur</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <TextInput style={[styles.input, { flex: 1 }]} value={value} onChangeText={setValue} placeholder="ex: 120/80 ou 90" />
-          <Text style={styles.unit}>
-            {type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
-          </Text>
-        </View>
-        <Text style={styles.help}>
-          {type === 'tension' ? "Ex: 120/80 mmHg" : type === 'glycemie' ? "Ex: 90 mg/dL" : type === 'poids' ? "Ex: 75.5 kg" : type === 'pouls' ? "Ex: 72 bpm" : "Ex: 37.2 °C"}
-        </Text>
-      </View>
-      <View style={styles.group}>
-        <Text style={styles.label}>Date (optionnel)</Text>
+        <Text style={styles.label}>Date et Heure</Text>
         <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-          <Text>{date || 'DD-MM-YYYY'}</Text>
+          <Text>{(date && time) ? `${date}, ${time}` : (date ? `${date}` : 'Choisir…')}</Text>
         </TouchableOpacity>
         {showDatePicker && (
           <DateTimePicker
@@ -180,16 +169,12 @@ export default function PatientMeasureAddScreen() {
                 const mm = String(selected.getMonth() + 1).padStart(2, '0');
                 const yyyy = String(selected.getFullYear());
                 setDate(`${dd}-${mm}-${yyyy}`);
+                setShowTimePicker(true);
               }
             }}
           />
         )}
-      </View>
-      <View style={styles.group}>
-        <Text style={styles.label}>Heure (optionnel)</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
-          <Text>{time || 'HH:mm'}</Text>
-        </TouchableOpacity>
+        
         {showTimePicker && (
           <DateTimePicker
             value={timeObj || new Date()}
@@ -208,10 +193,31 @@ export default function PatientMeasureAddScreen() {
         )}
       </View>
 
+      <View style={styles.group}>
+        <Text style={styles.label}>Valeur</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]} value={value} onChangeText={setValue}
+            placeholder={type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
+          />
+          <Text style={styles.unit}>
+            {type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
+          </Text>
+        </View>
+        <Text style={styles.help}>
+          {type === 'tension' ? "Ex: 120/80 mmHg" : type === 'glycemie' ? "Ex: 90 mg/dL" : type === 'poids' ? "Ex: 75.5 kg" : type === 'pouls' ? "Ex: 72 bpm" : "Ex: 37.2 °C"}
+        </Text>
+      </View>
+
+      <View style={styles.group}>
+        <Text style={styles.label}>Notes (facultatif)</Text>
+        <TextInput style={[styles.input, { minHeight: 90, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes} multiline placeholder="Ajouter une note..." />
+      </View>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
-        <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
+        <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Sauvegarder'}</Text>
       </TouchableOpacity>
       <Snackbar visible={snack.visible} message={snack.message} type={snack.type} onHide={() => setSnack((s) => ({ ...s, visible: false }))} />
     </ScrollView>

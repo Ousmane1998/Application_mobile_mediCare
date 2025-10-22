@@ -53,12 +53,12 @@ export async function changePassword(oldPassword: string, password: string) {
 
 // Measures
 export type MeasureType = 'tension' | 'glycemie' | 'poids' | 'pouls' | 'temperature';
-export async function addMeasure(payload: { patientId: string; type: MeasureType; value: string; date?: string; synced?: boolean }) {
+export async function addMeasure(payload: { patientId: string; type: MeasureType; value: string; heure?: string; synced?: boolean; notes?: string }) {
   return authFetch('/measures', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 // Appointments
-export async function createAppointment(payload: { patientId: string; medecinId: string; date: string; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule' }) {
+export async function createAppointment(payload: { patientId: string; medecinId: string; date: Date; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule' }) {
   return authFetch('/appointments', { method: 'POST', body: JSON.stringify(payload) });
 }
 

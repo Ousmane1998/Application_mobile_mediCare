@@ -11,9 +11,7 @@ export default function PatientDashboardScreen() {
      <Header />
 
       <Text style={styles.greeting}>Bonjour, Patient!</Text>
-
       <Text style={styles.sectionTitle}>Vos dernières mesures</Text>
-
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
           <Ionicons name="trending-up-outline" size={24} color="green" />

@@ -9,14 +9,36 @@ export default function PatientTabsLayout() {
         name="dashboard"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+          tabBarIcon: ({ color }) => <Ionicons name="home-outline" color={'black'} size={40} />,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="measures"
         options={{
-          title: 'Profil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+          title: 'Mesures',
+          tabBarIcon: ({ color }) => <Ionicons name="bar-chart-outline" color={'black'} size={40} />,
+        }}
+      />
+      <Tabs.Screen
+        name="appointments"
+        options={{
+          title: 'Rendez-vous',
+          tabBarIcon: ({ color }) => <Ionicons name="calendar-outline" color={'black'} size={40} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Chat',
+          tabBarBadge: 1,
+          tabBarIcon: ({ color }) => <Ionicons name="chatbox-ellipses-outline" color={'black'} size={40} />,
+        }}
+      />
+      <Tabs.Screen
+        name="medications"
+        options={{
+          title: 'Médicaments',
+          tabBarIcon: ({ color }) => <Ionicons name="medical-outline" color={'black'} size={40} />,
         }}
       />
     </Tabs>
