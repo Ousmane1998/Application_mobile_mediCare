@@ -11,6 +11,9 @@ const signToken = (user) => {
   });
 };
 
+const emailRegex = /^\S+@\S+\.\S+$/;
+const phoneRegex = /^7\d{8}$/;
+
 // POST /api/auth/register
 export async function register(req, res) {
   try {
@@ -29,6 +32,16 @@ export async function register(req, res) {
 
     if (!telephone || !password || !nom) {
       return res.status(400).json({ message: "Champs requis manquants (telephone, password, nom)." });
+    }
+
+    if (!phoneRegex.test(String(telephone))) {
+      return res.status(400).json({ message: "Format téléphone invalide. Format attendu: 7XXXXXXXX." });
+    }
+    if (email && !emailRegex.test(String(email))) {
+      return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Le mot de passe doit contenir au moins 6 caractères." });
     }
 
     const existing = await User.findOne({ $or: [{ telephone }, { email }] });
@@ -130,6 +143,21 @@ export async function login(req, res) {
       return res.status(400).json({ message: "identifiant et password requis." });
     }
 
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Le mot de passe doit contenir au moins 6 caractères." });
+    }
+
+    const isEmail = String(identifiant).includes("@");
+    if (isEmail) {
+      if (!emailRegex.test(String(identifiant))) {
+        return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
+      }
+    } else {
+      if (!phoneRegex.test(String(identifiant))) {
+        return res.status(400).json({ message: "Format téléphone invalide. Format attendu: 7XXXXXXXX." });
+      }
+    }
+
     const user = await User.findOne({
       $or: [{ email: identifiant?.toLowerCase() }, { telephone: identifiant }],
     });
@@ -176,13 +204,20 @@ export async function logout(req, res) {
 // POST /api/auth/changePassword
 export async function changePassword(req, res) {
   try {
-    const { password } = req.body || {};
-    if (!password) {
-      return res.status(400).json({ message: "password requis." });
+    const { oldPassword, password } = req.body || {};
+    if (!oldPassword || !password) {
+      return res.status(400).json({ message: "oldPassword et password sont requis." });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Le mot de passe doit contenir au moins 6 caractères." });
     }
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(400).json({ message: "Utilisateur non trouvé." });
+    }
+    const ok = await bcrypt.compare(String(oldPassword), user.password);
+    if (!ok) {
+      return res.status(400).json({ message: "Ancien mot de passe incorrect." });
     }
     const hashed = await bcrypt.hash(password, 10);
     user.password = hashed;
@@ -198,7 +233,13 @@ export async function modifyProfile(req, res) {
   try {
     const { nom, prenom, email, adresse, age, telephone } = req.body || {};
     if (!nom || !prenom || !email || !adresse || !age || !telephone) {
-      return res.status(400).json({ message: "Remplir tous les champs." });
+      return res.status(400).json({ message: "Champs requis manquants (nom, prenom, email, adresse, age, telephone)." });
+    }
+    if (!emailRegex.test(String(email))) {
+      return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
+    }
+    if (!phoneRegex.test(String(telephone))) {
+      return res.status(400).json({ message: "Format téléphone invalide. Format attendu: 7XXXXXXXX." });
     }
     const user = await User.findById(req.user.id);
     if (!user) {

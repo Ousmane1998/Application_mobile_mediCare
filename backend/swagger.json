@@ -306,13 +306,18 @@
           "schema": {
             "type": "object",
             "properties": {
+              "oldPassword": {
+                "type": "string",
+                "description": "Ancien mot de passe de l'utilisateur",
+                "example": "AncienPass123!"
+              },
               "password": {
                 "type": "string",
                 "description": "Nouveau mot de passe de l'utilisateur",
                 "example": "NouveauPass123!"
               }
             },
-            "required": ["password"]
+            "required": ["oldPassword", "password"]
           }
         }
       }
