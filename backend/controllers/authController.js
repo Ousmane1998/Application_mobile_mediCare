@@ -169,7 +169,7 @@ export async function profile(req, res) {
 
 // GET /api/auth/logout
 export async function logout(req, res) {
-  if (!req.user) return res.status(401).json({ message: "Non authentifié" });
+  // Optionnel : tu peux invalider le token côté serveur si tu utilises une blacklist
   return res.json({ message: "Déconnexion réussie" });
 }
 
