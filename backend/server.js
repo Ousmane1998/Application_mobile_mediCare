@@ -27,6 +27,7 @@ import errorHandler from "./middlewares/errorHandler.js";
 import { setupSocketIO } from "./utils/sendNotification.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
+import userRoutes from "./routes/userRoutes.js";
 
 const swaggerDocument = JSON.parse(fs.readFileSync("./swagger.json", "utf8"));
 
@@ -60,6 +61,7 @@ app.use("/api/availability", availabilityRoutes);
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/fiches", ficheRoutes);
 app.use("/api/ordonnance", ordonnanceRoutes);
+app.use("/api/users", userRoutes);
 
 // Error handler
 app.use(errorHandler);
