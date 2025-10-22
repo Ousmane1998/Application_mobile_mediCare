@@ -142,12 +142,14 @@ export async function modifyPassword(req, res) {
 
 // POST /api/auth/modifyProfile
 export async function modifyProfile(req, res) {
+    console.log("req.user :", req.user);
+
   try {
     const { nom, prenom, email, adresse, age, telephone } = req.body || {};
     if (!nom || !prenom || !email || !adresse || !age || !telephone) {
       return res.status(400).json({ message: "Champs requis manquants (nom, prenom, email, adresse, age, telephone)." });
     }
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(400).json({ message: "Utilisateur non trouvé." });
     }
