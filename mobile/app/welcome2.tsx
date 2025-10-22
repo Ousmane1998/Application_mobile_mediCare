@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Welcome2Screen() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function Welcome2Screen() {
   return (
     <View style={styles.container}>
       <View style={styles.illustration}>
-        <Image source={require('../assets/images/medicare chat.png')} style={{width: 350, height: 350}} />
+        <Image source={require('../assets/images/medicare chat.png')} style={{width: 250, height: 250}} />
       </View>
 
       <View style={styles.content}>
@@ -26,7 +27,7 @@ export default function Welcome2Screen() {
         </Text>
 
         <View style={styles.bullet}>
-          <Text style={styles.bulletIcon}>💡</Text>
+          <Ionicons name="bulb-outline" size={18} color="#2ccdd2" />
           <View style={styles.bulletTextWrap}>
             <Text style={styles.bulletTitle}>Obtenez des réponses rapides</Text>
             <Text style={styles.bulletText}>Posez vos questions et recevez des conseils sans attendre.</Text>
@@ -34,7 +35,7 @@ export default function Welcome2Screen() {
         </View>
 
         <View style={styles.bullet}>
-          <Text style={styles.bulletIcon}>📅</Text>
+          <Ionicons name="calendar-outline" size={18} color="#2ccdd2" />
           <View style={styles.bulletTextWrap}>
             <Text style={styles.bulletTitle}>Planifiez des rendez-vous facilement</Text>
             <Text style={styles.bulletText}>Consultez les disponibilités de votre médecin et prenez rendez-vous en quelques clics.</Text>
@@ -42,7 +43,7 @@ export default function Welcome2Screen() {
         </View>
 
         <View style={styles.bullet}>
-          <Text style={styles.bulletIcon}>🛡️</Text>
+          <Ionicons name="lock-closed-outline" size={18} color="#2ccdd2" />
           <View style={styles.bulletTextWrap}>
             <Text style={styles.bulletTitle}>Partagez vos données en toute sécurité</Text>
             <Text style={styles.bulletText}>Vos informations de santé sont chiffrées et protégées.</Text>
@@ -54,8 +55,6 @@ export default function Welcome2Screen() {
         <View style={styles.dots}>
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
         </View>
         <TouchableOpacity style={styles.primaryBtn} onPress={finishOnboarding}>
           <Text style={styles.primaryBtnText}>Continuer</Text>
