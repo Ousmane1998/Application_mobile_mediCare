@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, ThemeProvider, DefaultTheme as DefaultThemeNative } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
@@ -32,7 +32,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === 'light' ? DefaultThemeNative : DarkTheme}>
       <Stack initialRouteName={initialRoute}>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
         <Stack.Screen name="welcome2" options={{ headerShown: false }} />

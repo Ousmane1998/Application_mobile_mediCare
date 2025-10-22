@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import Snackbar from '../../components/Snackbar';
 import { addMeasure, getProfile, type UserProfile, type MeasureType } from '../../utils/api';
@@ -16,6 +17,10 @@ export default function PatientMeasureAddScreen() {
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
   const [me, setMe] = useState<UserProfile | null>(null);
   const [time, setTime] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [dateObj, setDateObj] = useState<Date | null>(null);
+  const [timeObj, setTimeObj] = useState<Date | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -147,13 +152,61 @@ export default function PatientMeasureAddScreen() {
 
       <View style={styles.group}>
         <Text style={styles.label}>Valeur</Text>
-        <TextInput style={styles.input} value={value} onChangeText={setValue} placeholder="ex: 120/80 ou 90 (mg/dL)" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TextInput style={[styles.input, { flex: 1 }]} value={value} onChangeText={setValue} placeholder="ex: 120/80 ou 90" />
+          <Text style={styles.unit}>
+            {type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
+          </Text>
+        </View>
         <Text style={styles.help}>
           {type === 'tension' ? "Ex: 120/80 mmHg" : type === 'glycemie' ? "Ex: 90 mg/dL" : type === 'poids' ? "Ex: 75.5 kg" : type === 'pouls' ? "Ex: 72 bpm" : "Ex: 37.2 °C"}
         </Text>
       </View>
-      <View style={styles.group}><Text style={styles.label}>Date (optionnel)</Text><TextInput style={styles.input} value={date} onChangeText={setDate} placeholder="DD-MM-YYYY" /></View>
-      <View style={styles.group}><Text style={styles.label}>Heure (optionnel)</Text><TextInput style={styles.input} value={time} onChangeText={setTime} placeholder="HH:mm" /></View>
+      <View style={styles.group}>
+        <Text style={styles.label}>Date (optionnel)</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+          <Text>{date || 'DD-MM-YYYY'}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={dateObj || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={(e, selected) => {
+              setShowDatePicker(Platform.OS === 'ios');
+              if (selected) {
+                setDateObj(selected);
+                const dd = String(selected.getDate()).padStart(2, '0');
+                const mm = String(selected.getMonth() + 1).padStart(2, '0');
+                const yyyy = String(selected.getFullYear());
+                setDate(`${dd}-${mm}-${yyyy}`);
+              }
+            }}
+          />
+        )}
+      </View>
+      <View style={styles.group}>
+        <Text style={styles.label}>Heure (optionnel)</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
+          <Text>{time || 'HH:mm'}</Text>
+        </TouchableOpacity>
+        {showTimePicker && (
+          <DateTimePicker
+            value={timeObj || new Date()}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(e, selected) => {
+              setShowTimePicker(Platform.OS === 'ios');
+              if (selected) {
+                setTimeObj(selected);
+                const hh = String(selected.getHours()).padStart(2, '0');
+                const mm = String(selected.getMinutes()).padStart(2, '0');
+                setTime(`${hh}:${mm}`);
+              }
+            }}
+          />
+        )}
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -178,4 +231,5 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
   chipText: { color: '#111827', fontSize: 13 },
   help: { color: '#6B7280', fontSize: 12, marginTop: 6 },
+  unit: { color: '#111827', backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB' },
 });

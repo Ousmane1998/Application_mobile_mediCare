@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import Snackbar from '../../components/Snackbar';
 import { createAppointment, getProfile, type UserProfile } from '../../utils/api';
@@ -13,6 +14,10 @@ export default function PatientAppointmentNewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
   const [me, setMe] = useState<UserProfile | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [dateObj, setDateObj] = useState<Date | null>(null);
+  const [timeObj, setTimeObj] = useState<Date | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -46,8 +51,51 @@ export default function PatientAppointmentNewScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Nouveau rendez-vous</Text>
       <View style={styles.group}><Text style={styles.label}>ID Médecin</Text><TextInput style={styles.input} value={medecinId} onChangeText={setMedecinId} placeholder="6528b5e8b21f4c001f7a12a4" /></View>
-      <View style={styles.group}><Text style={styles.label}>Date (DD-MM-YYYY)</Text><TextInput style={styles.input} value={date} onChangeText={setDate} placeholder="05-11-2025" /></View>
-      <View style={styles.group}><Text style={styles.label}>Heure (HH:mm)</Text><TextInput style={styles.input} value={heure} onChangeText={setHeure} placeholder="14:30" /></View>
+      <View style={styles.group}>
+        <Text style={styles.label}>Date (DD-MM-YYYY)</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+          <Text>{date || 'DD-MM-YYYY'}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={dateObj || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={(e, selected) => {
+              setShowDatePicker(Platform.OS === 'ios');
+              if (selected) {
+                setDateObj(selected);
+                const dd = String(selected.getDate()).padStart(2, '0');
+                const mm = String(selected.getMonth() + 1).padStart(2, '0');
+                const yyyy = String(selected.getFullYear());
+                setDate(`${dd}-${mm}-${yyyy}`);
+              }
+            }}
+          />
+        )}
+      </View>
+      <View style={styles.group}>
+        <Text style={styles.label}>Heure (HH:mm)</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
+          <Text>{heure || 'HH:mm'}</Text>
+        </TouchableOpacity>
+        {showTimePicker && (
+          <DateTimePicker
+            value={timeObj || new Date()}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(e, selected) => {
+              setShowTimePicker(Platform.OS === 'ios');
+              if (selected) {
+                setTimeObj(selected);
+                const hh = String(selected.getHours()).padStart(2, '0');
+                const mm = String(selected.getMinutes()).padStart(2, '0');
+                setHeure(`${hh}:${mm}`);
+              }
+            }}
+          />
+        )}
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
