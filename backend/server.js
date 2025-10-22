@@ -78,3 +78,32 @@ connectDB(process.env.MONGODB_URI).then(() => {
     console.log(`✅ Server running on port ${PORT}`);
   });
 });
+
+
+let users = [];
+
+// Ajouter un utilisateur connecté
+io.on("connection", (socket) => {
+  console.log("Un utilisateur est connecté : ", socket.id);
+
+  socket.on("join", (userId) => {
+    users.push({ userId, socketId: socket.id });
+  });
+
+  // Réception d’un message et rediffusion
+  socket.on("sendMessage", ({ senderId, receiverId, text }) => {
+    const receiver = users.find((u) => u.userId === receiverId);
+    if (receiver) {
+      io.to(receiver.socketId).emit("getMessage", {
+        senderId,
+        text,
+      });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    users = users.filter((u) => u.socketId !== socket.id);
+  });
+});
+
+server.listen(5000, () => console.log("Serveur démarré sur le port 5000"));
