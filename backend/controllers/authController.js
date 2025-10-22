@@ -113,3 +113,10 @@ export async function profile(req, res) {
   if (!req.user) return res.status(401).json({ message: "Non authentifié" });
   return res.json({ user: req.user });
 }
+
+// GET /api/auth/logout
+export async function logout(req, res) {
+  if (!req.user) return res.status(401).json({ message: "Non authentifié" });
+  req.logout();
+  res.json({ message: "Déconnexion réussie" });
+}

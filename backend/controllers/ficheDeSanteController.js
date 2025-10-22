@@ -1,5 +1,5 @@
 // controllers/FicheDeSanteController.js
-import FicheDeSante from "../Models/FicheDeSante.js";
+import FicheDeSante from "../models/FicheDeSante.js";
 
 /**
  * Obtenir toutes les fiches de santé
