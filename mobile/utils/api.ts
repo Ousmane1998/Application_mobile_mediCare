@@ -47,6 +47,6 @@ export async function updateProfile(payload: Partial<UserProfile>) {
   return authFetch('/auth/modifyProfile', { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export async function changePassword(password: string) {
-  return authFetch('/auth/changePassword', { method: 'POST', body: JSON.stringify({ password }) });
+export async function changePassword(oldPassword: string, password: string) {
+  return authFetch('/auth/changePassword', { method: 'POST', body: JSON.stringify({ oldPassword, password }) });
 }

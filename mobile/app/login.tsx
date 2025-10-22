@@ -25,7 +25,7 @@ export default function LoginScreen() {
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: expoClientId || undefined,
+    // expoClientId: expoClientId || undefined,
     iosClientId: iosClientId || undefined,
     androidClientId: androidClientId || undefined,
     responseType: 'id_token',
@@ -33,8 +33,26 @@ export default function LoginScreen() {
   });
 
   const onLogin = async () => {
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    const phoneRegex = /^7\d{8}$/;
     if (!emailOrPhone || !password) {
       setError('Veuillez renseigner vos identifiants.');
+      return;
+    }
+    const isEmail = emailOrPhone.includes('@');
+    if (isEmail) {
+      if (!emailRegex.test(emailOrPhone)) {
+        setError('Format email invalide. Format attendu: string@string.string.');
+        return;
+      }
+    } else {
+      if (!phoneRegex.test(emailOrPhone)) {
+        setError('Format téléphone invalide. Format attendu: 7XXXXXXXX.');
+        return;
+      }
+    }
+    if (String(password).length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
     setLoading(true);

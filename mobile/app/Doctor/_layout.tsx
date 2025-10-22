@@ -18,6 +18,7 @@ export default function DoctorTabsLayout() {
           title: 'Profil',
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
         }}
+        
       />
     </Tabs>
   );

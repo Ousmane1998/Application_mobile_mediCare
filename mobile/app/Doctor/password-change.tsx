@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { changePassword } from '../../utils/api';
 import Snackbar from '../../components/Snackbar';
 
-export default function PatientPasswordChangeScreen() {
+export default function DoctorPasswordChangeScreen() {
   const router = useRouter();
   const [oldPassword, setOldPassword] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +22,7 @@ export default function PatientPasswordChangeScreen() {
       setSnack({ visible: true, message: 'Veuillez renseigner les deux champs.', type: 'error' });
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 6 || confirm.length < 6) {
       setSnack({ visible: true, message: 'Le mot de passe doit contenir au moins 6 caractères.', type: 'error' });
       return;
     }

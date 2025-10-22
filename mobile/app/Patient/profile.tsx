@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, RefreshCo
 import { Ionicons } from '@expo/vector-icons';
 import ProfileCard, { ProfileRow } from '../../components/ProfileCard';
 import { getProfile, type UserProfile } from '../../utils/api';
+import { useRouter, type Href } from 'expo-router';
 
 export default function PatientProfileScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -50,10 +52,16 @@ export default function PatientProfileScreen() {
         {!!profile?.email && <Text style={styles.email}>{profile?.email}</Text>}
       </View>
 
-      <ProfileCard title="Informations Personnelles">
+      <ProfileCard title="Informations Personnelles" onEdit={() => router.push({ pathname: '/Patient/profile-edit' } as any)}>
         <ProfileRow icon={<Ionicons name="person-outline" size={18} />} label="Nom complet" value={`${profile?.nom || ''} ${profile?.prenom || ''}`} />
         <ProfileRow icon={<Ionicons name="call-outline" size={18} />} label="Téléphone" value={profile?.telephone || '—'} />
         <ProfileRow icon={<Ionicons name="home-outline" size={18} />} label="Adresse" value={profile?.adresse || '—'} />
+      </ProfileCard>
+
+      <View style={{ height: 12 }} />
+
+      <ProfileCard title="Sécurité" onEdit={() => router.push({ pathname: '/Patient/password-change' } as any)}>
+        <ProfileRow icon={<Ionicons name="lock-closed-outline" size={18} />} label="Mot de passe" value={'••••••••'} />
       </ProfileCard>
 
       <View style={{ height: 12 }} />

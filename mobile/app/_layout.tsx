@@ -38,6 +38,10 @@ export default function RootLayout() {
         <Stack.Screen name="welcome2" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register-doctor" options={{ headerShown: false }} />
+        <Stack.Screen name="register-patient" options={{ headerShown: false }} />
+        <Stack.Screen name="doctor" options={{ headerShown: false }} />
+        <Stack.Screen name="patient" options={{ headerShown: false }} />
+      
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

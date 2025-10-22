@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getProfile, updateProfile, type UserProfile } from '../../utils/api';
-import Snackbar from '../../components/Snackbar';
 
-export default function PatientProfileEditScreen() {
+export default function DoctorProfileEditScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<{ nom: string; prenom: string; email?: string; adresse?: string; age?: string; telephone?: string }>({ nom: '', prenom: '' });
-  const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
+  const [form, setForm] = useState<{ nom: string; prenom: string; email?: string; adresse?: string; age?: string; telephone?: string; specialite?: string; hopital?: string }>({ nom: '', prenom: '' });
 
   useEffect(() => {
     (async () => {
@@ -24,6 +22,8 @@ export default function PatientProfileEditScreen() {
           adresse: u.adresse || '',
           age: u.age ? String(u.age) : '',
           telephone: u.telephone || '',
+          specialite: u.specialite || '',
+          hopital: u.hopital || '',
         });
       } catch (e: any) {
         setError(e?.message || 'Erreur de chargement');
@@ -35,21 +35,21 @@ export default function PatientProfileEditScreen() {
 
   const onSave = async () => {
     if (!form.nom || !form.prenom || !form.email || !form.adresse || !form.age || !form.telephone) {
-      setSnack({ visible: true, message: 'Tous les champs sont requis.', type: 'error' });
+      Alert.alert('Validation', 'Tous les champs sont requis.');
       return;
     }
     const emailRegex = /^\S+@\S+\.\S+$/;
     const phoneRegex = /^7\d{8}$/;
     if (!emailRegex.test(form.email)) {
-      setSnack({ visible: true, message: 'Format email invalide. Format attendu: string@string.string.', type: 'error' });
+      Alert.alert('Validation', 'Format email invalide. Format attendu: string@string.string.');
       return;
     }
     if (!phoneRegex.test(form.telephone)) {
-      setSnack({ visible: true, message: 'Format téléphone invalide. Format attendu: 7XXXXXXXX.', type: 'error' });
+      Alert.alert('Validation', 'Format téléphone invalide. Format attendu: 7XXXXXXXX.');
       return;
     }
     if (isNaN(Number(form.age))) {
-      setSnack({ visible: true, message: 'Âge invalide.', type: 'error' });
+      Alert.alert('Validation', "Âge invalide.");
       return;
     }
     try {
@@ -62,12 +62,12 @@ export default function PatientProfileEditScreen() {
         adresse: form.adresse,
         age: Number(form.age),
         telephone: form.telephone,
+        specialite: form.specialite,
+        hopital: form.hopital,
       });
-      setSnack({ visible: true, message: 'Profil modifié avec succès.', type: 'success' });
-      setTimeout(() => router.back(), 800);
+      Alert.alert('Succès', 'Profil modifié avec succès.', [{ text: 'OK', onPress: () => router.back() }]);
     } catch (e: any) {
       setError(e?.message || 'Erreur lors de la sauvegarde');
-      setSnack({ visible: true, message: e?.message || 'Erreur lors de la sauvegarde', type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -91,13 +91,14 @@ export default function PatientProfileEditScreen() {
       <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} /></View>
       <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" /></View>
       <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" /></View>
+      <View style={styles.group}><Text style={styles.label}>Spécialité</Text><TextInput style={styles.input} value={form.specialite} onChangeText={(v) => setForm((f) => ({ ...f, specialite: v }))} /></View>
+      <View style={styles.group}><Text style={styles.label}>Hôpital</Text><TextInput style={styles.input} value={form.hopital} onChangeText={(v) => setForm((f) => ({ ...f, hopital: v }))} /></View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
       </TouchableOpacity>
-      <Snackbar visible={snack.visible} message={snack.message} type={snack.type} onHide={() => setSnack((s) => ({ ...s, visible: false }))} />
     </ScrollView>
   );
 }

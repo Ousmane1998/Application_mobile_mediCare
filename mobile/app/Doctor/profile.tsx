@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl }
 import { Ionicons } from '@expo/vector-icons';
 import ProfileCard, { ProfileRow } from '../../components/ProfileCard';
 import { getProfile, type UserProfile } from '../../utils/api';
+import { useRouter, type Href } from 'expo-router';
 
 export default function DoctorProfileScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -50,17 +52,23 @@ export default function DoctorProfileScreen() {
         {!!profile?.email && <Text style={styles.email}>{profile?.email}</Text>}
       </View>
 
-      <ProfileCard title="Informations Professionnelles">
+      <ProfileCard title="Informations Professionnelles" onEdit={() => router.push({ pathname: '/Doctor/profile-edit' } as any)}>
         <ProfileRow icon={<Ionicons name="briefcase-outline" size={18} />} label="Spécialité" value={profile?.specialite || '—'} />
         <ProfileRow icon={<Ionicons name="business-outline" size={18} />} label="Hôpital" value={profile?.hopital || '—'} />
       </ProfileCard>
 
       <View style={{ height: 12 }} />
 
-      <ProfileCard title="Coordonnées">
+      <ProfileCard title="Coordonnées" onEdit={() => router.push({ pathname: '/Doctor/profile-edit' } as any)}>
         <ProfileRow icon={<Ionicons name="mail-outline" size={18} />} label="Email" value={profile?.email || '—'} />
         <ProfileRow icon={<Ionicons name="call-outline" size={18} />} label="Téléphone" value={profile?.telephone || '—'} />
         <ProfileRow icon={<Ionicons name="home-outline" size={18} />} label="Adresse" value={profile?.adresse || '—'} />
+      </ProfileCard>
+
+      <View style={{ height: 12 }} />
+
+      <ProfileCard title="Sécurité" onEdit={() => router.push({ pathname: '/Doctor/password-change' } as any)}>
+        <ProfileRow icon={<Ionicons name="lock-closed-outline" size={18} />} label="Mot de passe" value={'••••••••'} />
       </ProfileCard>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}

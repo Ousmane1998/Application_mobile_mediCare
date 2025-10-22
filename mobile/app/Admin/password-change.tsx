@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 
 import { useRouter } from 'expo-router';
 import { changePassword } from '../../utils/api';
 import Snackbar from '../../components/Snackbar';
+// removed insecure client-side password comparison
 
-export default function PatientPasswordChangeScreen() {
+export default function AdminPasswordChangeScreen() {
   const router = useRouter();
   const [oldPassword, setOldPassword] = useState('');
   const [password, setPassword] = useState('');
@@ -12,17 +13,20 @@ export default function PatientPasswordChangeScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
-
   const onSave = async () => {
     if (!oldPassword) {
-      setSnack({ visible: true, message: "Saisir l'ancien mot de passe.", type: 'error' });
+      setSnack({ visible: true, message: 'Saisir l\'ancien mot de passe.', type: 'error' });
       return;
     }
-    if (!password || !confirm) {
-      setSnack({ visible: true, message: 'Veuillez renseigner les deux champs.', type: 'error' });
+    if (!password) {
+      setSnack({ visible: true, message: 'Saisir le nouveau mot de passe.', type: 'error' });
       return;
     }
-    if (password.length < 6) {
+    if (!confirm) {
+      setSnack({ visible: true, message: 'Saisir la confirmation du mot de passe.', type: 'error' });
+      return;
+    }
+    if (password.length < 6 || confirm.length < 6) {
       setSnack({ visible: true, message: 'Le mot de passe doit contenir au moins 6 caractères.', type: 'error' });
       return;
     }

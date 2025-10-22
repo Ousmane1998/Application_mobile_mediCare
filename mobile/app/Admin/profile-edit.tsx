@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { getProfile, updateProfile, type UserProfile } from '../../utils/api';
 import Snackbar from '../../components/Snackbar';
 
-export default function PatientProfileEditScreen() {
+export default function AdminProfileEditScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
