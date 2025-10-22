@@ -4,13 +4,14 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const signToken = (user) => {
+  // @ts-ignore
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 };
 
 // POST /api/auth/register
-export async function register(req, res, next) {
+export async function register(req, res) {
   try {
     const {
       nom,
@@ -62,14 +63,13 @@ export async function register(req, res, next) {
       },
     });
   } catch (err) {
-    next(err);
+    return res.status(500).json({ message: "Erreur lors de l'inscription." });
   }
 }
 
 // POST /api/auth/login
-export async function login(req, res, next) {
+export async function login(req, res) {
   try {
-    // Accepte "identifiant" (selon vos routes) ou "identifier" (tolérance front)
     const identifiant = req.body?.identifiant || req.body?.identifier;
     const { password } = req.body || {};
 
@@ -104,7 +104,7 @@ export async function login(req, res, next) {
       },
     });
   } catch (err) {
-    next(err);
+    return res.status(500).json({ message: "Erreur lors de la connexion." });
   }
 }
 
@@ -120,3 +120,48 @@ export async function logout(req, res) {
   req.logout();
   res.json({ message: "Déconnexion réussie" });
 }
+
+// POST /api/auth/modifyPassword
+export async function modifyPassword(req, res) {
+  try {
+    const { password } = req.body || {};
+    if (!password) {
+      return res.status(400).json({ message: "password requis." });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(400).json({ message: "Utilisateur non trouvé." });
+    }
+    const hashed = await bcrypt.hash(password, 10);
+    user.password = hashed;
+    await user.save();
+    return res.json({ message: "Mot de passe modifié avec succès." });
+  } catch (err) {
+    return res.status(500).json({ message: "Erreur lors de la modification du mot de passe." });
+  }
+}
+
+// POST /api/auth/modifyProfile
+export async function modifyProfile(req, res) {
+  try {
+    const { nom, prenom, email, adresse, age, telephone } = req.body || {};
+    if (!nom || !prenom || !email || !adresse || !age || !telephone) {
+      return res.status(400).json({ message: "Champs requis manquants (nom, prenom, email, adresse, age, telephone)." });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(400).json({ message: "Utilisateur non trouvé." });
+    }
+    user.nom = nom;
+    user.prenom = prenom;
+    user.email = email;
+    user.adresse = adresse;
+    user.age = age;
+    user.telephone = telephone;
+    await user.save();
+    return res.json({ message: "Profil modifié avec succès." });
+  } catch (err) {
+    return res.status(500).json({ message: "Erreur lors de la modification du profil." });
+  }
+}
+  
