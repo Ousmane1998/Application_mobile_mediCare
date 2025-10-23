@@ -103,7 +103,7 @@ export default function HealthAlertsScreen() {
 
       {/* Section finale */}
       <View style={styles.noAlertSection}>
-        <Ionicons name="checkmark-circle" size={64} color="#2ecc71" />
+        <Ionicons name="checkmark-circle" size={64} color="#2ccdd2" />
         <Text style={styles.noAlertText}>Aucune alerte récente</Text>
         <Text style={styles.subtitle}>Continuez votre excellent travail !</Text>
         <TouchableOpacity style={styles.historyButton}>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   buttonOutline: {
     borderWidth: 1,
-    borderColor: "#2ecc71",
+    borderColor: "#2ccdd2",
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -191,12 +191,12 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   buttonOutlineText: {
-    color: "#2ecc71",
+    color: "#2ccdd2",
     textAlign: "center",
     fontWeight: "600",
   },
   buttonFilled: {
-    backgroundColor: "#2ecc71",
+    backgroundColor: "#2ccdd2",
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   noAlertText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#2ecc71",
+    color: "#2ccdd2",
     marginTop: 8,
   },
   subtitle: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   historyButton: {
-    backgroundColor: "#2ecc71",
+    backgroundColor: "#2ccdd2",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
