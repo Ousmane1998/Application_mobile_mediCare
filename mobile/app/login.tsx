@@ -58,8 +58,7 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-      const res = await fetch(`${baseUrl}/auth/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: emailOrPhone, password }),
