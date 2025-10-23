@@ -10,11 +10,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Ionicons } from "@expo/vector-icons";
 import Snackbar from "../../components/Snackbar";
 import { addMeasure, getProfile, type UserProfile, type MeasureType } from "../../utils/api";
-import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-
 
 const types: MeasureType[] = ["glycemie", "tension", "poids", "pouls", "temperature"];
 
@@ -33,12 +30,8 @@ export default function PatientMeasureAddScreen() {
     type: "info",
   });
   const [me, setMe] = useState<UserProfile | null>(null);
-  const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [dateObj, setDateObj] = useState<Date | null>(null);
-  const [timeObj, setTimeObj] = useState<Date | null>(null);
+  // pickers already declared above; remove duplicates
 
   useEffect(() => {
     (async () => {
@@ -102,7 +95,7 @@ export default function PatientMeasureAddScreen() {
           if (sys < 80 || sys > 200 || dia < 50 || dia > 130) {
             setSnack({
               visible: true,
-              message: "Plages tension recommandées: systolique 80–200, diastolique 50–130.",
+              message: "Plages tension : systolique 80–200, diastolique 50–130.",
               type: "error",
             });
             return;
@@ -155,6 +148,7 @@ export default function PatientMeasureAddScreen() {
     try {
       setSaving(true);
       setError(null);
+      const dateISO = dateObj ? dateObj.toISOString() : undefined;
       await addMeasure({ patientId: me.id, type, value: value.trim().replace(',', '.'), heure: dateISO, notes: notes.trim() || undefined });
       setSnack({ visible: true, message: 'Mesure ajoutée.', type: 'success' });
       setTimeout(() => router.back(), 800);
@@ -168,7 +162,7 @@ export default function PatientMeasureAddScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Quel type de mesure souhaitez-vous ajouter ?</Text>
+      <Text style={styles.headerTitle}>Quel type de mesure souhaitez-vous ajouter ?</Text>
 
       <View style={styles.group}><Text style={styles.label}>Type</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -183,7 +177,7 @@ export default function PatientMeasureAddScreen() {
       <View style={styles.group}>
         <Text style={styles.label}>Date et Heure</Text>
         <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-          <Text>{(date && time) ? `${date}, ${time}` : (date ? `${date}` : 'Choisir…')}</Text>
+          <Text>{formatDisplayDate(dateObj)}</Text>
         </TouchableOpacity>
         {/* show pickers conditionally */}
         {showDatePicker && (
@@ -195,16 +189,11 @@ export default function PatientMeasureAddScreen() {
               setShowDatePicker(Platform.OS === 'ios');
               if (selected) {
                 setDateObj(selected);
-                const dd = String(selected.getDate()).padStart(2, '0');
-                const mm = String(selected.getMonth() + 1).padStart(2, '0');
-                const yyyy = String(selected.getFullYear());
-                setDate(`${dd}-${mm}-${yyyy}`);
                 setShowTimePicker(true);
               }
             }}
           />
         )}
-        
         {showTimePicker && (
           <DateTimePicker
             value={dateObj || new Date()}
@@ -212,7 +201,7 @@ export default function PatientMeasureAddScreen() {
             display="default"
             onChange={(e, selected) => {
               onChangeTime(e, selected);
-              if (Platform.OS !== "ios") {
+              if (Platform.OS !== 'ios') {
                 setShowDatePicker(false);
                 setShowTimePicker(false);
               }
@@ -260,20 +249,7 @@ export default function PatientMeasureAddScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#F8FAFC", minHeight: "100%" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: { flex: 1, textAlign: "center", fontWeight: "600", color: "#111827" },
-  question: { fontSize: 20, fontWeight: "700", color: "#111827", marginVertical: 12 },
-  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  headerTitle: { fontSize: 20, fontWeight: "700", color: "#111827", marginVertical: 12 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -287,18 +263,7 @@ const styles = StyleSheet.create({
   chipText: { color: "#111827", fontSize: 13 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: "#374151", marginBottom: 6 },
-  dateBox: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  dateText: { color: "#111827" },
+ 
   input: {
     backgroundColor: "#fff",
     borderWidth: 1,
@@ -307,10 +272,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  textarea: { minHeight: 100, textAlignVertical: "top" },
+  unit: { color: "#6B7280", fontSize: 12 },
   primaryBtn: { backgroundColor: "#2ccdd2", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 8 },
   primaryBtnText: { color: "#fff", fontSize: 16 },
   error: { color: "#DC2626", marginTop: 8 },
   help: { color: "#6B7280", fontSize: 12, marginTop: 6 },
-  smallAction: { color: "#2563EB", fontSize: 13 },
 });
