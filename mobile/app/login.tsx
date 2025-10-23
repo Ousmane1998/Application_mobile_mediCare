@@ -161,7 +161,7 @@ const data = JSON.parse(raw);
       </View>
 
       <View style={styles.avatarWrap}>
-        <Image source={require('../assets/images/docteur medicare.jpg')} style={{width: 200, height: 200}}/>
+        <Image source={require('../assets/images/docteur medicare.jpg')} style={{width: 300, height: 300}}/>
       </View>
 
       <Text style={styles.title}>Ravi de vous revoir</Text>
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontSize: 18,
-    color: '#2E2E2E',
+    color: '#2ccdd2',
   },
   avatarWrap: {
     alignItems: 'center',
