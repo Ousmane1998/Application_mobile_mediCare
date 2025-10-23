@@ -58,12 +58,18 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+      console.log("🔗 Tentative de connexion à :", `${API_URL}/api/auth/login`);
+
+      const res = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: emailOrPhone, password }),
+        body: JSON.stringify({ identifiant: emailOrPhone, password }),
       });
-      const data = await res.json().catch(() => ({}));
+      const raw = await res.text();
+console.log("📡 Réponse brute :", res.status, raw);
+const data = JSON.parse(raw);
+
       if (!res.ok) {
         const msg = (data && (data.message || data.error)) || 'Échec de la connexion.';
         setError(String(msg));
@@ -151,7 +157,7 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.avatarWrap}>
-        <Image source={require('../assets/images/docteur medicare.jpg')} style={{width: 200, height: 200}}/>
+        <Image source={require('../assets/images/docteur medicare.jpg')} style={{width: 300, height: 300}}/>
       </View>
 
       <Text style={styles.title}>Ravi de vous revoir</Text>
@@ -237,7 +243,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontSize: 18,
-    color: '#2E2E2E',
+    color: '#2ccdd2',
   },
   avatarWrap: {
     alignItems: 'center',
