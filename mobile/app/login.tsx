@@ -20,14 +20,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [gLoading, setGLoading] = useState(false);
 
-  const expoClientId = process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID || '';
-  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
-  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
-
   const [request, response, promptAsync] = Google.useAuthRequest({
-    // expoClientId: expoClientId || undefined,
-    iosClientId: iosClientId || undefined,
-    androidClientId: androidClientId || undefined,
     responseType: 'id_token',
     scopes: ['profile', 'email'],
   });

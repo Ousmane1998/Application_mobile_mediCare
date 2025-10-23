@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 50,
     paddingBottom: 24,
     justifyContent: 'space-between',
   },
