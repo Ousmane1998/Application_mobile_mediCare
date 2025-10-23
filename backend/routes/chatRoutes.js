@@ -1,6 +1,7 @@
 // routes/chatRoutes.js
 const express = require("express");
 const router = express.Router();
+// @ts-ignore
 const Chat = require("../models/Chat");
 
 // Récupérer les messages d'une conversation
