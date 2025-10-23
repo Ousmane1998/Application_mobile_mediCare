@@ -58,7 +58,7 @@ export async function addMeasure(payload: { patientId: string; type: MeasureType
 }
 
 // Appointments
-export async function createAppointment(payload: { patientId: string; medecinId: string; date: string; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule' }) {
+export async function createAppointment(payload: { patientId: string; medecinId: string; date: string; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule';typeConsultation?: string;  }) {
   return authFetch('/appointments', { method: 'POST', body: JSON.stringify(payload) });
 }
 
