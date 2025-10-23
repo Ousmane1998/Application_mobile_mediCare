@@ -12,7 +12,7 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 350, height: 350}} />
+        <Image source={require('../assets/images/logo_MediCare.png')} style={{width: 350, height: 350}} />
       </View>
 
       <View style={styles.content}>

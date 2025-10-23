@@ -27,6 +27,7 @@ export async function authFetch(path: string, options: RequestInit = {}) {
 }
 
 export type UserProfile = {
+  _id: string;
   id: string;
   nom: string;
   prenom: string;

@@ -12,6 +12,8 @@ import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Snackbar from "../../components/Snackbar";
 import { addMeasure, getProfile, type UserProfile, type MeasureType } from "../../utils/api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const types: MeasureType[] = ["glycemie", "tension", "poids", "pouls", "temperature"];
 
@@ -33,16 +35,25 @@ export default function PatientMeasureAddScreen() {
   const [notes, setNotes] = useState('');
   // pickers already declared above; remove duplicates
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getProfile();
-        setMe(data.user);
-      } catch (e: any) {
-        setSnack({ visible: true, message: e?.message || "Erreur de chargement", type: "error" });
-      }
-    })();
-  }, []);
+useEffect(() => {
+  (async () => {
+    try {
+      const data = await getProfile();
+      console.log("Profile fetched:", data);
+
+      // Mapper _id -> id
+      const user: UserProfile = {
+        ...data.user,
+        id: data.user._id, // <-- ici on crée `id`
+      };
+      setMe(user);
+    } catch (e: any) {
+      setSnack({ visible: true, message: e?.message || "Erreur de chargement", type: "error" });
+    }
+  })();
+}, []);
+
+
 
   const formatDisplayDate = (d: Date | null) => {
     if (!d) return "Sélectionner date et heure";

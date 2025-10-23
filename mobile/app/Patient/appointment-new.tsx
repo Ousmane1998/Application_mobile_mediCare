@@ -114,18 +114,22 @@ export default function PatientAppointmentNewScreen() {
       </View>
 
       <View style={styles.group}>
-        <Text style={styles.label}>Type de consultation</Text>
-        <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={typeConsultation}
-            onValueChange={(itemValue) => setTypeConsultation(itemValue)}
-          >
-            {typesConsultation.map((type) => (
-              <Picker.Item key={type} label={type} value={type} />
-            ))}
-          </Picker>
-        </View>
-      </View>
+  <Text style={styles.label}>Type de consultation</Text>
+  <View style={styles.pickerWrapper}>
+    <Picker
+      selectedValue={typeConsultation}
+      onValueChange={(itemValue) => setTypeConsultation(itemValue)}
+      style={styles.picker}
+      dropdownIconColor="#111827" // couleur de la flèche
+      mode="dropdown" // important sur Android
+    >
+      {typesConsultation.map((type) => (
+        <Picker.Item key={type} label={type} value={type} />
+      ))}
+    </Picker>
+  </View>
+</View>
+
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -150,8 +154,8 @@ export default function PatientAppointmentNewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
-  title: { fontSize: 18, color: '#111827', marginBottom: 12 },
+  container: { flex:1,padding: 16, backgroundColor:'#F8FAFC' },
+  title: { fontSize: 18, color: '#000', marginBottom: 12 , fontWeight:'bold'},
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },
   input: {
@@ -182,13 +186,22 @@ const styles = StyleSheet.create({
   cardText: {
     color: '#111827',
   },
-  pickerWrapper: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
+ pickerWrapper: {
+  backgroundColor: '#fff',
+  borderWidth: 1,
+  borderColor: '#D1D5DB', // gris clair
+  borderRadius: 8, // angles arrondis doux
+  overflow: 'hidden',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
+  elevation: 2, // effet ombre Android
+  height: 48, // même hauteur que dans ton image
+  justifyContent: 'center',
+  paddingHorizontal: Platform.OS === 'android' ? 4 : 0, // corrige le léger décalage du texte
+},
+
   primaryBtn: {
     backgroundColor: '#2ccdd2',
     paddingVertical: 14,
@@ -204,4 +217,8 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     marginTop: 8,
   },
+  picker: {
+  color: '#111827', // texte noir foncé
+  fontSize: 15,
+}
 });

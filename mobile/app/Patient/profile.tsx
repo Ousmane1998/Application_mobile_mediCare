@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#F3F4F6', padding: 16 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   avatarWrap: { alignItems: 'center', marginBottom: 16 },
-  avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
+  avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
   name: { marginTop: 12, fontSize: 20, color: '#111827' },
   email: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   error: { color: '#DC2626', marginTop: 12 },

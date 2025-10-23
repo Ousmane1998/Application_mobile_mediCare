@@ -34,7 +34,13 @@ export default function PatientDashboardScreen() {
         <Text style={styles.statusWarn}>Légère hausse</Text>
         <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
       </View>
-
+    <TouchableOpacity
+  style={styles.findStructureBtn}
+  onPress={() => alert("Page non encore disponible !")}
+>
+  <Ionicons name="location-outline" size={20} color="#2ccdd2" style={{ marginRight: 8 }} />
+  <Text style={styles.findStructureText}>Trouver une structure sanitaire</Text>
+</TouchableOpacity>
       <View style={styles.block}>
         <Text style={styles.blockTitle}>Vos prochains médicaments</Text>
         <Text style={styles.blockLine}>Insuline - 8h00</Text>
@@ -85,6 +91,26 @@ const styles = StyleSheet.create({
   block: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginTop: 12 },
   blockTitle: { fontSize: 16, color: '#111827', marginBottom: 8 },
   blockLine: { color: '#111827', marginBottom: 4 },
-  blockBtn: { marginTop: 8, backgroundColor: '#D1FAE5', paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
-  blockBtnText: { color: '#065F46' },
+  blockBtn: { marginTop: 8, backgroundColor: '#2ccdd2', paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  blockBtnText: { color: '#000' },
+  findStructureBtn: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#fff',
+  borderColor: '#D1D5DB',
+  borderWidth: 1,
+  borderRadius: 12,
+  paddingVertical: 12,
+  marginTop: 12,
+  shadowColor: '#000',
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  elevation: 2,
+},
+findStructureText: {
+  color: '#111827',
+  fontSize: 15,
+},
+
 });
