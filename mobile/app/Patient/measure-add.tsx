@@ -1,20 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
-import Snackbar from '../../components/Snackbar';
-import { addMeasure, getProfile, type UserProfile, type MeasureType } from '../../utils/api';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Platform,
+} from "react-native";
+import { useRouter } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
+import Snackbar from "../../components/Snackbar";
+import { addMeasure, getProfile, type UserProfile, type MeasureType } from "../../utils/api";
 
-const types: MeasureType[] = ['tension','glycemie','poids','pouls','temperature'];
+const types: MeasureType[] = ["glycemie", "tension", "poids", "pouls", "temperature"];
 
 export default function PatientMeasureAddScreen() {
   const router = useRouter();
-  const [type, setType] = useState<MeasureType>('tension');
-  const [value, setValue] = useState('');
-  const [date, setDate] = useState('');
+  const [type, setType] = useState<MeasureType>("glycemie");
+  const [value, setValue] = useState("");
+  const [dateObj, setDateObj] = useState<Date | null>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
+  const [snack, setSnack] = useState<{ visible: boolean; message: string; type: "success" | "error" | "info" }>({
+    visible: false,
+    message: "",
+    type: "info",
+  });
   const [me, setMe] = useState<UserProfile | null>(null);
   const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
@@ -29,100 +44,112 @@ export default function PatientMeasureAddScreen() {
         const data = await getProfile();
         setMe(data.user);
       } catch (e: any) {
-        setSnack({ visible: true, message: e?.message || 'Erreur de chargement', type: 'error' });
+        setSnack({ visible: true, message: e?.message || "Erreur de chargement", type: "error" });
       }
     })();
   }, []);
 
+  const formatDisplayDate = (d: Date | null) => {
+    if (!d) return "Sélectionner date et heure";
+    // ex: 10/27/2023, 10:00 AM
+    return d.toLocaleString(undefined, {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const onChangeDate = (event: any, selected?: Date) => {
+    setShowDatePicker(Platform.OS === "ios"); // keep open on iOS
+    if (selected) {
+      const current = dateObj ? new Date(dateObj) : new Date();
+      current.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+      setDateObj(current);
+    }
+  };
+
+  const onChangeTime = (event: any, selected?: Date) => {
+    setShowTimePicker(Platform.OS === "ios");
+    if (selected) {
+      const current = dateObj ? new Date(dateObj) : new Date();
+      current.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+      setDateObj(current);
+    }
+  };
+
   const onSave = async () => {
     if (!value) {
-      setSnack({ visible: true, message: 'Saisir la valeur.', type: 'error' });
+      setSnack({ visible: true, message: "Saisir la valeur.", type: "error" });
       return;
     }
-    // Contrainte selon type
+    // validations (gardées depuis ton code)
     const onlyNumber = /^\d+(?:[\.,]\d+)?$/;
     const bpRegex = /^\d{2,3}\/\d{2,3}$/; // ex: 120/80
     switch (type) {
-      case 'tension':
+      case "tension":
         if (!bpRegex.test(value.trim())) {
-          setSnack({ visible: true, message: "Format tension invalide. Utilisez '120/80'.", type: 'error' });
+          setSnack({ visible: true, message: "Format tension invalide. Utilisez '120/80'.", type: "error" });
           return;
         }
-        // Plages recommandées
         {
-          const [sysStr, diaStr] = value.trim().split('/');
+          const [sysStr, diaStr] = value.trim().split("/");
           const sys = parseInt(sysStr, 10);
           const dia = parseInt(diaStr, 10);
           if (sys < 80 || sys > 200 || dia < 50 || dia > 130) {
-            setSnack({ visible: true, message: 'Plages tension recommandées: systolique 80–200, diastolique 50–130.', type: 'error' });
+            setSnack({
+              visible: true,
+              message: "Plages tension recommandées: systolique 80–200, diastolique 50–130.",
+              type: "error",
+            });
             return;
           }
         }
         break;
-      case 'glycemie':
-      case 'poids':
-      case 'temperature':
+      case "glycemie":
+      case "poids":
+      case "temperature":
         if (!onlyNumber.test(value.trim())) {
-          setSnack({ visible: true, message: 'Valeur numérique attendue.', type: 'error' });
+          setSnack({ visible: true, message: "Valeur numérique attendue.", type: "error" });
           return;
         }
         {
-          const v = parseFloat(value.trim().replace(',', '.'));
-          if (type === 'glycemie' && (v < 40 || v > 600)) {
-            setSnack({ visible: true, message: 'Glycémie attendue entre 40 et 600 mg/dL.', type: 'error' });
+          const v = parseFloat(value.trim().replace(",", "."));
+          if (type === "glycemie" && (v < 40 || v > 600)) {
+            setSnack({ visible: true, message: "Glycémie attendue entre 40 et 600 mg/dL.", type: "error" });
             return;
           }
-          if (type === 'poids' && (v < 1 || v > 500)) {
-            setSnack({ visible: true, message: 'Poids attendu entre 1 et 500 kg.', type: 'error' });
+          if (type === "poids" && (v < 1 || v > 500)) {
+            setSnack({ visible: true, message: "Poids attendu entre 1 et 500 kg.", type: "error" });
             return;
           }
-          if (type === 'temperature' && (v < 34 || v > 43)) {
-            setSnack({ visible: true, message: 'Température attendue entre 34 et 43 °C.', type: 'error' });
+          if (type === "temperature" && (v < 34 || v > 43)) {
+            setSnack({ visible: true, message: "Température attendue entre 34 et 43 °C.", type: "error" });
             return;
           }
         }
         break;
-      case 'pouls':
+      case "pouls":
         if (!/^\d+$/.test(value.trim())) {
-          setSnack({ visible: true, message: 'Pouls doit être un entier (bpm).', type: 'error' });
+          setSnack({ visible: true, message: "Pouls doit être un entier (bpm).", type: "error" });
           return;
         }
         {
           const v = parseInt(value.trim(), 10);
           if (v < 30 || v > 220) {
-            setSnack({ visible: true, message: 'Pouls attendu entre 30 et 220 bpm.', type: 'error' });
+            setSnack({ visible: true, message: "Pouls attendu entre 30 et 220 bpm.", type: "error" });
             return;
           }
         }
         break;
     }
 
-    // Validation date DD-MM-YYYY et conversion vers YYYY-MM-DD
-    let dateISO: string | undefined = undefined;
-    if (date) {
-      const d = date.trim();
-      const ddmmyyyy = /^\d{2}-\d{2}-\d{4}$/;
-      if (!ddmmyyyy.test(d)) {
-        setSnack({ visible: true, message: 'Date invalide. Format attendu: DD-MM-YYYY.', type: 'error' });
-        return;
-      }
-      const [dd, mm, yyyy] = d.split('-');
-      // Si l'heure est fournie, construire un ISO complet
-      if (time) {
-        if (!/^\d{2}:\d{2}$/.test(time.trim())) {
-          setSnack({ visible: true, message: 'Heure invalide. Format: HH:mm.', type: 'error' });
-          return;
-        }
-        dateISO = `${yyyy}-${mm}-${dd}T${time.trim()}:00Z`;
-      } else {
-        dateISO = `${yyyy}-${mm}-${dd}`;
-      }
-    }
-
     if (!me?.id) {
-      setSnack({ visible: true, message: 'Profil non chargé.', type: 'error' });
+      setSnack({ visible: true, message: "Profil non chargé.", type: "error" });
       return;
     }
+
     try {
       setSaving(true);
       setError(null);
@@ -130,8 +157,8 @@ export default function PatientMeasureAddScreen() {
       setSnack({ visible: true, message: 'Mesure ajoutée.', type: 'success' });
       setTimeout(() => router.back(), 800);
     } catch (e: any) {
-      setError(e?.message || 'Erreur lors de l\'ajout');
-      setSnack({ visible: true, message: e?.message || 'Erreur lors de l\'ajout', type: 'error' });
+      setError(e?.message || "Erreur lors de l'ajout");
+      setSnack({ visible: true, message: e?.message || "Erreur lors de l'ajout", type: "error" });
     } finally {
       setSaving(false);
     }
@@ -156,11 +183,12 @@ export default function PatientMeasureAddScreen() {
         <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
           <Text>{(date && time) ? `${date}, ${time}` : (date ? `${date}` : 'Choisir…')}</Text>
         </TouchableOpacity>
+        {/* show pickers conditionally */}
         {showDatePicker && (
           <DateTimePicker
             value={dateObj || new Date()}
             mode="date"
-            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            display="default"
             onChange={(e, selected) => {
               setShowDatePicker(Platform.OS === 'ios');
               if (selected) {
@@ -177,16 +205,14 @@ export default function PatientMeasureAddScreen() {
         
         {showTimePicker && (
           <DateTimePicker
-            value={timeObj || new Date()}
+            value={dateObj || new Date()}
             mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            display="default"
             onChange={(e, selected) => {
-              setShowTimePicker(Platform.OS === 'ios');
-              if (selected) {
-                setTimeObj(selected);
-                const hh = String(selected.getHours()).padStart(2, '0');
-                const mm = String(selected.getMinutes()).padStart(2, '0');
-                setTime(`${hh}:${mm}`);
+              onChangeTime(e, selected);
+              if (Platform.OS !== "ios") {
+                setShowDatePicker(false);
+                setShowTimePicker(false);
               }
             }}
           />
@@ -219,23 +245,70 @@ export default function PatientMeasureAddScreen() {
       <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Sauvegarder'}</Text>
       </TouchableOpacity>
-      <Snackbar visible={snack.visible} message={snack.message} type={snack.type} onHide={() => setSnack((s) => ({ ...s, visible: false }))} />
+
+      <Snackbar
+        visible={snack.visible}
+        message={snack.message}
+        type={snack.type}
+        onHide={() => setSnack((s) => ({ ...s, visible: false }))}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
-  title: { fontSize: 18, color: '#111827', marginBottom: 12 },
+  container: { padding: 16, backgroundColor: "#F8FAFC", minHeight: "100%" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: { flex: 1, textAlign: "center", fontWeight: "600", color: "#111827" },
+  question: { fontSize: 20, fontWeight: "700", color: "#111827", marginVertical: 12 },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    backgroundColor: "transparent",
+    marginRight: 8,
+  },
+  chipActive: { backgroundColor: "#2ccdd2", borderColor: "#2ccdd2" },
+  chipText: { color: "#111827", fontSize: 13 },
   group: { marginBottom: 12 },
-  label: { fontSize: 13, color: '#374151', marginBottom: 6 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
-  primaryBtn: { backgroundColor: '#10B981', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 },
-  primaryBtnText: { color: '#fff', fontSize: 16 },
-  error: { color: '#DC2626', marginTop: 8 },
-  chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: '#D1D5DB' },
-  chipActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
-  chipText: { color: '#111827', fontSize: 13 },
-  help: { color: '#6B7280', fontSize: 12, marginTop: 6 },
-  unit: { color: '#111827', backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  label: { fontSize: 13, color: "#374151", marginBottom: 6 },
+  dateBox: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dateText: { color: "#111827" },
+  input: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  textarea: { minHeight: 100, textAlignVertical: "top" },
+  primaryBtn: { backgroundColor: "#2ccdd2", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 8 },
+  primaryBtnText: { color: "#fff", fontSize: 16 },
+  error: { color: "#DC2626", marginTop: 8 },
+  help: { color: "#6B7280", fontSize: 12, marginTop: 6 },
+  smallAction: { color: "#2563EB", fontSize: 13 },
 });
