@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
+import { useRouter } from 'expo-router';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* Top bar */}
@@ -53,6 +55,18 @@ export default function AdminDashboard() {
           style={styles.search}
         />
       </View>
+
+      {/* Lien vers l'écran d'activation des médecins */}
+      <TouchableOpacity style={styles.activationCard} onPress={() => router.push('/Admin/doctors-activation' as any)}>
+        <View style={styles.overviewIconWrap}>
+          <Ionicons name="shield-checkmark-outline" size={18} color="#2ccdd2" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.overviewLabel}>Validation</Text>
+          <Text style={styles.overviewValue}>Activation des Médecins</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+      </TouchableOpacity>
 
       <View style={styles.chipsRow}>
         <View style={styles.chipActive}><Text style={styles.chipTextActive}>Tous</Text></View>

@@ -12,6 +12,8 @@ export default function RegisterDoctorScreen() {
   const [specialty, setSpecialty] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [clinicAddress, setClinicAddress] = useState('');
+  const [hopital, setHopital] = useState('');
+  const [photo, setPhoto] = useState('');
 
   const onSubmit = () => {
     // TODO: envoyer au backend
@@ -98,8 +100,28 @@ export default function RegisterDoctorScreen() {
         <TextInput
           style={styles.input}
           placeholder="Entrez le nom de l'hôpital ou du cabinet ou vous etes rattaché"
+          value={hopital}
+          onChangeText={setHopital}
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Adresse de l&apos;hôpital ou du cabinet</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Entrez votre adresse"
           value={clinicAddress}
           onChangeText={setClinicAddress}
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Photo</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Entrez l'URL de votre photo"
+          value={photo}
+          onChangeText={setPhoto}
         />
       </View>
 
