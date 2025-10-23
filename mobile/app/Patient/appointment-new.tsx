@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import Snackbar from '../../components/Snackbar';
 import { createAppointment, getProfile, type UserProfile } from '../../utils/api';
@@ -16,6 +17,10 @@ export default function PatientAppointmentNewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
   const [me, setMe] = useState<UserProfile | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [dateObj, setDateObj] = useState<Date | null>(null);
+  const [timeObj, setTimeObj] = useState<Date | null>(null);
 
   const datesDisponibles = ['05-06-2024', '06-06-2024', '07-06-2024'];
   const heuresDisponibles = ['09:00', '09:30', '10:00', '11:00'];
