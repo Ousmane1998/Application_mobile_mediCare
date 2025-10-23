@@ -1,6 +1,6 @@
 // routes/authRoutes.js
 import express from "express";
-import { register, login, profile, changePassword, modifyProfile, logout, googleLogin, forgotPassword, resetPassword, updatePhoto } from "../controllers/authController.js";
+import { register, login, profile, changePassword, modifyProfile, logout, googleLogin, forgotPassword, resetPassword, updatePhoto, registerPatient } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 /**
@@ -143,6 +143,7 @@ router.get("/profile", authMiddleware, profile);
 router.post("/changePassword", authMiddleware, changePassword);
 router.post("/modifyProfile", authMiddleware, modifyProfile);
 router.post("/updatePhoto", authMiddleware, updatePhoto);
+router.post("/registerPatient", authMiddleware, registerPatient);
 router.get("/logout", authMiddleware, logout);
 router.post("/forgotPassword", forgotPassword);
 router.post("/resetPassword", resetPassword);

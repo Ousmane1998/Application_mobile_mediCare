@@ -95,13 +95,10 @@ export async function createPatient(payload: {
   age?: string;
   pathologie?: string;
 }) {
-  const tempPassword = Math.random().toString(36).slice(-8) + 'A1';
-  return authFetch('/auth/register', {
+  return authFetch('/auth/registerPatient', {
     method: 'POST',
     body: JSON.stringify({
       ...payload,
-      password: tempPassword,
-      role: 'patient',
     }),
   });
 }

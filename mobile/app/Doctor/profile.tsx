@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileCard, { ProfileRow } from '../../components/ProfileCard';
 import { getProfile, type UserProfile } from '../../utils/api';
@@ -45,9 +45,13 @@ export default function DoctorProfileScreen() {
       <Text style={styles.title}>Mon Profil</Text>
 
       <View style={styles.avatarWrap}>
-        <View style={styles.avatarCircle}>
-          <Ionicons name="person" size={64} color="#fff" />
-        </View>
+        {profile?.photo ? (
+          <Image source={{ uri: profile.photo }} style={styles.avatarImage} />
+        ) : (
+          <View style={styles.avatarCircle}>
+            <Ionicons name="person" size={64} color="#fff" />
+          </View>
+        )}
         <Text style={styles.name}>{profile?.nom} {profile?.prenom}</Text>
         {!!profile?.email && <Text style={styles.email}>{profile?.email}</Text>}
       </View>
@@ -81,6 +85,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   avatarWrap: { alignItems: 'center', marginBottom: 16 },
   avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
+  avatarImage: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#E5E7EB' },
   name: { marginTop: 12, fontSize: 20, color: '#111827' },
   email: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   error: { color: '#DC2626', marginTop: 12 },
