@@ -2,6 +2,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import PasswordReset from "../models/PasswordReset.js";
+import nodemailer from "nodemailer";
+
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
 const signToken = (user) => {
@@ -233,7 +236,7 @@ export async function changePassword(req, res) {
 
 // POST /api/auth/modifyProfile
 export async function modifyProfile(req, res) {
-    console.log("req.user :", req.user);
+  console.log("req.user :", req.user);
 
   try {
     const { nom, prenom, email, adresse, age, telephone } = req.body || {};
@@ -260,5 +263,92 @@ export async function modifyProfile(req, res) {
     return res.json({ message: "Profil modifié avec succès." });
   } catch (err) {
     return res.status(500).json({ message: "Erreur lors de la modification du profil." });
+  }
+}
+
+// Email transport (optional). If env is missing, we fallback to console log.
+function getMailer() {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) return null;
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: Number(SMTP_PORT) === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+  return { transporter, from: SMTP_FROM };
+}
+
+// POST /api/auth/forgotPassword (email only)
+export async function forgotPassword(req, res) {
+  try {
+    const email = req.body?.identifier || req.body?.email;
+    if (!email || !emailRegex.test(String(email))) {
+      return res.status(400).json({ message: "Email valide requis." });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    await PasswordReset.deleteMany({ identifier: email.toLowerCase() });
+    await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
+
+    const mailer = getMailer();
+    if (mailer) {
+      await mailer.transporter.sendMail({
+        from: mailer.from,
+        to: email,
+        subject: "Votre code de réinitialisation",
+        text: `Votre code est ${code}. Il expire dans 10 minutes.`,
+        html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
+      });
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`[PasswordReset] Code for ${email}: ${code} (expires 10min)`);
+    }
+
+    return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
+  } catch (err) {
+    return res.status(500).json({ message: "Erreur lors de la demande de réinitialisation." });
+  }
+}
+
+// POST /api/auth/resetPassword (email only)
+export async function resetPassword(req, res) {
+  try {
+    const { identifier, email, code, newPassword } = req.body || {};
+    const targetEmail = (email || identifier || "").toLowerCase();
+    if (!targetEmail || !emailRegex.test(String(targetEmail))) {
+      return res.status(400).json({ message: "Email valide requis." });
+    }
+    if (!code || !newPassword) {
+      return res.status(400).json({ message: "code et newPassword requis." });
+    }
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "Le mot de passe doit contenir au moins 6 caractères." });
+    }
+
+    const pr = await PasswordReset.findOne({ identifier: targetEmail });
+    if (!pr || pr.expiresAt < new Date()) {
+      if (pr) await PasswordReset.deleteOne({ _id: pr._id });
+      return res.status(400).json({ message: "Code invalide ou expiré." });
+    }
+    const ok = await bcrypt.compare(String(code), pr.codeHash);
+    if (!ok) return res.status(400).json({ message: "Code invalide." });
+
+    const user = await User.findOne({ email: targetEmail });
+    if (!user) {
+      await PasswordReset.deleteOne({ _id: pr._id });
+      return res.status(400).json({ message: "Utilisateur introuvable." });
+    }
+
+    user.password = await bcrypt.hash(String(newPassword), 10);
+    await user.save();
+    await PasswordReset.deleteOne({ _id: pr._id });
+
+    return res.json({ message: "Mot de passe réinitialisé avec succès." });
+  } catch (err) {
+    return res.status(500).json({ message: "Erreur lors de la réinitialisation du mot de passe." });
   }
 }
