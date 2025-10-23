@@ -1,15 +1,14 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState} from 'react';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { getProfile } from '../utils/api';
-import Snackbar from './Snackbar';
+import Snackbar from './Snackbar';  
 import { type UserProfile } from '../utils/api';
 
 export default function Header() {
     const router = useRouter();
-    const [notifications, setNotifications] = useState([]);
+    // const [notifications, setNotifications] = useState([]);
     const [profile, setProfile] = useState<UserProfile | null>(null);
 
     const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
@@ -30,8 +29,8 @@ export default function Header() {
     
     return (
         <View style={styles.topBar}>
-            {/* <Image source={require('../../assets/images/logo MediCare.png')} style={{width: 50, height: 50}} /> */}
-            <TouchableOpacity onPress={() => {router.push('User/notifications')}}>
+            <Image source={require('../../assets/images/logo MediCare.png')} style={{width: 75, height: 75}} />
+            <TouchableOpacity onPress={() => {router.push(profile?.role === 'medecin' ? '/Doctor/notifications' : '/Patient/notifications')}}>
                 <Ionicons name="notifications-outline" style={{color: 'black', marginLeft:'auto'}} size={24} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => {

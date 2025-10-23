@@ -146,7 +146,7 @@ export default function LoginScreen() {
     <ScrollView>
       <View style={styles.container}>
       <View style={styles.header}>        
-        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 50, height: 50}} />
+        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 75, height: 75}} />
         <Text style={styles.brand}>MediCare</Text>
       </View>
 

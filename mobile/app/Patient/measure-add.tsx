@@ -13,6 +13,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import Snackbar from "../../components/Snackbar";
 import { addMeasure, getProfile, type UserProfile, type MeasureType } from "../../utils/api";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+
 
 const types: MeasureType[] = ["glycemie", "tension", "poids", "pouls", "temperature"];
 

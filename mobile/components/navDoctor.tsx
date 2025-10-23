@@ -9,21 +9,21 @@ export default function NavDoctor() {
         name="dashboard"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="speedometer-outline" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <Ionicons name="speedometer-outline" color={color} size={60} />,
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
           title: 'Notifications',
-          tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <Ionicons name="notifications-outline" color={color} size={60} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={24} />,
+          tabBarIcon: ({ color }) => <Ionicons name="person-outline" color={color} size={60} />,
         }}
       />
     </Tabs>
