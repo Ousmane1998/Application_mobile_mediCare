@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useEffect, useState} from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,73 +45,6 @@ export default function Header() {
             <Snackbar visible={snack.visible} message={snack.message} type={snack.type} onHide={() => setSnack((s) => ({ ...s, visible: false }))} />
         </View>
     );
-=======
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { getProfile, type UserProfile } from '../utils/api';
-import Snackbar from './Snackbar';
-
-export default function Header() {
-  const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({
-    visible: false,
-    message: '',
-    type: 'info',
-  });
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getProfile();
-        const u = data.user as UserProfile;
-        setProfile(u);
-        setSnack({ visible: true, message: 'Profil chargé avec succès', type: 'success' });
-      } catch (e: any) {
-        setSnack({ visible: true, message: e?.message || 'Erreur de chargement', type: 'error' });
-      }
-    })();
-  }, []);
-
-  return (
-    <View style={styles.topBar}>
-      {/* ✅ Logo à gauche */}
-      <Image
-        source={require('../assets/images/logo_MediCare.png')}
-        style={{ width: 50, height: 50 }}
-        resizeMode="contain"
-      />
-
-      {/* ✅ Icônes à droite */}
-      <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={() => router.push('User/notifications')}>
-          <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            const role = profile?.role;
-            if (role === 'medecin') return router.push({ pathname: '/Doctor' } as any);
-            if (role === 'patient') return router.push({ pathname: '/Patient' } as any);
-            if (role === 'admin') return router.push({ pathname: '/Admin' } as any);
-            return router.push({ pathname: '/User' } as any);
-          }}
-        >
-          <Ionicons name="person-circle-outline" size={26} color="black" style={styles.icon} />
-        </TouchableOpacity>
-      </View>
-
-      <Snackbar
-        visible={snack.visible}
-        message={snack.message}
-        type={snack.type}
-        onHide={() => setSnack((s) => ({ ...s, visible: false }))}
-      />
-    </View>
-  );
->>>>>>> 5752405 (push header)
 }
 
 const styles = StyleSheet.create({
