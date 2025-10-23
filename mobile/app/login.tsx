@@ -60,8 +60,8 @@ export default function LoginScreen() {
         body: JSON.stringify({ identifiant: emailOrPhone, password }),
       });
       const raw = await res.text();
-console.log("📡 Réponse brute :", res.status, raw);
-const data = JSON.parse(raw);
+      console.log("📡 Réponse brute :", res.status, raw);
+      const data = JSON.parse(raw);
 
       if (!res.ok) {
         const msg = (data && (data.message || data.error)) || 'Échec de la connexion.';

@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
 import nodemailer from "nodemailer";
 import { v2 as cloudinary } from "cloudinary";
+import { OAuth2Client } from "google-auth-library";
 
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
@@ -176,8 +177,11 @@ export async function googleLogin(req, res) {
     if (!audiences.length && singleId) audiences.push(singleId);
     if (!audiences.length) return res.status(500).json({ message: "Configuration Google manquante (GOOGLE_CLIENT_ID[S])." });
 
-    const client = new OAuth2Client(audiences[0]);
-    const ticket = await client.verifyIdToken({ idToken, audience: audiences });
+    // Dynamically import OAuth2Client to avoid symbol resolution issues
+    const { OAuth2Client } = await import('google-auth-library');
+    // Initialize client without binding to a single ID; pass audience explicitly
+    const client = new OAuth2Client();
+    const ticket = await client.verifyIdToken({ idToken, audience: audiences.length === 1 ? audiences[0] : audiences });
     const payload = ticket.getPayload();
     if (!payload || !payload.email) return res.status(400).json({ message: "Token Google invalide." });
 
@@ -194,6 +198,7 @@ export async function googleLogin(req, res) {
         // @ts-ignore
         password: await bcrypt.hash(jwt.sign({ s: payload.sub }, process.env.JWT_SECRET), 10),
         role: "patient",
+        photo: payload.picture || undefined,
       });
     }
     
@@ -209,6 +214,7 @@ export async function googleLogin(req, res) {
         email: user.email,
         telephone: user.telephone,
         role: user.role,
+        photo: user.photo,
       },
     });
   } catch (err) {
