@@ -51,6 +51,15 @@ export async function changePassword(oldPassword: string, password: string) {
   return authFetch('/auth/changePassword', { method: 'POST', body: JSON.stringify({ oldPassword, password }) });
 }
 
+// Password reset
+export async function requestPasswordReset(identifier: string) {
+  return authFetch('/auth/forgotPassword', { method: 'POST', body: JSON.stringify({ identifier }) });
+}
+
+export async function resetPasswordWithCode(identifier: string, code: string, newPassword: string) {
+  return authFetch('/auth/resetPassword', { method: 'POST', body: JSON.stringify({ identifier, code, newPassword }) });
+}
+
 // Measures
 export type MeasureType = 'tension' | 'glycemie' | 'poids' | 'pouls' | 'temperature';
 export async function addMeasure(payload: { patientId: string; type: MeasureType; value: string; heure?: string; synced?: boolean; notes?: string }) {

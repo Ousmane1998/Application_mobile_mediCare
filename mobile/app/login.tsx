@@ -36,7 +36,7 @@ export default function LoginScreen() {
     const emailRegex = /^\S+@\S+\.\S+$/;
     const phoneRegex = /^7\d{8}$/;
     if (!emailOrPhone || !password) {
-      setError('Veuillez renseigner vos identifiants.');
+      setError('mail ou telephone requis.');
       return;
     }
     const isEmail = emailOrPhone.includes('@');
@@ -47,7 +47,7 @@ export default function LoginScreen() {
       }
     } else {
       if (!phoneRegex.test(emailOrPhone)) {
-        setError('Format téléphone invalide. Format attendu: 7XXXXXXXX.');
+        setError('Format téléphone invalide. Format attendu: 7X XXX XX XX.');
         return;
       }
     }
@@ -58,8 +58,7 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-      const res = await fetch(`${baseUrl}/auth/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: emailOrPhone, password }),
@@ -167,6 +166,7 @@ export default function LoginScreen() {
           onChangeText={setEmailOrPhone}
           keyboardType="email-address"
           autoCapitalize="none"
+
         />
       </View>
 
@@ -184,7 +184,7 @@ export default function LoginScreen() {
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/forgot-password' as Href)}>
           <Text style={styles.forgot}>Mot de passe oublié ?</Text>
         </TouchableOpacity>
       </View>

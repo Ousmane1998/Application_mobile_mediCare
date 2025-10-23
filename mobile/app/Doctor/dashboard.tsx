@@ -2,12 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
+import NavDoctor from '@/components/navDoctor';
 
 export default function DoctorDashboardScreen() {
   return (
+    <View>
+    <Header />
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      <Header />
-
       <Text style={styles.title}>Tableau de bord</Text>
 
       <View style={styles.cardsRow}>
@@ -77,6 +78,8 @@ export default function DoctorDashboardScreen() {
         <Text style={{ color: '#fff', fontSize: 24 }}>+</Text>
       </TouchableOpacity>
     </ScrollView>
+    <NavDoctor />
+    </View>
   );
 }
 

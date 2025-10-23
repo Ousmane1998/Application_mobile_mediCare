@@ -3,12 +3,15 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
+import NavPatient from '../../components/navPatient';
 
 export default function PatientDashboardScreen() {
   const router = useRouter();
   return (
+    <View>
+    <Header />
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-     <Header />
+     
 
       <Text style={styles.greeting}>Bonjour, Patient!</Text>
       <Text style={styles.sectionTitle}>Vos dernières mesures</Text>
@@ -57,6 +60,8 @@ export default function PatientDashboardScreen() {
 
       <View style={{ height: 16 }} />
     </ScrollView>
+    <NavPatient />
+    </View>
   );
 }
 
