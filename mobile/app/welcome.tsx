@@ -12,14 +12,13 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 350, height: 350}} />
+        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 300, height: 300}} />
       </View>
 
       <View style={styles.content}>
         <Text style={styles.title}>Reprenez le contrôle de votre santé.</Text>
         <Text style={styles.subtitle}>
-          MediCare vous aide à suivre votre santé et à collaborer avec votre médecin pour
-          gérer les maladies chroniques comme le diabète et l'hypertension.
+          MediCare vous aide à suivre votre santé et à collaborer avec votre médecin pour gérer les maladies chroniques comme le diabète et l'hypertension.
         </Text>
 
         <TouchableOpacity
@@ -58,7 +57,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    lineHeight: 34,
+    lineHeight: 32,
     color: '#2E2E2E',
     marginBottom: 12,
   },

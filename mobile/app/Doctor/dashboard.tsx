@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import NavDoctor from '@/components/navDoctor';
+import { router } from 'expo-router';
 
 export default function DoctorDashboardScreen() {
   return (
@@ -74,8 +75,8 @@ export default function DoctorDashboardScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.fab}>
-        <Text style={{ color: '#fff', fontSize: 24 }}>+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/Doctor/add-patient')}>
+        <Ionicons name="add" size={24} color="#fff" />
       </TouchableOpacity>
     </ScrollView>
     <NavDoctor />

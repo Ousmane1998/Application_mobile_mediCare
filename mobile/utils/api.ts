@@ -37,27 +37,37 @@ export type UserProfile = {
   role: 'patient' | 'medecin' | 'admin' | string;
   specialite?: string;
   hopital?: string;
+  photo?: string;
 };
 
+// Profile
 export async function getProfile(): Promise<{ user: UserProfile }>{
   return authFetch('/auth/profile');
 }
 
+// Modify Profile
 export async function updateProfile(payload: Partial<UserProfile>) {
   return authFetch('/auth/modifyProfile', { method: 'POST', body: JSON.stringify(payload) });
 }
 
+// Change Password
 export async function changePassword(oldPassword: string, password: string) {
   return authFetch('/auth/changePassword', { method: 'POST', body: JSON.stringify({ oldPassword, password }) });
 }
 
-// Password reset
+// Forgot Password
 export async function requestPasswordReset(identifier: string) {
   return authFetch('/auth/forgotPassword', { method: 'POST', body: JSON.stringify({ identifier }) });
 }
 
+// Reset Password
 export async function resetPasswordWithCode(identifier: string, code: string, newPassword: string) {
   return authFetch('/auth/resetPassword', { method: 'POST', body: JSON.stringify({ identifier, code, newPassword }) });
+}
+
+// Update Photo
+export async function updatePhoto(photoBase64OrDataUrl: string) {
+  return authFetch('/auth/updatePhoto', { method: 'POST', body: JSON.stringify({ photo: photoBase64OrDataUrl }) });
 }
 
 // Measures
@@ -74,4 +84,24 @@ export async function createAppointment(payload: { patientId: string; medecinId:
 // Messages
 export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }) {
   return authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// Create Patients 
+export async function createPatient(payload: {
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  age?: string;
+  pathologie?: string;
+}) {
+  const tempPassword = Math.random().toString(36).slice(-8) + 'A1';
+  return authFetch('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...payload,
+      password: tempPassword,
+      role: 'patient',
+    }),
+  });
 }
