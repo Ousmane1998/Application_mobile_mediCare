@@ -105,5 +105,3 @@ io.on("connection", (socket) => {
     users = users.filter((u) => u.socketId !== socket.id);
   });
 });
-
-server.listen(5000, () => console.log("Serveur démarré sur le port 5000"));

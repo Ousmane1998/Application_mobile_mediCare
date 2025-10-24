@@ -1,19 +1,22 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Medicare",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo MediCare.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "package": "com.medicare.app",
+      "bundleIdentifier": "com.medicare.app",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.medicare.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#2ccdd2",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -38,11 +41,19 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "47e21c9f-17af-41a7-a87d-3d0177642eee"
+      }
+    },
+    "owner": "amadouseye001"
   }
 }

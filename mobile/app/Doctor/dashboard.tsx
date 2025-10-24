@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import NavDoctor from '@/components/navDoctor';
+import { router } from 'expo-router';
 
 export default function DoctorDashboardScreen() {
   return (
@@ -74,8 +75,8 @@ export default function DoctorDashboardScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.fab}>
-        <Text style={{ color: '#fff', fontSize: 24 }}>+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/Doctor/add-patient')}>
+        <Text style={styles.fabText}>Ajouter Patient</Text>
       </TouchableOpacity>
     </ScrollView>
     <NavDoctor />
@@ -86,8 +87,7 @@ export default function DoctorDashboardScreen() {
 const styles = StyleSheet.create({
   container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brand: { fontSize: 20, color: '#2ccdd2' },
-  avatar: { fontSize: 18 },
+
   title: { marginTop: 12, fontSize: 22, color: '#111827' },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
   card: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12 },
@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 15, color: '#111827' },
   itemSub: { fontSize: 13, color: '#6B7280' },
   itemSubRed: { fontSize: 13, color: '#EF4444' },
-  alertIcon: { fontSize: 16, color: '#EF4444' },
   fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: '#2ccdd2', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, elevation: 4 },
+  fabText: { color: '#fff', fontSize: 14 },
 });

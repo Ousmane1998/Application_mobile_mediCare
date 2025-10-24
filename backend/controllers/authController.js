@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
 import nodemailer from "nodemailer";
+import { v2 as cloudinary } from "cloudinary";
+import { OAuth2Client } from "google-auth-library";
 
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
@@ -16,6 +18,85 @@ const signToken = (user) => {
 
 const emailRegex = /^\S+@\S+\.\S+$/;
 const phoneRegex = /^7\d{8}$/;
+
+// Cloudinary config (optional)
+if (process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
+
+// POST /api/auth/registerPatient (protected: medecin/admin)
+export async function registerPatient(req, res) {
+  try {
+    if (!req.user || !['medecin', 'admin'].includes(String(req.user.role))) {
+      return res.status(403).json({ message: "Accès refusé." });
+    }
+
+    const { nom, prenom, email, telephone, adresse, age, hopital } = req.body || {};
+    if (!nom || !prenom || !email || !telephone) {
+      return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone." });
+    }
+    if (!emailRegex.test(String(email))) {
+      return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
+    }
+    if (!phoneRegex.test(String(telephone))) {
+      return res.status(400).json({ message: "Format téléphone invalide. Format attendu: 7XXXXXXXX." });
+    }
+
+    const exists = await User.findOne({ $or: [{ email: String(email).toLowerCase() }, { telephone }] });
+    if (exists) {
+      return res.status(400).json({ message: "Un utilisateur avec cet email ou téléphone existe déjà." });
+    }
+
+    const defaultPassword = "medicare@123";
+    const hashed = await bcrypt.hash(defaultPassword, 10);
+    const user = await User.create({
+      nom,
+      prenom,
+      email: String(email).toLowerCase(),
+      telephone,
+      adresse: adresse || "",
+      age: age || undefined,
+      hopital: hopital || "",
+      password: hashed,
+      role: 'patient',
+    });
+
+    // Send email with credentials and track status
+    let emailSent = false;
+    const mailer = getMailer();
+    if (mailer) {
+      try {
+        await mailer.transporter.sendMail({
+          from: mailer.from,
+          to: user.email,
+          subject: 'Votre compte MediCare',
+          text: `Bonjour ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé.\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nPar mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.`,
+          html: `<p>Bonjour ${user.prenom || ''} ${user.nom || ''},</p>
+                 <p>Votre compte <b>MediCare</b> a été créé.</p>
+                 <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
+                 <b>Mot de passe</b>: ${defaultPassword}</p>
+                 <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>`,
+        });
+        emailSent = true;
+      } catch (e) {
+        emailSent = false; // email non envoyé, mais compte créé
+      }
+    }
+
+    return res.status(201).json({
+      message: emailSent ? 'Patient créé avec succès. Un email a été envoyé avec les identifiants. Pensez à changer le mot de passe.' : "Patient créé avec succès. L'email n'a pas pu être envoyé, communiquez-lui ses identifiants et demandez-lui de changer le mot de passe dès la première connexion.",
+      emailSent,
+      user: { id: user._id, nom: user.nom, prenom: user.prenom, email: user.email, telephone: user.telephone, role: user.role },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Erreur lors de la création du patient." });
+  }
+}
 
 // POST /api/auth/register
 export async function register(req, res) {
@@ -96,8 +177,11 @@ export async function googleLogin(req, res) {
     if (!audiences.length && singleId) audiences.push(singleId);
     if (!audiences.length) return res.status(500).json({ message: "Configuration Google manquante (GOOGLE_CLIENT_ID[S])." });
 
-    const client = new OAuth2Client(audiences[0]);
-    const ticket = await client.verifyIdToken({ idToken, audience: audiences });
+    // Dynamically import OAuth2Client to avoid symbol resolution issues
+    const { OAuth2Client } = await import('google-auth-library');
+    // Initialize client without binding to a single ID; pass audience explicitly
+    const client = new OAuth2Client();
+    const ticket = await client.verifyIdToken({ idToken, audience: audiences.length === 1 ? audiences[0] : audiences });
     const payload = ticket.getPayload();
     if (!payload || !payload.email) return res.status(400).json({ message: "Token Google invalide." });
 
@@ -114,6 +198,7 @@ export async function googleLogin(req, res) {
         // @ts-ignore
         password: await bcrypt.hash(jwt.sign({ s: payload.sub }, process.env.JWT_SECRET), 10),
         role: "patient",
+        photo: payload.picture || undefined,
       });
     }
     
@@ -129,6 +214,7 @@ export async function googleLogin(req, res) {
         email: user.email,
         telephone: user.telephone,
         role: user.role,
+        photo: user.photo,
       },
     });
   } catch (err) {
@@ -263,6 +349,65 @@ export async function modifyProfile(req, res) {
     return res.json({ message: "Profil modifié avec succès." });
   } catch (err) {
     return res.status(500).json({ message: "Erreur lors de la modification du profil." });
+  }
+}
+
+// POST /api/auth/updatePhoto
+export async function updatePhoto(req, res) {
+  try {
+    const { photo } = req.body || {};
+    if (!photo) return res.status(400).json({ message: "Photo requise." });
+
+    // Accept data URL or raw base64
+    let mime = "";
+    let base64Data = "";
+    const m = String(photo).match(/^data:(.+);base64,(.+)$/);
+    if (m) {
+      mime = m[1];
+      base64Data = m[2];
+    } else {
+      mime = "image/jpeg";
+      base64Data = String(photo);
+    }
+
+    // Validate MIME
+    const allowed = ["image/jpeg", "image/png"]; 
+    if (!allowed.includes(mime)) {
+      return res.status(400).json({ message: "Type d'image invalide. Formats autorisés: JPEG, PNG." });
+    }
+
+    // Validate size <= 2MB
+    try {
+      const buf = Buffer.from(base64Data, 'base64');
+      if (buf.length > 2 * 1024 * 1024) {
+        return res.status(400).json({ message: "Image trop volumineuse (max 2MB)." });
+      }
+    } catch {
+      return res.status(400).json({ message: "Image invalide." });
+    }
+
+    // Ensure Cloudinary configured
+    // cloudinary is imported and configured at top if env present
+    // @ts-ignore
+    if (!require('cloudinary').v2.config().cloud_name) {
+      return res.status(500).json({ message: "Stockage externe non configuré (Cloudinary)." });
+    }
+
+    // Upload
+    const uploadRes = await (await import('cloudinary')).v2.uploader.upload(`data:${mime};base64,${base64Data}` , {
+      folder: 'medicare/avatars',
+      resource_type: 'image',
+      overwrite: true,
+      transformation: [{ width: 512, height: 512, crop: 'limit' }],
+    });
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(400).json({ message: "Utilisateur non trouvé." });
+    user.photo = uploadRes.secure_url;
+    await user.save();
+    return res.json({ message: "Photo modifiée avec succès.", photo: user.photo });
+  } catch (err) {
+    return res.status(500).json({ message: "Erreur lors de la modification de la photo." });
   }
 }
 

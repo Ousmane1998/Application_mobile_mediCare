@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getProfile, updateProfile, type UserProfile } from '../../utils/api';
+import { getProfile, updateProfile, updatePhoto, type UserProfile } from '../../utils/api';
 import Snackbar from '../../components/Snackbar';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 export default function PatientProfileEditScreen() {
   const router = useRouter();
@@ -11,6 +13,8 @@ export default function PatientProfileEditScreen() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<{ nom: string; prenom: string; email?: string; adresse?: string; age?: string; telephone?: string }>({ nom: '', prenom: '' });
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
+  const [uploading, setUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     (async () => {
@@ -25,6 +29,7 @@ export default function PatientProfileEditScreen() {
           age: u.age ? String(u.age) : '',
           telephone: u.telephone || '',
         });
+        if (u.photo) setPhotoPreview(u.photo);
       } catch (e: any) {
         setError(e?.message || 'Erreur de chargement');
       } finally {
@@ -73,6 +78,42 @@ export default function PatientProfileEditScreen() {
     }
   };
 
+  const onPickAndUploadPhoto = async () => {
+    try {
+      setUploading(true);
+      setError(null);
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        setSnack({ visible: true, message: "Permission galerie refusée.", type: 'error' });
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1,1], quality: 1 });
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.uri) { setSnack({ visible: true, message: "Fichier invalide.", type: 'error' }); return; }
+
+      // Déterminer le format en fonction du MIME/extension
+      const mime = asset.mimeType || (asset.uri.endsWith('.png') ? 'image/png' : 'image/jpeg');
+      const format = mime === 'image/png' ? ImageManipulator.SaveFormat.PNG : ImageManipulator.SaveFormat.JPEG;
+
+      // Redimensionner max 512px, compresser
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 512 } }],
+        { compress: 0.8, format, base64: true }
+      );
+      if (!manipulated.base64) { setSnack({ visible: true, message: "Conversion base64 échouée.", type: 'error' }); return; }
+      const dataUrl = `data:${mime};base64,${manipulated.base64}`;
+      await updatePhoto(dataUrl);
+      setPhotoPreview(dataUrl);
+      setSnack({ visible: true, message: 'Photo mise à jour.', type: 'success' });
+    } catch (e: any) {
+      setSnack({ visible: true, message: e?.message || "Erreur lors de l'upload", type: 'error' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -84,6 +125,17 @@ export default function PatientProfileEditScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Modifier le profil</Text>
+
+      <View style={[styles.group, { alignItems: 'center' }]}>
+        {photoPreview ? (
+          <Image source={{ uri: photoPreview }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' }]} />
+        )}
+        <TouchableOpacity style={[styles.photoBtn, uploading && { opacity: 0.7 }]} disabled={uploading} onPress={onPickAndUploadPhoto}>
+          <Text style={styles.photoBtnText}>{uploading ? 'Envoi…' : 'Changer la photo'}</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} /></View>
       <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} /></View>
@@ -111,4 +163,7 @@ const styles = StyleSheet.create({
   primaryBtn: { backgroundColor: '#2ccdd2', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 },
   primaryBtnText: { color: '#fff', fontSize: 16 },
   error: { color: '#DC2626', marginTop: 8 },
+  avatar: { width: 96, height: 96, borderRadius: 999, marginBottom: 8 },
+  photoBtn: { backgroundColor: '#2ccdd2', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
+  photoBtnText: { color: '#fff', fontSize: 14 },
 });

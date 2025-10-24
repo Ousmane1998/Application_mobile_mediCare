@@ -45,9 +45,13 @@ export default function PatientProfileScreen() {
       <Text style={styles.title}>Mon Profil</Text>
 
       <View style={styles.avatarWrap}>
-        <View style={styles.avatarCircle}>
-          <Ionicons name="person" size={64} color="#fff" />
-        </View>
+        {profile?.photo ? (
+          <Image source={{ uri: profile.photo }} style={styles.avatarImage} />
+        ) : (
+          <View style={styles.avatarCircle}>
+            <Ionicons name="person" size={64} color="#fff" />
+          </View>
+        )}
         <Text style={styles.name}>{profile?.nom} {profile?.prenom}</Text>
         {!!profile?.email && <Text style={styles.email}>{profile?.email}</Text>}
       </View>
@@ -82,7 +86,12 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#F3F4F6', padding: 16 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   avatarWrap: { alignItems: 'center', marginBottom: 16 },
+<<<<<<< HEAD
   avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
+=======
+  avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
+  avatarImage: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#E5E7EB' },
+>>>>>>> 0f85833c2fd62bebd4e53bffec44e576ce4dea6b
   name: { marginTop: 12, fontSize: 20, color: '#111827' },
   email: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   error: { color: '#DC2626', marginTop: 12 },
