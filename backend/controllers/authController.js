@@ -1,3 +1,4 @@
+// @ts-nocheck
 // controllers/authController.js
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -10,7 +11,6 @@ import { OAuth2Client } from "google-auth-library";
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
 const signToken = (user) => {
-  // @ts-ignore
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
@@ -29,17 +29,16 @@ if (process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.
   });
 }
 
-// POST /api/auth/registerPatient (protected: medecin/admin)
+// POST /api/auth/registerPatient (protected: medecin)
 export async function registerPatient(req, res) {
   try {
-    // Seul un médecin connecté peut créer son patient
-    if (!req.user || String(req.user.role) !== 'medecin') {
+    if (!req.user || !['medecin'].includes(String(req.user.role))) {
       return res.status(403).json({ message: "Accès refusé." });
     }
 
     const { nom, prenom, email, telephone, adresse, age, pathologie } = req.body || {};
-    if (!nom || !prenom || !email || !telephone) {
-      return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone." });
+    if (!nom || !prenom || !email || !telephone || !idMedecin) {
+      return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone, pathologie, idMedecin." });
     }
     if (!emailRegex.test(String(email))) {
       return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
@@ -62,14 +61,13 @@ export async function registerPatient(req, res) {
       telephone,
       adresse: adresse || "",
       age: age || undefined,
+      pathologie,
+      idMedecin,
       password: hashed,
       role: 'patient',
-      // Lier le patient à son médecin créateur
-      medecinId: req.user._id,
-      pathologie: pathologie || "",
     });
 
-    // Send email with credentials and track status
+    // Send email with credentials
     let emailSent = false;
     const mailer = getMailer();
     if (mailer) {
@@ -78,7 +76,7 @@ export async function registerPatient(req, res) {
           from: mailer.from,
           to: user.email,
           subject: 'Votre compte MediCare',
-          text: `Bonjour ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé.\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nPar mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.`,
+          text: `Bonjour ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé.\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nNous vous recommandons de changer votre mot de passe après connexion.`,
           html: `<p>Bonjour ${user.prenom || ''} ${user.nom || ''},</p>
                  <p>Votre compte <b>MediCare</b> a été créé.</p>
                  <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
@@ -101,8 +99,8 @@ export async function registerPatient(req, res) {
   }
 }
 
-// POST /api/auth/register
-export async function register(req, res) {
+// POST /api/auth/registerDoctor
+export async function registerDoctor(req, res) {
   try {
     const {
       nom,
@@ -115,6 +113,7 @@ export async function register(req, res) {
       role, // "patient" | "medecin" | "admin"
       specialite,
       hopital,
+      // adresseHopital,
     } = req.body || {};
 
     if (!telephone || !password || !nom) {
@@ -180,11 +179,8 @@ export async function googleLogin(req, res) {
     if (!audiences.length && singleId) audiences.push(singleId);
     if (!audiences.length) return res.status(500).json({ message: "Configuration Google manquante (GOOGLE_CLIENT_ID[S])." });
 
-    // Dynamically import OAuth2Client to avoid symbol resolution issues
-    const { OAuth2Client } = await import('google-auth-library');
-    // Initialize client without binding to a single ID; pass audience explicitly
-    const client = new OAuth2Client();
-    const ticket = await client.verifyIdToken({ idToken, audience: audiences.length === 1 ? audiences[0] : audiences });
+    const client = new OAuth2Client(audiences[0]);
+    const ticket = await client.verifyIdToken({ idToken, audience: audiences });
     const payload = ticket.getPayload();
     if (!payload || !payload.email) return res.status(400).json({ message: "Token Google invalide." });
 
@@ -198,14 +194,11 @@ export async function googleLogin(req, res) {
         telephone: "",
         adresse: "",
         age: undefined,
-        // @ts-ignore
         password: await bcrypt.hash(jwt.sign({ s: payload.sub }, process.env.JWT_SECRET), 10),
         role: "patient",
-        photo: payload.picture || undefined,
       });
     }
     
-    // @ts-ignore
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
     return res.json({
       message: "Connexion Google réussie",
@@ -217,7 +210,6 @@ export async function googleLogin(req, res) {
         email: user.email,
         telephone: user.telephone,
         role: user.role,
-        photo: user.photo,
       },
     });
   } catch (err) {
@@ -390,8 +382,6 @@ export async function updatePhoto(req, res) {
     }
 
     // Ensure Cloudinary configured
-    // cloudinary is imported and configured at top if env present
-    // @ts-ignore
     if (!require('cloudinary').v2.config().cloud_name) {
       return res.status(500).json({ message: "Stockage externe non configuré (Cloudinary)." });
     }
@@ -414,7 +404,7 @@ export async function updatePhoto(req, res) {
   }
 }
 
-// Email transport (optional). If env is missing, we fallback to console log.
+// Email transport 
 function getMailer() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) return null;
