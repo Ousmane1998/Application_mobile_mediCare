@@ -20,7 +20,14 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [gLoading, setGLoading] = useState(false);
 
+  const expoClientId = process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID || '';
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
+
   const [request, response, promptAsync] = Google.useAuthRequest({
+    // expoClientId: expoClientId || undefined,
+    iosClientId: iosClientId || undefined,
+    androidClientId: androidClientId || undefined,
     responseType: 'id_token',
     scopes: ['profile', 'email'],
   });
@@ -29,7 +36,7 @@ export default function LoginScreen() {
     const emailRegex = /^\S+@\S+\.\S+$/;
     const phoneRegex = /^7\d{8}$/;
     if (!emailOrPhone || !password) {
-      setError('mail ou telephone requis.');
+      setError('Veuillez renseigner vos identifiants.');
       return;
     }
     const isEmail = emailOrPhone.includes('@');
@@ -40,7 +47,7 @@ export default function LoginScreen() {
       }
     } else {
       if (!phoneRegex.test(emailOrPhone)) {
-        setError('Format téléphone invalide. Format attendu: 7X XXX XX XX.');
+        setError('Format téléphone invalide. Format attendu: 7XXXXXXXX.');
         return;
       }
     }
@@ -51,10 +58,7 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-      console.log("🔗 Tentative de connexion à :", `${API_URL}/api/auth/login`);
-
-      const res = await fetch(`${baseUrl}/api/auth/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifiant: emailOrPhone, password }),
@@ -142,15 +146,15 @@ const data = JSON.parse(raw);
   };
 
   return (
-    <ScrollView>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
       <View style={styles.container}>
       <View style={styles.header}>        
-        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 75, height: 75}} />
+        <Image source={require('../assets/images/logo_MediCare.png')} style={{width: 50, height: 50}} />
         <Text style={styles.brand}>MediCare</Text>
       </View>
 
       <View style={styles.avatarWrap}>
-        <Image source={require('../assets/images/docteur medicare.jpg')} style={{width: 300, height: 300}}/>
+        <Image source={require('../assets/images/docteur medicare.jpg')} style={{width: 200, height: 200}}/>
       </View>
 
       <Text style={styles.title}>Ravi de vous revoir</Text>
@@ -165,7 +169,6 @@ const data = JSON.parse(raw);
           onChangeText={setEmailOrPhone}
           keyboardType="email-address"
           autoCapitalize="none"
-
         />
       </View>
 
@@ -183,7 +186,7 @@ const data = JSON.parse(raw);
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => router.push('/forgot-password' as Href)}>
+        <TouchableOpacity>
           <Text style={styles.forgot}>Mot de passe oublié ?</Text>
         </TouchableOpacity>
       </View>
@@ -223,7 +226,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 24,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   header: {
     flexDirection: 'row',
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontSize: 18,
-    color: '#2ccdd2',
+    color: '#2E2E2E',
   },
   avatarWrap: {
     alignItems: 'center',

@@ -36,7 +36,8 @@ export default function PatientDashboardScreen() {
       </View>
     <TouchableOpacity
   style={styles.findStructureBtn}
-  onPress={() => alert("Page non encore disponible !")}
+ onPress={() => router.push("/Patient/find-structure")}
+
 >
   <Ionicons name="location-outline" size={20} color="#2ccdd2" style={{ marginRight: 8 }} />
   <Text style={styles.findStructureText}>Trouver une structure sanitaire</Text>

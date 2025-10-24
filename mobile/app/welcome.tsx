@@ -30,7 +30,7 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
 
       </View>
-
+      
       <View style={styles.dots}>
         <View style={[styles.dot, styles.dotActive]} />
         <View style={styles.dot} />
