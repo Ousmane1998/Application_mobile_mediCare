@@ -12,7 +12,11 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+<<<<<<< HEAD
+        <Image source={require('../assets/images/logo_MediCare.png')} style={{width: 350, height: 350}} />
+=======
         <Image source={require('../assets/images/logo MediCare.png')} style={{width: 300, height: 300}} />
+>>>>>>> 0f85833c2fd62bebd4e53bffec44e576ce4dea6b
       </View>
 
       <View style={styles.content}>
@@ -29,7 +33,7 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
 
       </View>
-
+      
       <View style={styles.dots}>
         <View style={[styles.dot, styles.dotActive]} />
         <View style={styles.dot} />

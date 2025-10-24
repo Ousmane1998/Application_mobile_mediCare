@@ -155,12 +155,12 @@ export default function PatientProfileEditScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
+  container: { flex:1,padding: 16, backgroundColor:'#fff' },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
-  primaryBtn: { backgroundColor: '#10B981', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 },
+  primaryBtn: { backgroundColor: '#2ccdd2', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 },
   primaryBtnText: { color: '#fff', fontSize: 16 },
   error: { color: '#DC2626', marginTop: 8 },
   avatar: { width: 96, height: 96, borderRadius: 999, marginBottom: 8 },

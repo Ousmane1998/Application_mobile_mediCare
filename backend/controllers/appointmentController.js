@@ -5,13 +5,17 @@ import User from "../models/User.js";
 
 export const createAppointment = async (req, res) => {
   try {
-    const { patientId, medecinId, date, heure, motif } = req.body;
+    const { patientId, medecinId, date, heure, typeConsultation } = req.body;
+      // vérif basique
+    if (!patientId || !medecinId || !date) {
+      return res.status(400).json({ message: "Champs requis manquants." });
+    }
     const appointment = await Appointment.create({
       patientId,
       medecinId,
       date,
       heure,
-      motif,
+      typeConsultation,
       statut: "en_attente",
     });
     res.status(201).json({ message: "Rendez-vous créé", appointment });

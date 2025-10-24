@@ -27,6 +27,7 @@ export async function authFetch(path: string, options: RequestInit = {}) {
 }
 
 export type UserProfile = {
+  _id: string;
   id: string;
   nom: string;
   prenom: string;
@@ -85,6 +86,17 @@ export async function createAppointment(payload: { patientId: string; medecinId:
 export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }) {
   return authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
 }
+//list medecins
+export async function getMedecins() {
+  return authFetch('/users?role=medecin');
+}
+// utils/api.tsx (ou où est ta fonction)
+export async function getAvailabilityByMedecin(medecinId: string) {
+  return authFetch(`/availability?medecinId=${medecinId}`);
+}
+
+
+
 
 // Create Patients 
 export async function createPatient(payload: {
@@ -102,3 +114,4 @@ export async function createPatient(payload: {
     }),
   });
 }
+

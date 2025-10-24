@@ -6,6 +6,7 @@ const AppointmentSchema = new mongoose.Schema({
   medecinId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   date: { type: Date, required: true },
   heure: { type: String },
+   typeConsultation: { type: String },
   statut: { type: String, enum: ["en_attente", "confirme", "annule"], default: "en_attente" },
   createdAt: { type: Date, default: Date.now },
 });
