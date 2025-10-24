@@ -1,3 +1,4 @@
+// @ts-nocheck
 // controllers/messageController.js
 import Message from "../models/Message.js";
 

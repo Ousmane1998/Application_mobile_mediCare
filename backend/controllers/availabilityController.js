@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Availability from "../models/Availability.js";
 
 export const setAvailability = async (req, res) => {

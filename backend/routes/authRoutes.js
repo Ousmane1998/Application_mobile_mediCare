@@ -1,6 +1,6 @@
 // routes/authRoutes.js
 import express from "express";
-import { register, login, profile, changePassword, modifyProfile, logout, googleLogin, forgotPassword, resetPassword, updatePhoto, registerPatient } from "../controllers/authController.js";
+import { registerDoctor, registerPatient, login, profile, changePassword, modifyProfile, logout, googleLogin, forgotPassword, resetPassword, updatePhoto } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 /**
@@ -137,7 +137,7 @@ const router = express.Router();
  *       400:
  *         description: Erreur de validation.
  */
-router.post("/register", register);
+router.post("/registerDoctor", registerDoctor);
 router.post("/login", login);
 router.get("/profile", authMiddleware, profile);
 router.post("/changePassword", authMiddleware, changePassword);

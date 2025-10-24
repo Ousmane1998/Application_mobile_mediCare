@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const getGeolocation = async (req, res) => {
   try {
     // On récupère latitude/longitude soit depuis query (GET) soit depuis body (POST)

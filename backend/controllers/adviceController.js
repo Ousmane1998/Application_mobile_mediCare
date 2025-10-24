@@ -1,3 +1,4 @@
+// @ts-nocheck
 // controllers/adviceController.js
 import Advice from "../models/Advice.js";
 

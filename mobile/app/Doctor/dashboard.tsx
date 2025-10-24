@@ -58,7 +58,9 @@ export default function DoctorDashboardScreen() {
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Mes Patients</Text>
-        <Text style={styles.link}>Voir tout</Text>
+        <TouchableOpacity onPress={() => router.push('/Doctor/my-patients' as any)}>
+          <Text style={styles.link}>Voir tout</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.patientItem}>

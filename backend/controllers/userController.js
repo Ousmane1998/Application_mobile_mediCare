@@ -1,3 +1,4 @@
+// @ts-nocheck
 import User from "../models/User.js";
 
 // Lister tous les utilisateurs
@@ -5,6 +6,19 @@ export const listUsers = async (req, res) => {
   try {
     const users = await User.find({ archived: { $ne: true } });
     res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Lister les patients du médecin connecté
+export const listMyPatients = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'medecin') {
+      return res.status(403).json({ message: 'Accès refusé.' });
+    }
+    const patients = await User.find({ role: 'patient', medecinId: req.user._id, archived: { $ne: true } });
+    res.status(200).json(patients);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

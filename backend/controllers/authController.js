@@ -32,11 +32,12 @@ if (process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.
 // POST /api/auth/registerPatient (protected: medecin/admin)
 export async function registerPatient(req, res) {
   try {
-    if (!req.user || !['medecin', 'admin'].includes(String(req.user.role))) {
+    // Seul un médecin connecté peut créer son patient
+    if (!req.user || String(req.user.role) !== 'medecin') {
       return res.status(403).json({ message: "Accès refusé." });
     }
 
-    const { nom, prenom, email, telephone, adresse, age, hopital } = req.body || {};
+    const { nom, prenom, email, telephone, adresse, age, pathologie } = req.body || {};
     if (!nom || !prenom || !email || !telephone) {
       return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone." });
     }
@@ -61,9 +62,11 @@ export async function registerPatient(req, res) {
       telephone,
       adresse: adresse || "",
       age: age || undefined,
-      hopital: hopital || "",
       password: hashed,
       role: 'patient',
+      // Lier le patient à son médecin créateur
+      medecinId: req.user._id,
+      pathologie: pathologie || "",
     });
 
     // Send email with credentials and track status

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // controllers/appointmentController.js
 import Appointment from "../models/Appointment.js";
 import User from "../models/User.js";

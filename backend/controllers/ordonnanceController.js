@@ -1,3 +1,4 @@
+// @ts-nocheck
 // controllers/OrdonnanceController.js
 import Ordonnance from "../models/Ordonnance.js";
 

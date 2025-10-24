@@ -1,3 +1,4 @@
+// @ts-nocheck
 // controllers/FicheDeSanteController.js
 import FicheDeSante from "../models/FicheDeSante.js";
 

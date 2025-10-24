@@ -1,10 +1,11 @@
 import express from "express";
 import {
   listUsers,
+  listMyPatients,
   listPatients,
   listMedecins,
   updateUser,
-  archiveUser
+  archiveUser,
 } from "../controllers/userController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
@@ -15,6 +16,9 @@ router.use(authMiddleware);
 
 // Liste tous les utilisateurs
 router.get("/", listUsers);
+
+// Liste des patients du médecin connecté
+router.get("/my-patients", listMyPatients);
 
 // Liste patients
 router.get("/patients", listPatients);

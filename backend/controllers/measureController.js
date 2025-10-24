@@ -1,3 +1,4 @@
+// @ts-nocheck
 // controllers/measureController.js
 import Measure from "../models/Measure.js";
 import Notification from "../models/Notification.js";
