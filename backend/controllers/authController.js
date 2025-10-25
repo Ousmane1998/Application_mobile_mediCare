@@ -65,7 +65,6 @@ function getMailer() {
 
 // POST /api/auth/registerPatient (protected: medecin)
 export async function registerPatient(req, res) {
-  console.log("📥 Requête reçue pour création de patient :", req.body);
   try {
     if (!req.user || !['medecin'].includes(String(req.user.role))) {
       return res.status(403).json({ message: "Accès refusé." });
@@ -83,7 +82,9 @@ export async function registerPatient(req, res) {
       return res.status(400).json({ message: "Format téléphone invalide. Format attendu: 7XXXXXXXX." });
     }
 
-    const exists = await User.findOne({ $or: [{ email: String(email).toLowerCase() }, { telephone }] });
+    // ✅ Convertir le téléphone en nombre pour la vérification
+    const telNumber = Number(telephone);
+    const exists = await User.findOne({ $or: [{ email: String(email).toLowerCase() }, { telephone: telNumber }] });
     if (exists) {
       return res.status(400).json({ message: "Un utilisateur avec cet email ou téléphone existe déjà." });
     }
@@ -100,7 +101,7 @@ try {
     nom,
     prenom,
     email: String(email).toLowerCase(),
-    telephone,
+    telephone: telNumber,
     adresse: adresse || "",
     age: age || undefined,
     pathologie,
@@ -113,6 +114,16 @@ try {
   console.error(err);
   console.error("🧠 Message :", err.message);
   console.error("📚 Stack :", err.stack);
+  
+  // ✅ Gérer les erreurs de clé dupliquée
+  if (err?.code === 11000) {
+    const field = Object.keys(err.keyPattern || {})[0] || 'clé unique';
+    const fieldLabel = field === 'email' ? 'email' : field === 'telephone' ? 'téléphone' : field;
+    return res.status(400).json({
+      message: `Un utilisateur avec ce ${fieldLabel} existe déjà.`
+    });
+  }
+  
  return res.status(500).json({
   message: "Erreur lors de la création du patient.",
   debug: {
