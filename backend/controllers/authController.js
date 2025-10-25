@@ -132,8 +132,13 @@ export async function registerPatient(req, res) {
       emailSent,
       user: { id: user._id, nom: user.nom, prenom: user.prenom, email: user.email, telephone: user.telephone, role: user.role },
     });
-  } catch (err) {
-  console.error("🔥 Erreur complète lors de la création du patient :", err);
+  }  catch (err) {
+  console.error("🔥 Erreur complète lors de la création du patient :", {
+    message: err.message,
+    stack: err.stack,
+    name: err.name,
+    cause: err.cause,
+  });
   return res.status(500).json({ message: "Erreur lors de la création du patient." });
 }
 
