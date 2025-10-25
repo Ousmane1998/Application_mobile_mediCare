@@ -1,73 +1,119 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
+import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, type AppointmentItem } from '../../utils/api';
 
 export default function PatientDashboardScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [meId, setMeId] = useState<string | null>(null);
+  const [latest, setLatest] = useState<Record<string, any>>({});
+  const [nextAppt, setNextAppt] = useState<AppointmentItem | null>(null);
+  const [recentMsg, setRecentMsg] = useState<any | null>(null);
+  const [unread, setUnread] = useState<number>(0);
+
+  const load = async () => {
+    try {
+      const prof = await getProfile();
+      const id = (prof.user as any)._id || (prof.user as any).id;
+      setMeId(id);
+      const history = await getMeasuresHistory(id);
+      const byType: Record<string, any> = {};
+      (Array.isArray(history) ? history : []).forEach((m: any) => {
+        const t = String(m.type || '').toLowerCase();
+        const cur = byType[t];
+        const time = new Date(m.date || m.createdAt || Date.now()).getTime();
+        if (!cur || time > cur._ts) byType[t] = { ...m, _ts: time };
+      });
+      setLatest(byType);
+      const appts = await getAppointments();
+      const myAppts = (Array.isArray(appts) ? appts : []).filter(a => String((a.patientId as any)?._id || a.patientId) === String(id));
+      const future = myAppts.filter(a => new Date(`${a.date} ${a.heure || '00:00'}`).getTime() >= Date.now());
+      future.sort((a,b)=> new Date(`${a.date} ${a.heure||'00:00'}`).getTime() - new Date(`${b.date} ${b.heure||'00:00'}`).getTime());
+      setNextAppt(future[0] || null);
+      const msgs = await getMessages();
+      const listMsgs = Array.isArray(msgs) ? msgs : [];
+      const myMsgs = listMsgs.filter((m: any) => [String(m.senderId), String(m.receiverId)].includes(String(id)));
+      myMsgs.sort((a: any,b: any)=> new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setRecentMsg(myMsgs[0] || null);
+      const notifs = await getNotifications(id);
+      const unreadCount = (Array.isArray(notifs) ? notifs : []).filter(n => !n.isRead).length;
+      setUnread(unreadCount);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
+  const gly = latest['glycemie'];
+  const tens = latest['tension'];
+
   return (
     <View>
-    <Header />
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-     
+      <Header />
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <Text style={styles.greeting}>Bonjour{meId ? '' : ''}!</Text>
+        <Text style={styles.sectionTitle}>Vos dernières mesures</Text>
+
 
       <Text style={styles.greeting}>Bonjour, Patient!</Text>
       <Text style={styles.sectionTitle}>Vos dernières mesures</Text>
-      <View style={styles.card}>
-        <View style={styles.cardHeaderRow}>
-          <Ionicons name="trending-up-outline" size={24} color="green" />
-          <Text style={styles.cardTitle}>Glycémie</Text>
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <Ionicons name="trending-up-outline" size={24} color="green" />
+            <Text style={styles.cardTitle}>Glycémie</Text>
+          </View>
+          <Text style={styles.bigValue}>{gly?.value ? `${gly.value}` : '—'}</Text>
+          <Text style={styles.statusOk}>{gly?._ts ? new Date(gly._ts).toLocaleString() : 'Aucune donnée'}</Text>
+          <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
         </View>
-        <Text style={styles.bigValue}>120 mg/dL</Text>
-        <Text style={styles.statusOk}>Stable</Text>
-        <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
-      </View>
 
-      <View style={styles.card}>
-        <View style={styles.cardHeaderRow}>
-          <Ionicons name="trending-up-outline" size={24} color="green" />
-          <Text style={styles.cardTitle}>Pression Artérielle</Text>
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <Ionicons name="trending-up-outline" size={24} color="green" />
+            <Text style={styles.cardTitle}>Pression Artérielle</Text>
+          </View>
+          <Text style={styles.bigValue}>{tens?.value ? `${tens.value}` : '—'}</Text>
+          <Text style={styles.statusWarn}>{tens?._ts ? new Date(tens._ts).toLocaleString() : 'Aucune donnée'}</Text>
+          <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
         </View>
-        <Text style={styles.bigValue}>130/85 mmHg</Text>
-        <Text style={styles.statusWarn}>Légère hausse</Text>
-        <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
-      </View>
-    <TouchableOpacity
-  style={styles.findStructureBtn}
- onPress={() => router.push("/Patient/find-structure")}
 
->
-  <Ionicons name="location-outline" size={20} color="#2ccdd2" style={{ marginRight: 8 }} />
-  <Text style={styles.findStructureText}>Trouver une structure sanitaire</Text>
-</TouchableOpacity>
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>Vos prochains médicaments</Text>
-        <Text style={styles.blockLine}>Insuline - 8h00</Text>
-        <Text style={styles.blockLine}>Lisinopril - 9h00</Text>
-        <TouchableOpacity style={styles.blockBtn}><Text style={styles.blockBtnText}>Voir tout</Text></TouchableOpacity>
-      </View>
+        <TouchableOpacity style={styles.findStructureBtn} onPress={() => router.push('/Patient/find-structure')}>
+          <Ionicons name="location-outline" size={20} color="#2ccdd2" style={{ marginRight: 8 }} />
+          <Text style={styles.findStructureText}>Trouver une structure sanitaire</Text>
+        </TouchableOpacity>
 
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>Prochain rendez-vous</Text>
-        <Text style={styles.blockLine}>Dr. Martin - 15/05/2024 à 10h30</Text>
-        <Text style={styles.blockLine}>Hôpital Central, 123 Rue de la Santé</Text>
-        <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-new')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
-      </View>
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Prochain rendez-vous</Text>
+          <Text style={styles.blockLine}>{nextAppt ? `${(nextAppt as any).medecinId?.nom || 'Médecin'} - ${nextAppt.date} à ${nextAppt.heure || ''}` : 'Aucun prochain rendez-vous'}</Text>
+          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-new')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
+        </View>
 
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>Messages</Text>
-        <Text style={styles.blockLine}>
-          Nouveau message du Dr. Dubois
-        </Text>
-        <Text style={[styles.blockLine, { fontStyle: 'italic', color: '#6B7280' }]}>"Bonjour, n'oubliez pas de prendre votre tension demain matin."</Text>
-        <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/chat')}><Text style={styles.blockBtnText}>Ouvrir le chat</Text></TouchableOpacity>
-      </View>
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Messages</Text>
+          <Text style={styles.blockLine}>{recentMsg ? (recentMsg.text || recentMsg.message || 'Nouveau message') : 'Aucun message'}</Text>
+          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/chat')}><Text style={styles.blockBtnText}>Ouvrir le chat</Text></TouchableOpacity>
+        </View>
 
-      <View style={{ height: 16 }} />
-    </ScrollView>
-    <NavPatient />
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Notifications non lues</Text>
+          <Text style={styles.blockLine}>{unread}</Text>
+        </View>
+
+        <View style={{ height: 16 }} />
+      </ScrollView>
+      <NavPatient />
     </View>
   );
 }

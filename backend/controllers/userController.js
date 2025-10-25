@@ -67,3 +67,41 @@ export const archiveUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+export const getStats = async (req, res) => {
+  try {
+    const total = await User.countDocuments({ archived: { $ne: true } });
+    const patients = await User.countDocuments({ role: "patient", archived: { $ne: true } });
+    const medecins = await User.countDocuments({ role: "medecin", archived: { $ne: true } });
+    const admins = await User.countDocuments({ role: "admin", archived: { $ne: true } });
+    res.status(200).json({ total, patients, medecins, admins });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body || {};
+    if (!role || !["patient", "medecin", "admin"].includes(String(role))) {
+      return res.status(400).json({ message: "Rôle invalide" });
+    }
+    const updated = await User.findByIdAndUpdate(id, { role }, { new: true });
+    if (!updated) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await User.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    res.status(200).json({ message: "Utilisateur supprimé" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

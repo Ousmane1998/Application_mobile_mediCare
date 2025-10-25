@@ -6,8 +6,12 @@ import {
   listMedecins,
   updateUser,
   archiveUser,
+  getStats,
+  updateUserRole,
+  deleteUser,
 } from "../controllers/userController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
+import adminMiddleware from "../middlewares/adminMiddleware.js";
 
 const router = express.Router();
 
@@ -31,5 +35,10 @@ router.put("/:id", updateUser);
 
 // Archiver un utilisateur
 router.put("/archive/:id", archiveUser);
+
+// === Admin-only ===
+router.get("/stats", adminMiddleware, getStats);
+router.put("/:id/role", adminMiddleware, updateUserRole);
+router.delete("/:id", adminMiddleware, deleteUser);
 
 export default router;

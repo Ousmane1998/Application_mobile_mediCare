@@ -91,6 +91,10 @@ export async function addMeasure(payload: { patientId: string; type: MeasureType
   return authFetch('/measures', { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export async function getMeasuresHistory(patientId: string) {
+  return authFetch(`/measures/history/${encodeURIComponent(patientId)}`);
+}
+
 // Appointments
 export async function createAppointment(payload: { patientId: string; medecinId: string; date: string; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule';typeConsultation?: string;  }) {
   return authFetch('/appointments', { method: 'POST', body: JSON.stringify(payload) });
@@ -110,9 +114,18 @@ export async function getAppointments(): Promise<AppointmentItem[]> {
   return authFetch('/appointments');
 }
 
+export async function updateAppointment(id: string, payload: Partial<{ statut: 'en_attente'|'confirme'|'annule'; date: string; heure: string }>) {
+  return authFetch(`/appointments/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
 // Messages
 export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }) {
   return authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function getMessages(params?: Record<string, string>) {
+  const qs = params ? ('?' + new URLSearchParams(params).toString()) : '';
+  return authFetch(`/messages${qs}`);
 }
 //list medecins
 export async function getMedecins() {
@@ -180,5 +193,38 @@ export async function markNotificationRead(id: string) {
 
 export async function deleteNotification(id: string) {
   return authFetch(`/notifications/${id}`, { method: 'DELETE' });
+}
+
+// Admin
+export type AppUser = {
+  _id: string;
+  nom?: string;
+  prenom?: string;
+  email?: string;
+  telephone?: string | number;
+  role: 'patient' | 'medecin' | 'admin' | string;
+  archived?: boolean;
+};
+
+export type AdminStats = { total: number; patients: number; medecins: number; admins: number };
+
+export async function adminListUsers(): Promise<AppUser[]> {
+  return authFetch('/users');
+}
+
+export async function adminGetStats(): Promise<AdminStats> {
+  return authFetch('/users/stats');
+}
+
+export async function adminUpdateUserRole(id: string, role: 'patient' | 'medecin' | 'admin') {
+  return authFetch(`/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) });
+}
+
+export async function adminArchiveUser(id: string) {
+  return authFetch(`/users/archive/${id}`, { method: 'PUT' });
+}
+
+export async function adminDeleteUser(id: string) {
+  return authFetch(`/users/${id}`, { method: 'DELETE' });
 }
 
