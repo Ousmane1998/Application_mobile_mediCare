@@ -21,10 +21,14 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [gLoading, setGLoading] = useState(false);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    responseType: 'id_token',
-    scopes: ['profile', 'email'],
-  });
+const [request, response, promptAsync] = Google.useAuthRequest({
+  clientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
+  responseType: "id_token",
+  scopes: ["profile", "email"],
+});
+
+
+
 
   const onLogin = async () => {
     const emailRegex = /^\S+@\S+\.\S+$/;

@@ -10,6 +10,7 @@ import { OAuth2Client } from "google-auth-library";
 
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
+// 🔹 Générer un token JWT
 const signToken = (user) => {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: "7d",
@@ -19,8 +20,12 @@ const signToken = (user) => {
 const emailRegex = /^\S+@\S+\.\S+$/;
 const phoneRegex = /^7\d{8}$/;
 
-// Cloudinary config (optional)
-if (process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)) {
+// 🔹 Configuration Cloudinary (optionnelle)
+if (
+  process.env.CLOUDINARY_URL ||
+  (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
+)
+{
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -29,37 +34,84 @@ if (process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.
   });
 }
 
+function getMailer() {
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    SMTP_FROM,
+  } = process.env;
+
+  if (!SMTP_USER || !SMTP_PASS) return null;
+
+  const transporter = SMTP_HOST && SMTP_PORT
+    ? nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: Number(SMTP_PORT),
+        secure: Number(SMTP_PORT) === 465,
+        auth: { user: SMTP_USER, pass: SMTP_PASS },
+      })
+    : nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: SMTP_USER, pass: SMTP_PASS },
+      });
+
+  const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
+
+  return { transporter, from };
+}
+
+
 // POST /api/auth/registerPatient (protected: medecin)
 export async function registerPatient(req, res) {
+  console.log("📥 [registerPatient] Requête reçue :", { body: req.body, user: req.user?.id });
+  
   try {
     if (!req.user || !['medecin'].includes(String(req.user.role))) {
+      console.log("❌ [registerPatient] Accès refusé - rôle invalide :", req.user?.role);
       return res.status(403).json({ message: "Accès refusé." });
     }
 
     const { nom, prenom, email, telephone, adresse, age, pathologie } = req.body || {};
-    const medecinId = req.user && (req.user._id || req.user.id);
-    if (!nom || !prenom || !email || !telephone) {
-      return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone." });
+    const medecinId = req.user?.id;
+    
+    console.log("🔍 [registerPatient] Champs extraits :", { nom, prenom, email, telephone, medecinId });
+    
+    if (!nom || !prenom || !email || !telephone || !medecinId) {
+      console.log("❌ [registerPatient] Champs manquants");
+      return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone, pathologie, idMedecin." });
     }
     if (!emailRegex.test(String(email))) {
+      console.log("❌ [registerPatient] Email invalide :", email);
       return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
     }
     if (!phoneRegex.test(String(telephone))) {
+      console.log("❌ [registerPatient] Téléphone invalide :", telephone);
       return res.status(400).json({ message: "Format téléphone invalide. Format attendu: 7XXXXXXXX." });
     }
 
-    const exists = await User.findOne({ $or: [{ email: String(email).toLowerCase() }, { telephone }] });
+    // ✅ Convertir le téléphone en nombre pour la vérification
+    const telNumber = Number(telephone);
+    console.log("🔢 [registerPatient] Téléphone converti :", { original: telephone, converted: telNumber });
+    
+    const exists = await User.findOne({ $or: [{ email: String(email).toLowerCase() }, { telephone: telNumber }] });
     if (exists) {
+      console.log("⚠️ [registerPatient] Utilisateur existe déjà :", { email, telephone: telNumber });
       return res.status(400).json({ message: "Un utilisateur avec cet email ou téléphone existe déjà." });
     }
 
     const defaultPassword = "medicare@123";
     const hashed = await bcrypt.hash(defaultPassword, 10);
+    console.log("✅ [registerPatient] Données patient à créer :", {
+      nom, prenom, email, telephone: telNumber, adresse, age, pathologie, medecinId
+    });
+
     const user = await User.create({
       nom,
       prenom,
       email: String(email).toLowerCase(),
-      telephone,
+      telephone: telNumber,
       adresse: adresse || "",
       age: age || undefined,
       pathologie,
@@ -67,6 +119,8 @@ export async function registerPatient(req, res) {
       password: hashed,
       role: 'patient',
     });
+    
+    console.log("✅ [registerPatient] Patient créé avec succès :", user._id);
 
     // Send email with credentials
     let emailSent = false;
@@ -85,8 +139,10 @@ export async function registerPatient(req, res) {
                  <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>`,
         });
         emailSent = true;
+        console.log("📧 [registerPatient] Email envoyé avec succès");
       } catch (e) {
-        emailSent = false; // email non envoyé, mais compte créé
+        emailSent = false;
+        console.log("⚠️ [registerPatient] Email non envoyé :", e.message);
       }
     }
 
@@ -95,8 +151,32 @@ export async function registerPatient(req, res) {
       emailSent,
       user: { id: user._id, nom: user.nom, prenom: user.prenom, email: user.email, telephone: user.telephone, role: user.role },
     });
+    
   } catch (err) {
-    return res.status(500).json({ message: "Erreur lors de la création du patient." });
+    console.error("🔥 [registerPatient] ERREUR COMPLÈTE :");
+    console.error("📌 Message :", err.message);
+    console.error("📌 Code :", err.code);
+    console.error("📌 Name :", err.name);
+    console.error("📌 Stack :", err.stack);
+    
+    // ✅ Gérer les erreurs de clé dupliquée
+    if (err?.code === 11000) {
+      const field = Object.keys(err.keyPattern || {})[0] || 'clé unique';
+      const fieldLabel = field === 'email' ? 'email' : field === 'telephone' ? 'téléphone' : field;
+      console.log("⚠️ [registerPatient] Erreur E11000 - Doublon détecté :", fieldLabel);
+      return res.status(400).json({
+        message: `Un utilisateur avec ce ${fieldLabel} existe déjà.`
+      });
+    }
+    
+    return res.status(500).json({
+      message: "Erreur lors de la création du patient.",
+      debug: {
+        message: err.message,
+        name: err.name,
+        code: err.code,
+      },
+    });
   }
 }
 
@@ -405,18 +485,7 @@ export async function updatePhoto(req, res) {
   }
 }
 
-// Email transport 
-function getMailer() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) return null;
-  const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-  return { transporter, from: SMTP_FROM };
-}
+
 
 // POST /api/auth/forgotPassword (email only)
 export async function forgotPassword(req, res) {
