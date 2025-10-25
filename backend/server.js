@@ -3,12 +3,16 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+console.log("🚀 [SERVER] Démarrage du serveur...");
+
 import express from "express";
 import http from "http";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { Server } from "socket.io";
+
+console.log("✅ [SERVER] Modules de base importés");
 
 import { connectDB } from "./config/db.js";
 import { swaggerDocs } from "./config/swagger.js";
@@ -30,7 +34,16 @@ import swaggerUi from "swagger-ui-express";
 import fs from "fs";
 import userRoutes from "./routes/userRoutes.js";
 
-const swaggerDocument = JSON.parse(fs.readFileSync("./swagger.json", "utf8"));
+console.log("✅ [SERVER] Toutes les routes importées");
+
+let swaggerDocument;
+try {
+  swaggerDocument = JSON.parse(fs.readFileSync("./swagger.json", "utf8"));
+  console.log("✅ [SERVER] swagger.json chargé avec succès");
+} catch (err) {
+  console.error("❌ [SERVER] Erreur lors du chargement de swagger.json :", err.message);
+  swaggerDocument = {};
+}
 
 
 // App & server
@@ -72,13 +85,25 @@ setupSocketIO(io);
 
 // Swagger docs
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 // Start server
 const PORT = process.env.PORT || 5000;
-connectDB(process.env.MONGODB_URI).then(() => {
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+
+console.log("🔗 [SERVER] Tentative de connexion à MongoDB...");
+console.log("📌 [SERVER] MONGODB_URI :", process.env.MONGODB_URI ? "✅ Défini" : "❌ Non défini");
+
+connectDB(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("✅ [SERVER] Base de données connectée avec succès");
+    server.listen(PORT, () => {
+      console.log(`✅ [SERVER] Serveur démarré sur le port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ [SERVER] Erreur de connexion à la base de données :", err.message);
+    console.error("📌 [SERVER] Stack :", err.stack);
+    process.exit(1);
   });
-});
 
 
 let users = [];
