@@ -73,9 +73,9 @@ export async function registerPatient(req, res) {
       return res.status(403).json({ message: "Accès refusé." });
     }
 
-    const { nom, prenom, email, telephone, adresse, age, pathologie, idMedecin } = req.body || {};
+    const { nom, prenom, email, telephone, adresse, age, pathologie } = req.body || {};
     const medecinId = idMedecin;
-    if (!nom || !prenom || !email || !telephone || !idMedecin) {
+    if (!nom || !prenom || !email || !telephone || !medecinId) {
       return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone, pathologie, idMedecin." });
     }
     if (!emailRegex.test(String(email))) {
