@@ -37,8 +37,9 @@ export async function registerPatient(req, res) {
     }
 
     const { nom, prenom, email, telephone, adresse, age, pathologie } = req.body || {};
-    if (!nom || !prenom || !email || !telephone || !idMedecin) {
-      return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone, pathologie, idMedecin." });
+    const medecinId = req.user && (req.user._id || req.user.id);
+    if (!nom || !prenom || !email || !telephone) {
+      return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone." });
     }
     if (!emailRegex.test(String(email))) {
       return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
@@ -62,7 +63,7 @@ export async function registerPatient(req, res) {
       adresse: adresse || "",
       age: age || undefined,
       pathologie,
-      idMedecin,
+      medecinId,
       password: hashed,
       role: 'patient',
     });

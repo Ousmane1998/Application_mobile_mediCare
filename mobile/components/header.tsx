@@ -29,7 +29,7 @@ export default function Header() {
     
     return (
         <View style={styles.topBar}>
-            {/* <Image source={require('../../assets/images/logo MediCare.png')} style={{width: 75, height: 75}} /> */}
+            <Image source={require('../assets/images/logoMedicare.png')} style={{width: 75, height: 75}} />
             <TouchableOpacity onPress={() => {router.push(profile?.role === 'medecin' ? '/Doctor/notifications' : '/Patient/notifications')}}>
                 <Ionicons name="notifications-outline" style={{color: 'black', marginLeft:'auto'}} size={24} />
             </TouchableOpacity>

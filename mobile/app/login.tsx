@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
@@ -145,7 +146,7 @@ export default function LoginScreen() {
     <ScrollView>
       <View style={styles.container}>
       <View style={styles.header}>        
-        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 75, height: 75}} />
+        <Image source={require('../assets/images/logoMedicare.png')} style={{width: 75, height: 75}} />
         <Text style={styles.brand}>MediCare</Text>
       </View>
 

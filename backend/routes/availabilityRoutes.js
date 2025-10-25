@@ -1,6 +1,7 @@
 // routes/availabilityRoutes.js
 import express from "express";
-import { setAvailability, getAvailability } from "../controllers/availabilityController.js";
+import { setAvailability, getAvailability, updateAvailability, deleteAvailability } from "../controllers/availabilityController.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 /**
  * @openapi
@@ -35,8 +36,11 @@ import { setAvailability, getAvailability } from "../controllers/availabilityCon
  */
 
 const router = express.Router();
+router.use(authMiddleware);
 
 router.post("/", setAvailability);
 router.get("/", getAvailability);
+router.put("/:id", updateAvailability);
+router.delete("/:id", deleteAvailability);
 
 export default router;

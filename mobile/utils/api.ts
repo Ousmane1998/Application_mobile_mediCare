@@ -82,17 +82,43 @@ export async function createAppointment(payload: { patientId: string; medecinId:
   return authFetch('/appointments', { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export type AppointmentItem = {
+  _id: string;
+  patientId: any;
+  medecinId: any;
+  date: string;
+  heure?: string;
+  statut: 'en_attente' | 'confirme' | 'annule' | string;
+  typeConsultation?: string;
+};
+
+export async function getAppointments(): Promise<AppointmentItem[]> {
+  return authFetch('/appointments');
+}
+
 // Messages
 export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }) {
   return authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
 }
 //list medecins
 export async function getMedecins() {
-  return authFetch('/users?role=medecin');
+  return authFetch('/users/medecins');
 }
 // utils/api.tsx (ou où est ta fonction)
 export async function getAvailabilityByMedecin(medecinId: string) {
   return authFetch(`/availability?medecinId=${medecinId}`);
+}
+
+export async function setAvailability(payload: { medecinId: string; jour: string; heureDebut: string; heureFin: string; disponible?: boolean }) {
+  return authFetch('/availability', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateAvailability(id: string, payload: Partial<{ jour: string; heureDebut: string; heureFin: string; disponible: boolean }>) {
+  return authFetch(`/availability/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export async function deleteAvailabilityApi(id: string) {
+  return authFetch(`/availability/${id}`, { method: 'DELETE' });
 }
 
 
@@ -113,5 +139,29 @@ export async function createPatient(payload: {
       ...payload,
     }),
   });
+}
+
+// Notifications
+export type NotificationItem = {
+  _id: string;
+  id?: string;
+  userId: string;
+  type?: 'message' | 'rdv' | 'alerte' | string;
+  message?: string;
+  isRead?: boolean;
+  data?: any;
+  createdAt?: string;
+};
+
+export async function getNotifications(userId: string): Promise<NotificationItem[]> {
+  return authFetch(`/notifications?userId=${encodeURIComponent(userId)}`);
+}
+
+export async function markNotificationRead(id: string) {
+  return authFetch(`/notifications/${id}/read`, { method: 'PUT' });
+}
+
+export async function deleteNotification(id: string) {
+  return authFetch(`/notifications/${id}`, { method: 'DELETE' });
 }
 

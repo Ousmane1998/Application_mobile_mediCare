@@ -13,6 +13,13 @@ export default function NavDoctor() {
         }}
       />
       <Tabs.Screen
+        name="availability"
+        options={{
+          title: 'Disponibilités',
+          tabBarIcon: ({ color }) => <Ionicons name="time-outline" color={color} size={60} />,
+        }}
+      />
+      <Tabs.Screen
         name="notifications"
         options={{
           title: 'Notifications',

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -86,12 +87,7 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#F3F4F6', padding: 16 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   avatarWrap: { alignItems: 'center', marginBottom: 16 },
-<<<<<<< HEAD
   avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
-=======
-  avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
-  avatarImage: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#E5E7EB' },
->>>>>>> 0f85833c2fd62bebd4e53bffec44e576ce4dea6b
   name: { marginTop: 12, fontSize: 20, color: '#111827' },
   email: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   error: { color: '#DC2626', marginTop: 12 },

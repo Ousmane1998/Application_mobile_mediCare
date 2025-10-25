@@ -1,87 +1,172 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import NavDoctor from '@/components/navDoctor';
 import { router } from 'expo-router';
+import { getProfile, authFetch, getNotifications, getAppointments, type NotificationItem, type AppointmentItem } from '../../utils/api';
 
 export default function DoctorDashboardScreen() {
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [totalPatients, setTotalPatients] = useState<number>(0);
+  const [alerts, setAlerts] = useState<NotificationItem[]>([]);
+  const [pendingAppointments, setPendingAppointments] = useState<number>(0);
+  const [pathologies, setPathologies] = useState<Array<{ name: string; count: number }>>([]);
+  const [alertsFilter, setAlertsFilter] = useState<'Toutes' | '24h' | '7j'>('Toutes');
+  const [alertsType, setAlertsType] = useState<'Tous' | 'Messages' | 'Rendez-vous' | 'Alertes'>('Tous');
+  const filteredAlerts = useMemo(() => {
+    if (!alerts?.length) return [] as NotificationItem[];
+    const now = Date.now();
+    let base = alerts;
+    // type filter
+    if (alertsType !== 'Tous') {
+      const typeMap: Record<string,string[]> = {
+        Messages: ['message'],
+        'Rendez-vous': ['rdv','appointment'],
+        Alertes: ['alerte','alert'],
+      };
+      const allowed = typeMap[alertsType];
+      base = base.filter(a => allowed.includes(String(a.type||'').toLowerCase()));
+    }
+    // timeframe filter
+    if (alertsFilter === '24h') {
+      const t = now - 24 * 60 * 60 * 1000;
+      base = base.filter(a => a.createdAt && new Date(a.createdAt).getTime() >= t);
+    } else if (alertsFilter === '7j') {
+      const t = now - 7 * 24 * 60 * 60 * 1000;
+      base = base.filter(a => a.createdAt && new Date(a.createdAt).getTime() >= t);
+    }
+    return base;
+  }, [alerts, alertsFilter, alertsType]);
+
+  const load = async () => {
+    try {
+      setError(null);
+      const prof = await getProfile();
+      const meId = (prof.user as any)._id || (prof.user as any).id;
+      const patients = await authFetch('/users/my-patients');
+      const arr = Array.isArray(patients) ? patients : (patients?.data || []);
+      const total = arr.length || 0;
+      setTotalPatients(total);
+      // Pathologies breakdown (top 3)
+      const counts: Record<string, number> = {};
+      arr.forEach((u: any) => { const p = (u.pathologie || '').trim(); if (p) counts[p] = (counts[p]||0)+1; });
+      const top = Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a,b)=>b.count-a.count).slice(0,3);
+      setPathologies(top);
+      const notifs: NotificationItem[] = await getNotifications(meId);
+      const recentAlerts = (Array.isArray(notifs) ? notifs : []).filter(n => ['alerte','alert'].includes(String(n.type||'').toLowerCase())).slice(0, 5);
+      setAlerts(recentAlerts);
+      // Pending appointments for this doctor
+      const appts: AppointmentItem[] = await getAppointments();
+      const pending = (Array.isArray(appts) ? appts : []).filter(a => String((a.medecinId as any)?._id || a.medecinId) === String(meId) && String(a.statut).toLowerCase() === 'en_attente').length;
+      setPendingAppointments(pending);
+    } catch (e: any) {
+      setError(e?.message || 'Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
   return (
     <View>
-    <Header />
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      <Text style={styles.title}>Tableau de bord</Text>
+      <Header />
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <Text style={styles.title}>Tableau de bord</Text>
 
-      <View style={styles.cardsRow}>
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Total Patients</Text>
-          <Text style={styles.cardValue}>38</Text>
-        </View>
-        <View style={[styles.card, styles.cardAlert]}>
-          <Text style={styles.cardLabel}>Patients avec alertes</Text>
-          <Text style={[styles.cardValue, { color: '#EF4444' }]}>5</Text>
-        </View>
-      </View>
+        {loading ? (
+          <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <ActivityIndicator />
+          </View>
+        ) : (
+          <>
+            <View style={styles.cardsRow}>
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>Total Patients</Text>
+                <Text style={styles.cardValue}>{totalPatients}</Text>
+              </View>
+              <View style={[styles.card, styles.cardAlert]}>
+                <Text style={styles.cardLabel}>Patients avec alertes</Text>
+                <Text style={[styles.cardValue, { color: '#EF4444' }]}>{alerts.length}</Text>
+              </View>
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>RDV en attente</Text>
+                <Text style={styles.cardValue}>{pendingAppointments}</Text>
+              </View>
+            </View>
 
-      <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔎</Text>
-        <TextInput placeholder="Rechercher des patients" style={styles.search} />
-      </View>
+            <View style={styles.searchWrap}>
+              <Text style={styles.searchIcon}>🔎</Text>
+              <TextInput placeholder="Rechercher des patients" style={styles.search} />
+            </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }}>
-        <View style={styles.chipActive}><Text style={styles.chipTextActive}>Tous</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>Diabète</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>Hypertension</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>Alertes</Text></View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }}>
+              <View style={styles.chipActive}><Text style={styles.chipTextActive}>Tous</Text></View>
+              <View style={styles.chip}><Text style={styles.chipText}>Diabète</Text></View>
+              <View style={styles.chip}><Text style={styles.chipText}>Hypertension</Text></View>
+              <View style={styles.chip}><Text style={styles.chipText}>Alertes</Text></View>
+            </ScrollView>
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Alertes Récentes</Text>
+              <TouchableOpacity onPress={() => router.push('/Doctor/notifications' as any)}>
+                <Text style={styles.link}>Voir tout</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+              {(['Toutes','24h','7j'] as const).map(f => (
+                <TouchableOpacity key={f} onPress={() => setAlertsFilter(f)}>
+                  <View style={f === alertsFilter ? styles.chipActive : styles.chip}>
+                    <Text style={f === alertsFilter ? styles.chipTextActive : styles.chipText}>{f}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+              {(['Tous','Messages','Rendez-vous','Alertes'] as const).map(f => (
+                <TouchableOpacity key={f} onPress={() => setAlertsType(f)}>
+                  <View style={f === alertsType ? styles.chipActive : styles.chip}>
+                    <Text style={f === alertsType ? styles.chipTextActive : styles.chipText}>{f}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {filteredAlerts.map((n, i) => (
+              <View key={(n._id || i).toString()} style={styles.alertItem}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.itemName}>{n.type || 'Alerte'}</Text>
+                  {!!n.message && <Text style={styles.itemSubRed}>{n.message}</Text>}
+                </View>
+                <Ionicons name="alert-circle-outline" size={24} color="#EF4444" />
+              </View>
+            ))}
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Mes Patients</Text>
+              <TouchableOpacity onPress={() => router.push('/Doctor/my-patients' as any)}>
+                <Text style={styles.link}>Voir tout</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.fab} onPress={() => router.push('/Doctor/add-patient')}>
+              <Text style={styles.fabText}>Ajouter Patient</Text>
+            </TouchableOpacity>
+
+            {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
+          </>
+        )}
       </ScrollView>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Alertes Récentes</Text>
-        <Text style={styles.link}>Voir tout</Text>
-      </View>
-
-      <View style={styles.alertItem}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.itemName}>Marie Dupont</Text>
-          <Text style={styles.itemSubRed}>Glycémie: 180 mg/dL</Text>
-        </View>
-        <Ionicons name="alert-circle-outline" size={24} color="#EF4444" />
-      </View>
-
-      <View style={styles.alertItem}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.itemName}>Jean Martin</Text>
-          <Text style={styles.itemSubRed}>Tension: 160/100 mmHg</Text>
-        </View>
-        <Ionicons name="alert-circle-outline" size={24} color="#EF4444" />
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Mes Patients</Text>
-        <TouchableOpacity onPress={() => router.push('/Doctor/my-patients' as any)}>
-          <Text style={styles.link}>Voir tout</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.patientItem}>
-        <View>
-          <Text style={styles.itemName}>Pierre Dubois</Text>
-          <Text style={styles.itemSub}>Tension: 120/80 mmHg</Text>
-        </View>
-      </View>
-
-      <View style={styles.patientItem}>
-        <View>
-          <Text style={styles.itemName}>Sophie Bernard</Text>
-          <Text style={styles.itemSub}>Glycémie: 95 mg/dL</Text>
-        </View>
-      </View>
-
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/Doctor/add-patient')}>
-        <Text style={styles.fabText}>Ajouter Patient</Text>
-      </TouchableOpacity>
-    </ScrollView>
-    <NavDoctor />
+      <NavDoctor />
     </View>
   );
 }

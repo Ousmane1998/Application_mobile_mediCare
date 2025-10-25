@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Link, useRouter } from 'expo-router';
@@ -12,17 +13,13 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-<<<<<<< HEAD
-        <Image source={require('../assets/images/logo_MediCare.png')} style={{width: 350, height: 350}} />
-=======
-        <Image source={require('../assets/images/logo MediCare.png')} style={{width: 300, height: 300}} />
->>>>>>> 0f85833c2fd62bebd4e53bffec44e576ce4dea6b
+        <Image source={require('../assets/images/logoMedicare.png')} style={{width: 300, height: 300}} />
       </View>
 
       <View style={styles.content}>
         <Text style={styles.title}>Reprenez le contrôle de votre santé.</Text>
         <Text style={styles.subtitle}>
-          MediCare vous aide à suivre votre santé et à collaborer avec votre médecin pour gérer les maladies chroniques comme le diabète et l'hypertension.
+          MediCare vous aide à suivre votre santé et à collaborer avec votre médecin pour gérer les maladies chroniques comme le diabète et l&aposhypertension.
         </Text>
 
         <TouchableOpacity
