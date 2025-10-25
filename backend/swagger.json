@@ -247,10 +247,15 @@
 }
 
 ,
-    "/api/auth/register": {
+    "/api/auth/registerPatient": {
       "post": {
         "tags": ["Auth"],
         "summary": "Inscription d'un utilisateur",
+        "security": [
+  {
+    "bearerAuth": []
+  }
+],
         "requestBody": {
           "required": true,
           "content": {

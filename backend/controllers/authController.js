@@ -96,18 +96,32 @@ export async function registerPatient(req, res) {
   nom, prenom, email, telephone, adresse, age, pathologie, medecinId
 });
 
-    const user = await User.create({
-      nom,
-      prenom,
-      email: String(email).toLowerCase(),
-      telephone,
-      adresse: adresse || "",
-      age: age || undefined,
-      pathologie,
-      medecinId,
-      password: hashed,
-      role: 'patient',
-    });
+    let user;
+try {
+  user = await User.create({
+    nom,
+    prenom,
+    email: String(email).toLowerCase(),
+    telephone,
+    adresse: adresse || "",
+    age: age || undefined,
+    pathologie,
+    medecinId,
+    password: hashed,
+    role: 'patient',
+  });
+} catch (err) {
+  console.error("🔥 Erreur Mongoose lors de la création du patient :", err);
+  return res.status(500).json({
+    message: "Erreur lors de la création du patient.",
+    debug: {
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+    },
+  });
+}
+    console.log("✅ Patient créé avec succès dans la base de données :", user);
 
     // Send email with credentials
     let emailSent = false;
@@ -136,15 +150,12 @@ export async function registerPatient(req, res) {
       emailSent,
       user: { id: user._id, nom: user.nom, prenom: user.prenom, email: user.email, telephone: user.telephone, role: user.role },
     });
-  } catch (err) {
-  console.error("🔥 Erreur complète lors de la création du patient :", {
-    message: err.message,
-    stack: err.stack,
-    name: err.name,
-    cause: err.cause,
-  });
+  }catch (err) {
+  console.error("🔥 Erreur complète lors de la création du patient :", err);
+  console.log("🧠 Stack :", err.stack);
+  console.log("🧠 Message :", err.message);
+  console.log("🧠 Name :", err.name);
 
-  // Pour test temporaire : renvoyer l'erreur brute au frontend
   return res.status(500).json({
     message: "Erreur lors de la création du patient.",
     debug: {
