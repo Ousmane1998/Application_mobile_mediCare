@@ -23,9 +23,7 @@ const phoneRegex = /^7\d{8}$/;
 // 🔹 Configuration Cloudinary (optionnelle)
 if (
   process.env.CLOUDINARY_URL ||
-  (process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET)
+  (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
 )
 {
   cloudinary.config({
@@ -111,15 +109,20 @@ try {
     role: 'patient',
   });
 } catch (err) {
-  console.error("🔥 Erreur Mongoose lors de la création du patient :", err);
-  return res.status(500).json({
-    message: "Erreur lors de la création du patient.",
-    debug: {
-      message: err.message,
-      name: err.name,
-      stack: err.stack,
-    },
-  });
+   console.error("🔥 ERREUR MONGOOSE COMPLÈTE :");
+  console.error(err);
+  console.error("🧠 Message :", err.message);
+  console.error("📚 Stack :", err.stack);
+ return res.status(500).json({
+  message: "Erreur lors de la création du patient.",
+  debug: {
+    test: "visible",
+    message: err.message,
+    name: err.name,
+    stack: err.stack,
+  },
+});
+
 }
     console.log("✅ Patient créé avec succès dans la base de données :", user);
 
