@@ -10,6 +10,7 @@ import { OAuth2Client } from "google-auth-library";
 
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
+// 🔹 Générer un token JWT
 const signToken = (user) => {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: "7d",
@@ -19,8 +20,14 @@ const signToken = (user) => {
 const emailRegex = /^\S+@\S+\.\S+$/;
 const phoneRegex = /^7\d{8}$/;
 
-// Cloudinary config (optional)
-if (process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)) {
+// 🔹 Configuration Cloudinary (optionnelle)
+if (
+  process.env.CLOUDINARY_URL ||
+  (process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET)
+)
+{
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -29,14 +36,45 @@ if (process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.
   });
 }
 
+function getMailer() {
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    SMTP_FROM,
+  } = process.env;
+
+  if (!SMTP_USER || !SMTP_PASS) return null;
+
+  const transporter = SMTP_HOST && SMTP_PORT
+    ? nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: Number(SMTP_PORT),
+        secure: Number(SMTP_PORT) === 465,
+        auth: { user: SMTP_USER, pass: SMTP_PASS },
+      })
+    : nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: SMTP_USER, pass: SMTP_PASS },
+      });
+
+  const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
+
+  return { transporter, from };
+}
+
+
 // POST /api/auth/registerPatient (protected: medecin)
 export async function registerPatient(req, res) {
+  console.log("📥 Requête reçue pour création de patient :", req.body);
   try {
     if (!req.user || !['medecin'].includes(String(req.user.role))) {
       return res.status(403).json({ message: "Accès refusé." });
     }
 
-    const { nom, prenom, email, telephone, adresse, age, pathologie } = req.body || {};
+    const { nom, prenom, email, telephone, adresse, age, pathologie, idMedecin } = req.body || {};
+    const medecinId = idMedecin;
     if (!nom || !prenom || !email || !telephone || !idMedecin) {
       return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone, pathologie, idMedecin." });
     }
@@ -62,7 +100,7 @@ export async function registerPatient(req, res) {
       adresse: adresse || "",
       age: age || undefined,
       pathologie,
-      idMedecin,
+      medecinId: idMedecin,
       password: hashed,
       role: 'patient',
     });
@@ -95,8 +133,10 @@ export async function registerPatient(req, res) {
       user: { id: user._id, nom: user.nom, prenom: user.prenom, email: user.email, telephone: user.telephone, role: user.role },
     });
   } catch (err) {
-    return res.status(500).json({ message: "Erreur lors de la création du patient." });
-  }
+  console.error("🔥 Erreur complète lors de la création du patient :", err);
+  return res.status(500).json({ message: "Erreur lors de la création du patient." });
+}
+
 }
 
 // POST /api/auth/registerDoctor
@@ -404,18 +444,7 @@ export async function updatePhoto(req, res) {
   }
 }
 
-// Email transport 
-function getMailer() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) return null;
-  const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-  return { transporter, from: SMTP_FROM };
-}
+
 
 // POST /api/auth/forgotPassword (email only)
 export async function forgotPassword(req, res) {

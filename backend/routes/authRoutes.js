@@ -144,6 +144,7 @@ router.post("/changePassword", authMiddleware, changePassword);
 router.post("/modifyProfile", authMiddleware, modifyProfile);
 router.post("/updatePhoto", authMiddleware, updatePhoto);
 router.post("/registerPatient", authMiddleware, registerPatient);
+router.post("/registerDoctor", authMiddleware, registerDoctor);
 router.get("/logout", authMiddleware, logout);
 router.post("/forgotPassword", forgotPassword);
 router.post("/resetPassword", resetPassword);
