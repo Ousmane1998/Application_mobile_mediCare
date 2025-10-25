@@ -100,7 +100,7 @@ export async function registerPatient(req, res) {
       adresse: adresse || "",
       age: age || undefined,
       pathologie,
-      medecinId: idMedecin,
+      medecinId,
       password: hashed,
       role: 'patient',
     });
