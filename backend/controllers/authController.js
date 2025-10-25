@@ -74,7 +74,7 @@ export async function registerPatient(req, res) {
     }
 
     const { nom, prenom, email, telephone, adresse, age, pathologie } = req.body || {};
-    const medecinId = idMedecin;
+    const medecinId = req.user?.id;
     if (!nom || !prenom || !email || !telephone || !medecinId) {
       return res.status(400).json({ message: "Champs requis: nom, prenom, email, telephone, pathologie, idMedecin." });
     }
@@ -92,6 +92,10 @@ export async function registerPatient(req, res) {
 
     const defaultPassword = "medicare@123";
     const hashed = await bcrypt.hash(defaultPassword, 10);
+    console.log("✅ Données patient à créer :", {
+  nom, prenom, email, telephone, adresse, age, pathologie, medecinId
+});
+
     const user = await User.create({
       nom,
       prenom,
