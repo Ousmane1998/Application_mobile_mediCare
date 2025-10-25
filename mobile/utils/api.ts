@@ -105,7 +105,9 @@ export async function createPatient(payload: {
   email: string;
   telephone: string;
   age?: string;
+  adresse?: string;
   pathologie?: string;
+   idMedecin?: string;
 }) {
   return authFetch('/auth/registerPatient', {
     method: 'POST',

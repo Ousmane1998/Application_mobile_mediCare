@@ -11,6 +11,8 @@ export default function DoctorAddPatientScreen() {
   const [email, setEmail] = useState('');
   const [telephone, setTelephone] = useState('');
   const [age, setAge] = useState('');
+  const [adresse, setAdresse] = useState('');
+
   const [pathologie, setPathologie] = useState('Diabète');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,16 +29,31 @@ export default function DoctorAddPatientScreen() {
     if (!emailRegex.test(email)) { setError('Email invalide.'); return; }
     if (!phoneRegex.test(telephone)) { setError('Téléphone invalide (7XXXXXXXX).'); return; }
 
-    try {
-      setLoading(true);
-      await createPatient({ nom, prenom, email, telephone, age, pathologie });
-      setInfo('Patient créé avec succès.');
-      setTimeout(() => router.back(), 700);
-    } catch (e: any) {
-      setError(e?.message || "Erreur lors de l'enregistrement.");
-    } finally {
-      setLoading(false);
-    }
+  try {
+  setLoading(true);
+  const res = await createPatient({
+    nom,
+    prenom,
+    email,
+    telephone,
+    age,
+    pathologie,
+    adresse,
+  });
+
+  console.log("✅ Réponse complète du backend :", res);
+  setInfo('Patient créé avec succès.');
+  setTimeout(() => router.back(), 700);
+} catch (e: any) {
+  console.log("🔥 Erreur complète reçue :", e);
+  setError(e?.message || "Erreur lors de l'enregistrement.");
+  if (e?.debug) {
+    console.log("🧠 Détails backend :", e.debug);
+  }
+} finally {
+  setLoading(false);
+}
+
   };
 
   return (
@@ -62,6 +79,16 @@ export default function DoctorAddPatientScreen() {
         <Text style={styles.label}>Numéro de téléphone</Text>
         <TextInput style={styles.input} value={telephone} onChangeText={setTelephone} placeholder="7XXXXXXXX" keyboardType="number-pad" />
       </View>
+      <View style={styles.group}>
+  <Text style={styles.label}>Adresse</Text>
+  <TextInput
+    style={styles.input}
+    value={adresse}
+    onChangeText={setAdresse}
+    placeholder="Adresse du patient"
+  />
+</View>
+
 
       <View style={styles.group}>
         <Text style={styles.label}>Age</Text>
