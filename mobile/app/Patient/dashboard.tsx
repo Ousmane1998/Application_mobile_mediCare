@@ -111,6 +111,15 @@ export default function PatientDashboardScreen() {
           <Text style={styles.blockLine}>{unread}</Text>
         </View>
 
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+          <TouchableOpacity style={[styles.blockBtn, { flex: 1 }]} onPress={() => router.push('/Patient/measures-history')}>
+            <Text style={styles.blockBtnText}>Historique mesures</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.blockBtn, { flex: 1 }]} onPress={() => router.push('/Patient/appointments')}>
+            <Text style={styles.blockBtnText}>Mes rendez-vous</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 16 }} />
       </ScrollView>
       <NavPatient />

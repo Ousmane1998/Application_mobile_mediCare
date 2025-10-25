@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Modal } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { getProfile, getAppointments, updateAppointment, type AppointmentItem } from '../../utils/api';
 
 export default function PatientAppointmentsScreen() {
@@ -7,6 +8,11 @@ export default function PatientAppointmentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [meId, setMeId] = useState<string | null>(null);
   const [items, setItems] = useState<AppointmentItem[]>([]);
+  const [resModal, setResModal] = useState<{ open: boolean; appt: AppointmentItem | null }>({ open: false, appt: null });
+  const [selDate, setSelDate] = useState<string | null>(null);
+  const [selTime, setSelTime] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const badge = (s?: string) => {
     const k = String(s||'').toLowerCase();
@@ -21,7 +27,9 @@ export default function PatientAppointmentsScreen() {
   };
 
   const reschedule = async (a: AppointmentItem) => {
-    Alert.alert('Reprogrammer', "Cette action nécessite une UI dédiée (date/heure). Dites-moi si je l'ajoute.");
+    setResModal({ open: true, appt: a });
+    setSelDate(a.date || null);
+    setSelTime(a.heure || null);
   };
 
   const load = async () => {
@@ -59,7 +67,8 @@ export default function PatientAppointmentsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <View style={{ flex: 1 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
       <Text style={styles.title}>Rendez-vous</Text>
 
       <View style={styles.card}>
@@ -88,6 +97,67 @@ export default function PatientAppointmentsScreen() {
         ))}
       </View>
     </ScrollView>
+    <Modal visible={resModal.open} transparent animationType="fade" onRequestClose={() => setResModal({ open: false, appt: null })}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Reprogrammer le rendez-vous</Text>
+          <Text style={styles.modalLabel}>Date</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={styles.optionText}>{selDate ? new Date(selDate).toLocaleDateString() : 'Choisir une date'}</Text>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)}><Text style={[styles.action, { color: '#2563EB' }]}>Choisir</Text></TouchableOpacity>
+          </View>
+          <Text style={[styles.modalLabel, { marginTop: 8 }]}>Heure</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={styles.optionText}>{selTime || 'Choisir une heure'}</Text>
+            <TouchableOpacity onPress={() => setShowTimePicker(true)}><Text style={[styles.action, { color: '#2563EB' }]}>Choisir</Text></TouchableOpacity>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+            <TouchableOpacity onPress={() => setResModal({ open: false, appt: null })}><Text style={styles.action}>Annuler</Text></TouchableOpacity>
+            <TouchableOpacity
+              onPress={async () => {
+                if (!resModal.appt || !selDate || !selTime) return;
+                // Validation: interdit une date/heure passée
+                const candidate = new Date(`${selDate}T${selTime}:00`);
+                if (isNaN(candidate.getTime()) || candidate.getTime() < Date.now()) {
+                  Alert.alert('Date invalide', 'La date/heure choisie est passée. Veuillez choisir un créneau futur.');
+                  return;
+                }
+                try { await updateAppointment(resModal.appt._id, { date: selDate, heure: selTime }); setResModal({ open: false, appt: null }); await load(); }
+                catch (e: any) { Alert.alert('Erreur', e?.message || 'Impossible de reprogrammer'); }
+              }}
+            >
+              <Text style={[styles.action, { color: '#2563EB' }]}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+
+    <DateTimePickerModal
+      isVisible={showDatePicker}
+      mode="date"
+      minimumDate={new Date()}
+      onConfirm={(date) => {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        setSelDate(`${yyyy}-${mm}-${dd}`);
+        setShowDatePicker(false);
+      }}
+      onCancel={() => setShowDatePicker(false)}
+    />
+    <DateTimePickerModal
+      isVisible={showTimePicker}
+      mode="time"
+      onConfirm={(date) => {
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mi = String(date.getMinutes()).padStart(2, '0');
+        setSelTime(`${hh}:${mi}`);
+        setShowTimePicker(false);
+      }}
+      onCancel={() => setShowTimePicker(false)}
+    />
+    </View>
   );
 }
 
@@ -103,4 +173,38 @@ const styles = StyleSheet.create({
   action: { fontWeight: '600' },
   btn: { marginTop: 8, backgroundColor: '#2ccdd2', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   btnText: { color: '#fff' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  modalCard: { width: '100%', backgroundColor: '#fff', borderRadius: 12, padding: 16 },
+  modalTitle: { fontSize: 18, color: '#111827', marginBottom: 8 },
+  modalLabel: { color: '#6B7280', marginTop: 4 },
+  optionRow: { paddingVertical: 8, borderRadius: 8, paddingHorizontal: 8 },
+  optionRowActive: { backgroundColor: '#E5E7EB' },
+  optionText: { color: '#111827' },
+  optionTextActive: { color: '#111827', fontWeight: '600' },
+  chip: { backgroundColor: '#E5E7EB', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, marginRight: 8 },
+  chipActive: { backgroundColor: '#2ccdd2', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, marginRight: 8 },
+  chipText: { color: '#111827' },
+  chipTextActive: { color: '#fff' },
+});
+
+function next30Days() {
+  const out: Array<{ label: string; value: string }> = [];
+  const today = new Date();
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const value = `${yyyy}-${mm}-${dd}`;
+    out.push({ label: d.toLocaleDateString(), value });
+  }
+  return out;
+}
+
+const timeOptions = Array.from({ length: ((20 - 8) * 60) / 30 + 1 }, (_, i) => {
+  const minutes = 8 * 60 + i * 30;
+  const h = Math.floor(minutes / 60).toString().padStart(2, '0');
+  const m = (minutes % 60).toString().padStart(2, '0');
+  const label = `${h}:${m}`;
+  return { label, value: label } as const;
 });

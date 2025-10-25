@@ -18,6 +18,7 @@ export default function PatientMeasuresHistoryScreen() {
   const [items, setItems] = useState<any[]>([]);
   const [typeFilter, setTypeFilter] = useState<MeasureType | 'tous'>('tous');
   const [page, setPage] = useState(1);
+  const [period, setPeriod] = useState<'tout' | '7j' | '30j'>('tout');
   const pageSize = 20;
 
   const load = async () => {
@@ -45,18 +46,27 @@ export default function PatientMeasuresHistoryScreen() {
     setRefreshing(false);
   };
 
+  const withinPeriod = (d: any) => {
+    if (period === 'tout') return true;
+    const ts = new Date(d).getTime();
+    const now = Date.now();
+    const delta = period === '7j' ? 7 : 30;
+    return ts >= now - delta * 24 * 60 * 60 * 1000;
+  };
+
   const filtered = useMemo(() => {
-    if (typeFilter === 'tous') return items;
-    return items.filter(m => String(m.type).toLowerCase() === typeFilter);
-  }, [items, typeFilter]);
+    let arr = items.filter(m => withinPeriod(m.date || m.createdAt || Date.now()));
+    if (typeFilter !== 'tous') arr = arr.filter(m => String(m.type).toLowerCase() === typeFilter);
+    return arr;
+  }, [items, typeFilter, period]);
 
   const pageSlice = filtered.slice(0, page * pageSize);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    items.forEach(m => { const t = String(m.type || '').toLowerCase(); c[t] = (c[t]||0)+1; });
+    filtered.forEach(m => { const t = String(m.type || '').toLowerCase(); c[t] = (c[t]||0)+1; });
     return c;
-  }, [items]);
+  }, [filtered]);
 
   if (loading) {
     return (
@@ -71,18 +81,33 @@ export default function PatientMeasuresHistoryScreen() {
       <Text style={styles.title}>Historique des mesures</Text>
 
       <View style={styles.chartBox}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+          {(['tout','7j','30j'] as const).map(p => (
+            <TouchableOpacity key={p} onPress={() => setPeriod(p)}>
+              <View style={period === p ? styles.chipActive : styles.chip}><Text style={period === p ? styles.chipTextActive : styles.chipText}>{p.toUpperCase()}</Text></View>
+            </TouchableOpacity>
+          ))}
+        </View>
         {TYPES.map(t => {
+          const rows = filtered.filter(m => String(m.type).toLowerCase() === t.key);
+          const last = rows.slice(0, 12).reverse();
+          const values = last.map(m => Number(m.value) || 0);
+          const maxVal = Math.max(1, ...values);
           const count = counts[t.key] || 0;
-          const max = Math.max(1, ...Object.values(counts));
-          const pct = Math.round((count / max) * 100);
           return (
-            <View key={t.key} style={{ marginBottom: 8 }}>
+            <View key={t.key} style={{ marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={styles.chartLabel}>{t.label}</Text>
                 <Text style={styles.chartCount}>{count}</Text>
               </View>
-              <View style={styles.chartBarBg}>
-                <View style={[styles.chartBarFill, { width: `${pct}%` }]} />
+              <View style={styles.sparkRow}>
+                {values.length === 0 ? (
+                  <Text style={styles.chartCount}>—</Text>
+                ) : (
+                  values.map((v, i) => (
+                    <View key={i} style={[styles.sparkBar, { height: Math.max(3, Math.round((v / maxVal) * 28)) }]} />
+                  ))
+                )}
               </View>
             </View>
           );
@@ -141,4 +166,6 @@ const styles = StyleSheet.create({
   sub: { fontSize: 13, color: '#6B7280', marginTop: 2 },
   loadMore: { marginTop: 12, backgroundColor: '#E5E7EB', paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
   loadMoreText: { color: '#111827' },
+  sparkRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 30, marginTop: 6 },
+  sparkBar: { width: 6, backgroundColor: '#10B981', borderRadius: 2 },
 });
