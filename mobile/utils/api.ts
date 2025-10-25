@@ -15,16 +15,30 @@ function withApiSuffix(url: string) {
 
 export const API_URL = withApiSuffix(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000');
 
+
+
 export async function authFetch(path: string, options: RequestInit = {}) {
   const token = await AsyncStorage.getItem('authToken');
   const headers = new Headers(options.headers || {});
   headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  console.log("🌍 URL finale utilisée :", `${API_URL}${path}`);
+  console.log("🪪 Token envoyé :", token);
+  console.log("📦 Corps de la requête :", options.body);
+
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   const data = await res.json().catch(() => undefined);
-  if (!res.ok) throw new Error((data && (data.message || data.error)) || 'Erreur API');
+
+  if (!res.ok) {
+    const error: any = new Error(data?.message || 'Erreur API');
+    error.debug = data?.debug || null;
+    console.log("📥 Erreur backend complète :", data);
+    throw error;
+  }
+
   return data;
 }
+
 
 export type UserProfile = {
   _id: string;
@@ -113,6 +127,7 @@ export async function createPatient(payload: {
     method: 'POST',
     body: JSON.stringify({
       ...payload,
+      telephone: Number(payload.telephone), // ✅ Convertir en nombre
     }),
   });
 }

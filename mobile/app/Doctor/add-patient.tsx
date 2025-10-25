@@ -46,11 +46,13 @@ export default function DoctorAddPatientScreen() {
   setTimeout(() => router.back(), 700);
 } catch (e: any) {
   console.log("🔥 Erreur complète reçue :", e);
-  setError(e?.message || "Erreur lors de l'enregistrement.");
   if (e?.debug) {
     console.log("🧠 Détails backend :", e.debug);
+    alert(`Erreur serveur: ${e.debug.message}\n\n${e.debug.stack?.slice(0, 200)}...`);
   }
-} finally {
+  setError(e?.message || "Erreur lors de l'enregistrement.");
+}
+finally {
   setLoading(false);
 }
 
