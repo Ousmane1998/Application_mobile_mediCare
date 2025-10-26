@@ -1,7 +1,11 @@
+// @ts-nocheck
 // utils/sendNotification.js
 import Notification from "../models/Notification.js";
 
+let ioRef = null;
+
 export function setupSocketIO(io) {
+  ioRef = io;
   io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id);
 
@@ -26,4 +30,13 @@ export function setupSocketIO(io) {
       console.log("Socket disconnected", socket.id);
     });
   });
+}
+
+export function emitToUser(userId, event, payload) {
+  try {
+    if (!ioRef) return;
+    ioRef.to(String(userId)).emit(event, payload);
+  } catch (e) {
+    console.error('[socket] emit error', e?.message);
+  }
 }
