@@ -275,3 +275,25 @@ export async function adminDeleteUser(id: string) {
   return authFetch(`/users/${id}`, { method: 'DELETE' });
 }
 
+// Logout
+export async function logout() {
+  try {
+    await authFetch('/auth/logout', { method: 'POST' });
+  } catch (err) {
+    console.error("Erreur logout:", err);
+  } finally {
+    // Supprimer le token même si la requête échoue
+    await AsyncStorage.removeItem('authToken');
+  }
+}
+
+// Structures
+export async function getNearbyStructures(latitude: number, longitude: number, radius: number = 10) {
+  return fetch(`${API_URL}/structures/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`)
+    .then(res => res.json());
+}
+
+export async function getAllStructures() {
+  return fetch(`${API_URL}/structures`)
+    .then(res => res.json());
+}

@@ -39,17 +39,21 @@ export default function Header() {
 
       {/* Icônes à droite */}
       <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={() => router.push('/User/notifications')}>
+        <TouchableOpacity onPress={() => {
+          const role = profile?.role;
+          if (role === 'medecin') return router.push('/Doctor/notifications' as any);
+          if (role === 'patient') return router.push('/Patient/notifications' as any);
+          if (role === 'admin') return router.push('/Admin/notifications' as any);
+        }}>
           <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon} />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => {
             const role = profile?.role;
-            if (role === 'medecin') return router.push({ pathname: '/Doctor' } as any);
-            if (role === 'patient') return router.push({ pathname: '/Patient' } as any);
-            if (role === 'admin') return router.push({ pathname: '/Admin' } as any);
-            return router.push({ pathname: '/User' } as any);
+            if (role === 'medecin') return router.push('/Doctor/profile' as any);
+            if (role === 'patient') return router.push('/Patient/profile' as any);
+            if (role === 'admin') return router.push('/Admin/profile' as any);
           }}
         >
           <Ionicons name="person-circle-outline" size={26} color="black" style={styles.icon} />
