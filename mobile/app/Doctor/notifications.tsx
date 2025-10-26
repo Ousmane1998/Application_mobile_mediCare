@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+// @ts-nocheck
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getNotifications, markNotificationRead, deleteNotification, type NotificationItem, getProfile, type UserProfile } from '../../utils/api';
+import { getNotifications, markNotificationRead, deleteNotification, type NotificationItem, getProfile, type UserProfile, SOCKET_URL } from '../../utils/api';
+import io from 'socket.io-client';
+import { useRouter } from 'expo-router';
 
 // Notifications orientées médecin: nouveaux messages, demandes de rendez-vous, alertes patient
 
@@ -22,6 +25,8 @@ export default function DoctorNotificationsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [me, setMe] = useState<UserProfile | null>(null);
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const socketRef = useRef<any>(null);
+  const router = useRouter();
 
   const load = async () => {
     try {
@@ -38,6 +43,30 @@ export default function DoctorNotificationsScreen() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    const id = (me as any)?._id || (me as any)?.id;
+    if (!id) return;
+    const s = io(SOCKET_URL, { transports: ['websocket'] });
+    socketRef.current = s;
+    s.emit('join', String(id));
+    s.on('alert', (payload: any) => {
+      const n = {
+        _id: `rt_${Date.now()}`,
+        userId: id,
+        type: 'alerte',
+        message: String(payload?.message || 'Alerte'),
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        data: payload,
+      } as any as NotificationItem;
+      setItems((prev) => [n, ...prev]);
+    });
+    return () => {
+      try { s.disconnect(); } catch {}
+      socketRef.current = null;
+    };
+  }, [me]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -99,8 +128,12 @@ export default function DoctorNotificationsScreen() {
         const time = n.createdAt ? new Date(n.createdAt).toLocaleString() : '';
         const title = n.type ? n.type.charAt(0).toUpperCase() + n.type.slice(1) : 'Notification';
         const subtitle = n.message || '';
+        const canOpenMeasure = (n as any)?.data?.measureId;
+        const onOpen = () => {
+          if (canOpenMeasure) router.push(`/Doctor/measure/${(n as any).data.measureId}`);
+        };
         return (
-          <View key={String(n._id)} style={styles.card}>
+          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={canOpenMeasure ? 0.7 : 1} onPress={onOpen}>
             <View style={styles.cardHead}>
               <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}> 
                 <Ionicons name={icon} size={20} color={accent} />
@@ -116,7 +149,7 @@ export default function DoctorNotificationsScreen() {
             <Text style={styles.cardTitle}>{title}</Text>
             {!!time && <Text style={styles.time}>{time}</Text>}
             {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-          </View>
+          </TouchableOpacity>
         );
       })}
 

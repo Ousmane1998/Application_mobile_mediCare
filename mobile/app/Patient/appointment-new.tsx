@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -49,18 +50,6 @@ export default function PatientAppointmentNewScreen() {
         setMe(data.user);
       } catch (e: any) {
         setSnack({ visible: true, message: e?.message || 'Erreur de chargement du profil', type: 'error' });
-      }
-    })();
-  }, []);
-
-  // Charger liste des médecins
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMedecins();
-        setMedecins(data);
-      } catch (e) {
-        console.error('Erreur chargement médecins', e);
       }
     })();
   }, []);

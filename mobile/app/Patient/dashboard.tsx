@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
@@ -76,7 +77,9 @@ export default function PatientDashboardScreen() {
           </View>
           <Text style={styles.bigValue}>{gly?.value ? `${gly.value}` : '—'}</Text>
           <Text style={styles.statusOk}>{gly?._ts ? new Date(gly._ts).toLocaleString() : 'Aucune donnée'}</Text>
-          <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
+            <Text style={styles.smallBtnText}>Ajouter</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.card}>

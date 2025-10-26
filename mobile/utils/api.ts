@@ -14,6 +14,7 @@ function withApiSuffix(url: string) {
 }
 
 export const API_URL = withApiSuffix(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000');
+export const SOCKET_URL = API_URL.replace(/\/api$/, '');
 
 
 
@@ -93,6 +94,10 @@ export async function addMeasure(payload: { patientId: string; type: MeasureType
 
 export async function getMeasuresHistory(patientId: string) {
   return authFetch(`/measures/history/${encodeURIComponent(patientId)}`);
+}
+
+export async function getMeasureById(id: string) {
+  return authFetch(`/measures/${encodeURIComponent(id)}`);
 }
 
 // Appointments
