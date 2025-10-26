@@ -17,37 +17,45 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 // Récupérer les structures via Overpass API (OpenStreetMap)
 const getStructuresFromOverpass = async (lat, lng, radius = 10000) => {
   try {
-    const query = `
-      [bbox:${lat - 0.1},${lng - 0.1},${lat + 0.1},${lng + 0.1}];
-      (
-        node["amenity"="hospital"];
-        node["amenity"="pharmacy"];
-        node["amenity"="clinic"];
-        way["amenity"="hospital"];
-        way["amenity"="pharmacy"];
-        way["amenity"="clinic"];
-      );
-      out center;
-    `;
+    console.log(`🔍 Requête Overpass pour: ${lat}, ${lng}`);
+    
+    // Utiliser une bbox plus grande
+    const bbox = `${lat - 0.15},${lng - 0.15},${lat + 0.15},${lng + 0.15}`;
+    
+    const query = `[bbox:${bbox}];(node["amenity"="hospital"];node["amenity"="pharmacy"];node["amenity"="clinic"];way["amenity"="hospital"];way["amenity"="pharmacy"];way["amenity"="clinic"];);out center;`;
 
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
+    const url = `https://overpass-api.de/api/interpreter`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      body: query,
+      timeout: 30000
+    });
+
+    if (!response.ok) {
+      console.error(`❌ Overpass API error: ${response.status}`);
+      return [];
+    }
+
     const data = await response.json();
+    console.log(`📍 Éléments trouvés: ${data.elements?.length || 0}`);
 
     const structures = [];
     
-    if (data.elements) {
+    if (data.elements && Array.isArray(data.elements)) {
       data.elements.forEach(element => {
-        let lat = element.lat;
-        let lng = element.lon;
+        if (!element.tags) return;
+
+        let elemLat = element.lat;
+        let elemLng = element.lon;
         
         // Pour les ways, utiliser le centre
         if (element.center) {
-          lat = element.center.lat;
-          lng = element.center.lon;
+          elemLat = element.center.lat;
+          elemLng = element.center.lon;
         }
 
-        const tags = element.tags || {};
+        const tags = element.tags;
         let type = 'Hopital';
         
         if (tags.amenity === 'pharmacy') {
@@ -56,21 +64,24 @@ const getStructuresFromOverpass = async (lat, lng, radius = 10000) => {
           type = 'Poste de santé';
         }
 
+        const distance = calculateDistance(lat, lng, elemLat, elemLng);
+
         structures.push({
           nom: tags.name || `${type} sans nom`,
           type: type,
-          lat: lat,
-          lng: lng,
-          adresse: tags['addr:full'] || tags['addr:street'] || 'Adresse non disponible',
-          tel: tags.phone || 'Non disponible',
-          distance: calculateDistance(lat, lng, lat, lng)
+          lat: elemLat,
+          lng: elemLng,
+          adresse: tags['addr:full'] || tags['addr:street'] || tags['addr:city'] || 'Adresse non disponible',
+          tel: tags.phone || tags.contact?.phone || 'Non disponible',
+          distance: distance
         });
       });
     }
 
+    console.log(`✅ Structures parsées: ${structures.length}`);
     return structures;
   } catch (err) {
-    console.error("❌ Erreur Overpass API:", err);
+    console.error("❌ Erreur Overpass API:", err.message);
     return [];
   }
 };
@@ -92,8 +103,14 @@ export const getNearbyStructures = async (req, res) => {
     // Récupérer les structures via Overpass API
     const allStructures = await getStructuresFromOverpass(lat, lng, maxRadius * 1000);
 
-    // Calculer la distance et filtrer
+    console.log(`📊 Total structures reçues: ${allStructures.length}`);
+
+    // Filtrer et trier par distance
     const nearbyStructures = allStructures
+      .filter(s => {
+        const dist = calculateDistance(lat, lng, s.lat, s.lng);
+        return dist <= maxRadius;
+      })
       .map(s => ({
         nom: s.nom,
         type: s.type,
@@ -103,11 +120,10 @@ export const getNearbyStructures = async (req, res) => {
         tel: s.tel,
         distance: calculateDistance(lat, lng, s.lat, s.lng)
       }))
-      .filter(s => s.distance <= maxRadius)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 20); // Limiter à 20 résultats
 
-    console.log(`✅ Structures trouvées: ${nearbyStructures.length}`);
+    console.log(`✅ Structures filtrées: ${nearbyStructures.length}`);
 
     res.json({
       message: "Structures trouvées",
