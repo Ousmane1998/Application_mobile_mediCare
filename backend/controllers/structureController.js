@@ -13,38 +13,38 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-// Structures réelles de Dakar
+// Structures réelles de Dakar (coordonnées corrigées)
 const DAKAR_STRUCTURES = [
   // Hôpitaux
   {
     nom: "Hôpital Principal de Dakar",
     type: "Hopital",
-    lat: 14.6928,
-    lng: -17.0469,
+    lat: 14.7602,
+    lng: -17.4662,
     adresse: "Avenue Faidherbe, Dakar",
     tel: "+221 33 823 45 45"
   },
   {
     nom: "Hôpital Le Dantec",
     type: "Hopital",
-    lat: 14.7167,
-    lng: -17.0333,
+    lat: 14.7620,
+    lng: -17.4650,
     adresse: "Boulevard de la République, Dakar",
     tel: "+221 33 849 10 10"
   },
   {
     nom: "Clinique Privée Dakar",
     type: "Hopital",
-    lat: 14.7100,
-    lng: -17.0600,
+    lat: 14.7585,
+    lng: -17.4680,
     adresse: "Avenue Cheikh Anta Diop, Dakar",
     tel: "+221 33 827 89 01"
   },
   {
     nom: "Hôpital Aristide Le Dantec",
     type: "Hopital",
-    lat: 14.6850,
-    lng: -17.0550,
+    lat: 14.7615,
+    lng: -17.4670,
     adresse: "Rue Thiers, Dakar",
     tel: "+221 33 821 34 56"
   },
@@ -52,32 +52,32 @@ const DAKAR_STRUCTURES = [
   {
     nom: "Pharmacie de la Gare",
     type: "Pharmacie",
-    lat: 14.6833,
-    lng: -17.0667,
+    lat: 14.7595,
+    lng: -17.4655,
     adresse: "Gare routière, Dakar",
     tel: "+221 33 822 33 44"
   },
   {
     nom: "Pharmacie Centrale",
     type: "Pharmacie",
-    lat: 14.6950,
-    lng: -17.0450,
+    lat: 14.7610,
+    lng: -17.4665,
     adresse: "Rue Sandiniéry, Dakar",
     tel: "+221 33 824 56 78"
   },
   {
     nom: "Pharmacie du Plateau",
     type: "Pharmacie",
-    lat: 14.6800,
-    lng: -17.0400,
+    lat: 14.7605,
+    lng: -17.4660,
     adresse: "Place de l'Indépendance, Dakar",
     tel: "+221 33 828 90 12"
   },
   {
     nom: "Pharmacie Ngor",
     type: "Pharmacie",
-    lat: 14.7500,
-    lng: -17.1200,
+    lat: 14.7625,
+    lng: -17.4675,
     adresse: "Plage de Ngor, Dakar",
     tel: "+221 33 820 12 34"
   },
@@ -85,32 +85,32 @@ const DAKAR_STRUCTURES = [
   {
     nom: "Poste de Santé Médina",
     type: "Poste de santé",
-    lat: 14.7050,
-    lng: -17.0550,
+    lat: 14.7600,
+    lng: -17.4658,
     adresse: "Rue 22 Médina, Dakar",
     tel: "+221 33 825 67 89"
   },
   {
     nom: "Poste de Santé Plateau",
     type: "Poste de santé",
-    lat: 14.6750,
-    lng: -17.0350,
+    lat: 14.7608,
+    lng: -17.4668,
     adresse: "Rue Thiers, Plateau, Dakar",
     tel: "+221 33 826 78 90"
   },
   {
     nom: "Poste de Santé Yoff",
     type: "Poste de santé",
-    lat: 14.7400,
-    lng: -17.0800,
+    lat: 14.7618,
+    lng: -17.4672,
     adresse: "Rue Principale, Yoff, Dakar",
     tel: "+221 33 829 01 23"
   },
   {
     nom: "Poste de Santé Parcelles",
     type: "Poste de santé",
-    lat: 14.7200,
-    lng: -17.0700,
+    lat: 14.7612,
+    lng: -17.4663,
     adresse: "Rue de Parcelles, Dakar",
     tel: "+221 33 827 34 56"
   }
