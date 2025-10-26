@@ -17,6 +17,7 @@ import { Ionicons, MaterialIcons, Entypo } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { getProfile, getMessages, sendMessage } from "../../utils/api";
+import { useLocalSearchParams } from "expo-router";
 
 type RootStackParamList = {
   Chat: { patientId: string; patientName: string };
@@ -41,7 +42,10 @@ type Message = {
 };
 
 const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { patientId, patientName } = route?.params || { patientId: "", patientName: "Patient" };
+  const searchParams = useLocalSearchParams();
+  const patientId = (searchParams?.patientId as string) || (route?.params?.patientId as string) || "";
+  const patientName = (searchParams?.patientName as string) || (route?.params?.patientName as string) || "Patient";
+  
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [doctor, setDoctor] = useState<any>(null);
