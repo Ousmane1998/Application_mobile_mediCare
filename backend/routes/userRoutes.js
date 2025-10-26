@@ -4,6 +4,7 @@ import {
   listMyPatients,
   listPatients,
   listMedecins,
+  getUser,
   updateUser,
   archiveUser,
   getStats,
@@ -29,6 +30,9 @@ router.get("/patients", listPatients);
 
 // Liste médecins
 router.get("/medecins", listMedecins);
+
+// Récupérer un utilisateur par ID
+router.get("/:id", getUser);
 
 // Modifier un utilisateur
 router.put("/:id", updateUser);

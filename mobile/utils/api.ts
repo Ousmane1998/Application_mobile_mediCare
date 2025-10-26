@@ -63,6 +63,7 @@ export type UserProfile = {
   specialite?: string;
   hopital?: string;
   photo?: string;
+  medecinId?: string;
 };
 
 // Profile
@@ -138,19 +139,35 @@ export async function updateAppointment(id: string, payload: Partial<{ statut: '
 }
 
 // Messages
-export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }) {
-  return authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
+export type MessageItem = {
+  _id: string;
+  senderId: string;
+  receiverId: string;
+  text: string;
+  isRead?: boolean;
+  createdAt: string;
+};
+
+export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }): Promise<MessageItem> {
+  const response = await authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
+  return response.data || response;
 }
 
-export async function getMessages(params?: Record<string, string>) {
-  const qs = params ? ('?' + new URLSearchParams(params).toString()) : '';
-  return authFetch(`/messages${qs}`);
+export async function getMessages(user1: string, user2: string): Promise<MessageItem[]> {
+  return authFetch(`/messages?user1=${encodeURIComponent(user1)}&user2=${encodeURIComponent(user2)}`);
 }
-//list medecins
+
+// List medecins
 export async function getMedecins() {
   return authFetch('/users/medecins');
 }
-// utils/api.tsx (ou où est ta fonction)
+
+// Get medecin by ID
+export async function getMedecinById(medecinId: string) {
+  return authFetch(`/users/${medecinId}`);
+}
+
+// Availability
 export async function getAvailabilityByMedecin(medecinId: string) {
   return authFetch(`/availability?medecinId=${medecinId}`);
 }
@@ -167,9 +184,6 @@ export async function deleteAvailabilityApi(id: string) {
   return authFetch(`/availability/${id}`, { method: 'DELETE' });
 }
 
-
-
-
 // Create Patients 
 export async function createPatient(payload: {
   nom: string;
@@ -179,13 +193,13 @@ export async function createPatient(payload: {
   age?: string;
   adresse?: string;
   pathologie?: string;
-   idMedecin?: string;
+  idMedecin?: string;
 }) {
   return authFetch('/auth/registerPatient', {
     method: 'POST',
     body: JSON.stringify({
       ...payload,
-      telephone: Number(payload.telephone), // ✅ Convertir en nombre
+      telephone: Number(payload.telephone),
     }),
   });
 }
@@ -193,9 +207,8 @@ export async function createPatient(payload: {
 // Notifications
 export type NotificationItem = {
   _id: string;
-  id?: string;
   userId: string;
-  type?: 'message' | 'rdv' | 'alerte' | string;
+  type: string;
   message?: string;
   isRead?: boolean;
   data?: any;

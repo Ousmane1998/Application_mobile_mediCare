@@ -44,6 +44,20 @@ export const listMedecins = async (req, res) => {
   }
 };
 
+// Récupérer un utilisateur par ID
+export const getUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    res.status(200).json({ user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Modifier un utilisateur
 export const updateUser = async (req, res) => {
   try {
