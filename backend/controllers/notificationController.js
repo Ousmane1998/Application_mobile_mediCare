@@ -25,9 +25,30 @@ export const getNotifications = async (req, res) => {
     console.log("✅ [getNotifications] Notifications trouvées :", notifications.length);
     console.log("📋 [getNotifications] Détails :", JSON.stringify(notifications, null, 2));
     
+    // Afficher aussi les types de notifications
+    const typeCount = {};
+    notifications.forEach(n => {
+      typeCount[n.type] = (typeCount[n.type] || 0) + 1;
+    });
+    console.log("📊 [getNotifications] Résumé par type :", typeCount);
+    
     res.json(notifications);
   } catch (err) {
     console.error("❌ [getNotifications] Erreur :", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getAllNotifications = async (req, res) => {
+  try {
+    console.log("📬 [getAllNotifications] Récupération de TOUTES les notifications");
+    
+    const notifications = await Notification.find().sort({ createdAt: -1 }).limit(50);
+    console.log("✅ [getAllNotifications] Total notifications :", notifications.length);
+    
+    res.json(notifications);
+  } catch (err) {
+    console.error("❌ [getAllNotifications] Erreur :", err.message);
     res.status(500).json({ message: err.message });
   }
 };
