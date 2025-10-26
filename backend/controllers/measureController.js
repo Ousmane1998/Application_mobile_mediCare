@@ -44,9 +44,18 @@ export const addMeasure = async (req, res) => {
 };
 
 export const getHistory = async (req, res) => {
-  const { patientId } = req.params;
-  const measures = await Measure.find({ patientId })
-    .sort({ date: -1 })
-    .limit(100);
-  res.json({ measures });
+  try {
+    const { patientId } = req.params;
+    console.log("📥 [getHistory] Récupération des mesures pour patientId :", patientId);
+    
+    const measures = await Measure.find({ patientId })
+      .sort({ date: -1 })
+      .limit(100);
+    
+    console.log("✅ [getHistory] Mesures trouvées :", measures.length);
+    res.json(measures);  // ✅ Retourner directement l'array
+  } catch (err) {
+    console.error("❌ [getHistory] Erreur :", err.message);
+    res.status(500).json({ message: err.message });
+  }
 };

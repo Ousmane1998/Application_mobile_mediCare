@@ -22,12 +22,23 @@ export const createAdvice = async (req, res) => {
 export const getAdvice = async (req, res) => {
   try {
     const { patientId } = req.query;
-    const advices = await Advice.find()
-  .populate('medecinId', 'nom prenom email') // ou les champs que tu veux afficher
-  .populate('patientId', 'nom prenom email');
+    console.log("📥 [getAdvice] Récupération des conseils pour patientId :", patientId);
+    
+    if (!patientId) {
+      console.log("❌ [getAdvice] patientId manquant");
+      return res.status(400).json({ message: "patientId est requis" });
+    }
+    
+    // ✅ Filtrer par patientId
+    const advices = await Advice.find({ patientId })
+      .populate('medecinId', 'nom prenom email')
+      .populate('patientId', 'nom prenom email')
+      .sort({ createdAt: -1 });
 
+    console.log("✅ [getAdvice] Conseils trouvés :", advices.length);
     res.json(advices);
   } catch (err) {
+    console.error("❌ [getAdvice] Erreur :", err.message);
     res.status(500).json({ message: err.message });
   }
 };
