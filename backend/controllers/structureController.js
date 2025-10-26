@@ -213,12 +213,18 @@ export const getNearbyStructures = async (req, res) => {
       distance: calculateDistance(lat, lng, s.lat, s.lng)
     }));
 
+    // Afficher toutes les distances pour déboguer
+    console.log(`📍 Distances calculées:`);
+    structuresAvecDistance.forEach(s => {
+      console.log(`  - ${s.nom}: ${s.distance.toFixed(2)} km`);
+    });
+
     // Filtrer par rayon et trier par distance
     const nearbyStructures = structuresAvecDistance
       .filter(s => s.distance <= maxRadius)
       .sort((a, b) => a.distance - b.distance);
 
-    console.log(`✅ Structures trouvées: ${nearbyStructures.length}`);
+    console.log(`✅ Structures trouvées (rayon ${maxRadius}km): ${nearbyStructures.length}`);
 
     res.json({
       message: "Structures trouvées",

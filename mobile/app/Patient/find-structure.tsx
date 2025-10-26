@@ -28,8 +28,14 @@ export default function FindStructureScreen() {
 
   const loadStructures = async (lat: number, lng: number, rad: number) => {
     try {
+      console.log(`📍 Chargement structures: lat=${lat}, lng=${lng}, radius=${rad}km`);
       const response = await getNearbyStructures(lat, lng, rad);
+      console.log(`📊 Réponse API:`, response);
       if (response.structures && Array.isArray(response.structures)) {
+        console.log(`✅ ${response.structures.length} structures reçues`);
+        response.structures.forEach((s: Structure) => {
+          console.log(`  - ${s.nom}: ${s.distance?.toFixed(2) || '?'} km`);
+        });
         setStructures(response.structures);
       } else {
         setStructures([]);
