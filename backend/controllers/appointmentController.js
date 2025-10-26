@@ -2,6 +2,7 @@
 // controllers/appointmentController.js
 import Appointment from "../models/Appointment.js";
 import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 
 export const createAppointment = async (req, res) => {
   try {
@@ -18,6 +19,26 @@ export const createAppointment = async (req, res) => {
       typeConsultation,
       statut: "en_attente",
     });
+
+    console.log("📅 [createAppointment] Rendez-vous créé :", appointment._id);
+
+    // 📬 Créer une notification pour le patient
+    try {
+      const dateObj = new Date(date);
+      const dateStr = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', month: 'long', day: 'numeric' });
+      
+      await Notification.create({
+        userId: patientId,
+        type: 'rdv',
+        message: `Rendez-vous confirmé pour le ${dateStr}${heure ? ' à ' + heure : ''}`,
+        data: { appointmentId: appointment._id, medecinId },
+        isRead: false,
+      });
+      console.log("✅ [createAppointment] Notification créée pour patient :", patientId);
+    } catch (notifErr) {
+      console.error("⚠️ [createAppointment] Erreur création notification :", notifErr.message);
+    }
+
     res.status(201).json({ message: "Rendez-vous créé", appointment });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -54,6 +75,30 @@ export const updateAppointment = async (req, res) => {
 
     if (!appointment) {
       return res.status(404).json({ message: "Rendez-vous non trouvé" });
+    }
+
+    console.log("📅 [updateAppointment] Rendez-vous mis à jour :", id, "Statut :", statut);
+
+    // 📬 Créer une notification si le statut change
+    if (statut) {
+      try {
+        const statusMessages = {
+          'confirme': 'Votre rendez-vous a été confirmé',
+          'annule': 'Votre rendez-vous a été annulé',
+          'en_attente': 'Votre rendez-vous est en attente de confirmation',
+        };
+
+        await Notification.create({
+          userId: appointment.patientId,
+          type: 'rdv',
+          message: statusMessages[statut] || 'Mise à jour du rendez-vous',
+          data: { appointmentId: appointment._id, medecinId: appointment.medecinId },
+          isRead: false,
+        });
+        console.log("✅ [updateAppointment] Notification créée pour patient :", appointment.patientId);
+      } catch (notifErr) {
+        console.error("⚠️ [updateAppointment] Erreur création notification :", notifErr.message);
+      }
     }
 
     res.status(200).json({

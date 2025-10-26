@@ -1,6 +1,7 @@
 // @ts-nocheck
 // controllers/messageController.js
 import Message from "../models/Message.js";
+import Notification from "../models/Notification.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -13,6 +14,23 @@ export const sendMessage = async (req, res) => {
       isRead: isRead || false,  // optionnel, par défaut false
       createdAt: createdAt || Date.now(), // optionnel, par défaut date actuelle
     });
+
+    console.log("📨 [sendMessage] Message créé :", message._id);
+
+    // 📬 Créer une notification pour le destinataire
+    try {
+      await Notification.create({
+        userId: receiverId,
+        type: 'message',
+        message: `Nouveau message: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+        data: { messageId: message._id, senderId },
+        isRead: false,
+      });
+      console.log("✅ [sendMessage] Notification créée pour :", receiverId);
+    } catch (notifErr) {
+      console.error("⚠️ [sendMessage] Erreur création notification :", notifErr.message);
+      // Continuer même si la notification échoue
+    }
 
     res.status(201).json({ message: "Message envoyé", data: message });
   } catch (err) {
