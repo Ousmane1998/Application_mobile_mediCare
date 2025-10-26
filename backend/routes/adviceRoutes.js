@@ -45,7 +45,19 @@ import { createAdvice, getAdvice } from "../controllers/adviceController.js";
 
 const router = express.Router();
 
+// POST pour créer un conseil
 router.post("/", createAdvice);
+
+// GET / - récupérer tous les conseils (sans paramètre)
 router.get("/", getAdvice);
+
+// GET /:patientId - récupérer les conseils d'un patient spécifique
+router.get("/:patientId", (req, res, next) => {
+  // Vérifier que ce n'est pas une route spéciale
+  if (!req.params.patientId || req.params.patientId === '') {
+    return next();
+  }
+  getAdvice(req, res);
+});
 
 export default router;

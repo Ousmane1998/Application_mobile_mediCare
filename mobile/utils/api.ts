@@ -18,25 +18,35 @@ export const API_URL = withApiSuffix(process.env.EXPO_PUBLIC_API_URL || 'http://
 
 
 export async function authFetch(path: string, options: RequestInit = {}) {
-  const token = await AsyncStorage.getItem('authToken');
-  const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  console.log("🌍 URL finale utilisée :", `${API_URL}${path}`);
-  console.log("🪪 Token envoyé :", token);
-  console.log("📦 Corps de la requête :", options.body);
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    const headers = new Headers(options.headers || {});
+    headers.set('Content-Type', 'application/json');
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    console.log("🌍 URL finale utilisée :", `${API_URL}${path}`);
+    console.log("🪪 Token envoyé :", token);
+    console.log("📦 Corps de la requête :", options.body);
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const data = await res.json().catch(() => undefined);
+    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    console.log("📊 Statut réponse :", res.status, res.statusText);
+    
+    const data = await res.json().catch(() => undefined);
+    console.log("📥 Données reçues :", data);
 
-  if (!res.ok) {
-    const error: any = new Error(data?.message || 'Erreur API');
-    error.debug = data?.debug || null;
-    console.log("📥 Erreur backend complète :", data);
-    throw error;
+    if (!res.ok) {
+      const errorMessage = data?.message || data?.error || `Erreur HTTP ${res.status}`;
+      const error: any = new Error(errorMessage);
+      error.debug = data?.debug || null;
+      error.status = res.status;
+      console.log("❌ Erreur backend complète :", data);
+      throw error;
+    }
+
+    return data;
+  } catch (err: any) {
+    console.error("❌ Erreur authFetch :", err.message);
+    throw err;
   }
-
-  return data;
 }
 
 
