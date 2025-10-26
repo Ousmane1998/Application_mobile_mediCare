@@ -41,13 +41,22 @@ type Message = {
 };
 
 const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { patientId, patientName } = route.params;
+  const { patientId, patientName } = route?.params || { patientId: "", patientName: "Patient" };
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [doctor, setDoctor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList<Message> | null>(null);
+
+  // Si pas de patientId, afficher une erreur
+  if (!patientId) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ fontSize: 16, color: "#EF4444" }}>Erreur: Patient non sélectionné</Text>
+      </View>
+    );
+  }
 
   // Charger le profil du médecin et les messages
   useEffect(() => {

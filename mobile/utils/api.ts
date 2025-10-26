@@ -167,6 +167,21 @@ export async function getMedecinById(medecinId: string) {
   return authFetch(`/users/${medecinId}`);
 }
 
+// Get my patients (for doctor)
+export async function listMyPatients(): Promise<Patient[]> {
+  return authFetch('/users/my-patients');
+}
+
+export type Patient = {
+  _id: string;
+  nom: string;
+  prenom: string;
+  email?: string;
+  photo?: string;
+  pathologie?: string;
+  telephone?: string;
+};
+
 // Availability
 export async function getAvailabilityByMedecin(medecinId: string) {
   return authFetch(`/availability?medecinId=${medecinId}`);

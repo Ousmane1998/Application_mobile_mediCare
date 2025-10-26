@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { getProfile } from "../../utils/api";
+import { getProfile, listMyPatients, Patient } from "../../utils/api";
 
 type RootStackParamList = {
   Messages: undefined;
@@ -21,15 +21,6 @@ type MessagesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList
 
 type Props = {
   navigation: MessagesScreenNavigationProp;
-};
-
-type Patient = {
-  _id: string;
-  nom: string;
-  prenom: string;
-  email?: string;
-  photo?: string;
-  pathologie?: string;
 };
 
 const MessagesScreen: React.FC<Props> = ({ navigation }) => {
@@ -47,12 +38,10 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
         setDoctor(user);
         console.log("👨‍⚕️ Médecin :", user._id);
 
-        // TODO: Créer un endpoint pour récupérer les patients du médecin
-        // Pour maintenant, on va afficher un message
-        console.log("📋 Patients du médecin :", user._id);
-        
-        // Exemple de patients (à remplacer par un appel API)
-        setPatients([]);
+        // Récupérer les patients du médecin
+        const patientsData = await listMyPatients();
+        console.log("📋 Patients du médecin :", patientsData.length);
+        setPatients(patientsData);
       } catch (err: any) {
         console.error("❌ Erreur chargement :", err.message);
       } finally {
