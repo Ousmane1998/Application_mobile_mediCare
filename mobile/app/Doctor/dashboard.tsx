@@ -19,6 +19,24 @@ export default function DoctorDashboardScreen() {
   const [pathologies, setPathologies] = useState<Array<{ name: string; count: number }>>([]);
   const [alertsFilter, setAlertsFilter] = useState<'Toutes' | '24h' | '7j'>('Toutes');
   const [alertsType, setAlertsType] = useState<'Tous' | 'Messages' | 'Rendez-vous' | 'Alertes'>('Tous');
+  
+  const filteredPatients = useMemo(() => {
+    // Utiliser alertsType pour filtrer les patients (au lieu de patientFilter)
+    if (alertsType === 'Tous') return patients;
+    
+    const patientIds = new Set<string>();
+    
+    if (alertsType === 'Messages') {
+      messages.forEach(m => patientIds.add(m.userId));
+    } else if (alertsType === 'Rendez-vous') {
+      appointments.forEach(a => patientIds.add(a.userId));
+    } else if (alertsType === 'Alertes') {
+      alerts.forEach(a => patientIds.add(a.userId));
+    }
+    
+    return patients.filter(p => patientIds.has(p._id));
+  }, [patients, messages, appointments, alerts, alertsType]);
+  
   const filteredAlerts = useMemo(() => {
     if (!alerts?.length) return [] as NotificationItem[];
     const now = Date.now();
@@ -178,43 +196,6 @@ export default function DoctorDashboardScreen() {
               </View>
             ))}
 
-            {messages.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Messages</Text>
-                  <TouchableOpacity onPress={() => router.push('/Doctor/messages' as any)}>
-                    <Text style={styles.link}>Voir tout</Text>
-                  </TouchableOpacity>
-                </View>
-                {messages.map((n, i) => (
-                  <View key={(n._id || i).toString()} style={styles.alertItem}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.itemName}>Message</Text>
-                      {!!n.message && <Text style={styles.itemSub}>{n.message}</Text>}
-                    </View>
-                    <Ionicons name="chatbubbles-outline" size={24} color="#2ccdd2" />
-                  </View>
-                ))}
-              </>
-            )}
-
-            {appointments.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Rendez-vous</Text>
-                </View>
-                {appointments.map((n, i) => (
-                  <View key={(n._id || i).toString()} style={styles.alertItem}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.itemName}>Rendez-vous</Text>
-                      {!!n.message && <Text style={styles.itemSub}>{n.message}</Text>}
-                    </View>
-                    <Ionicons name="calendar-outline" size={24} color="#10B981" />
-                  </View>
-                ))}
-              </>
-            )}
-
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Mes Patients</Text>
               <TouchableOpacity onPress={() => router.push('/Doctor/my-patients' as any)}>
@@ -222,7 +203,7 @@ export default function DoctorDashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            {patients.slice(0, 5).map((p) => (
+            {filteredPatients.slice(0, 5).map((p) => (
               <View key={p._id} style={styles.patientItem}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemName}>{p.prenom} {p.nom}</Text>
