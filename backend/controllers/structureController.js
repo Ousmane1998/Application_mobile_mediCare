@@ -190,7 +190,7 @@ const getStructuresFromOverpass = async (lat, lng, radius = 10000) => {
 
 export const getNearbyStructures = async (req, res) => {
   try {
-    const { latitude, longitude, radius = 10 } = req.query;
+    const { latitude, longitude } = req.query;
 
     if (!latitude || !longitude) {
       return res.status(400).json({ message: "Coordonnées manquantes" });
@@ -198,9 +198,8 @@ export const getNearbyStructures = async (req, res) => {
 
     const lat = parseFloat(latitude);
     const lng = parseFloat(longitude);
-    const maxRadius = parseFloat(radius);
 
-    console.log(`🔍 Recherche structures près de: ${lat}, ${lng} (rayon: ${maxRadius}km)`);
+    console.log(`🔍 Recherche structures près de: ${lat}, ${lng}`);
 
     // Calculer la distance pour chaque structure
     const structuresAvecDistance = DAKAR_STRUCTURES.map(s => ({
@@ -213,11 +212,9 @@ export const getNearbyStructures = async (req, res) => {
       distance: calculateDistance(lat, lng, s.lat, s.lng)
     }));
 
-    // Filtrer par rayon et trier par distance
+    // Trier par distance (les plus proches en premier)
     const nearbyStructures = structuresAvecDistance
-      .filter(s => s.distance <= maxRadius)
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 20);
+      .sort((a, b) => a.distance - b.distance);
 
     console.log(`✅ Structures trouvées: ${nearbyStructures.length}`);
 
