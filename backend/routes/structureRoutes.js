@@ -1,5 +1,5 @@
 import express from "express";
-import { getNearbyStructures, getAllStructures } from "../controllers/structureController.js";
+import { getNearbyStructures } from "../controllers/structureController.js";
 
 const router = express.Router();
 
@@ -12,7 +12,7 @@ const router = express.Router();
  * /api/structures/nearby:
  *   get:
  *     tags: [Structure]
- *     summary: Récupérer les structures proches
+ *     summary: Récupérer les structures proches via OpenStreetMap
  *     parameters:
  *       - in: query
  *         name: latitude
@@ -32,17 +32,8 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Structures trouvées
- *
- * /api/structures:
- *   get:
- *     tags: [Structure]
- *     summary: Récupérer toutes les structures
- *     responses:
- *       200:
- *         description: Toutes les structures
  */
 
 router.get("/nearby", getNearbyStructures);
-router.get("/", getAllStructures);
 
 export default router;

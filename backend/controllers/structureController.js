@@ -1,5 +1,5 @@
 // @ts-nocheck
-import Structure from '../models/Structure.js';
+import fetch from 'node-fetch';
 
 // Fonction pour calculer la distance entre deux points (formule de Haversine)
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -14,6 +14,67 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+// Récupérer les structures via Overpass API (OpenStreetMap)
+const getStructuresFromOverpass = async (lat, lng, radius = 10000) => {
+  try {
+    const query = `
+      [bbox:${lat - 0.1},${lng - 0.1},${lat + 0.1},${lng + 0.1}];
+      (
+        node["amenity"="hospital"];
+        node["amenity"="pharmacy"];
+        node["amenity"="clinic"];
+        way["amenity"="hospital"];
+        way["amenity"="pharmacy"];
+        way["amenity"="clinic"];
+      );
+      out center;
+    `;
+
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const structures = [];
+    
+    if (data.elements) {
+      data.elements.forEach(element => {
+        let lat = element.lat;
+        let lng = element.lon;
+        
+        // Pour les ways, utiliser le centre
+        if (element.center) {
+          lat = element.center.lat;
+          lng = element.center.lon;
+        }
+
+        const tags = element.tags || {};
+        let type = 'Hopital';
+        
+        if (tags.amenity === 'pharmacy') {
+          type = 'Pharmacie';
+        } else if (tags.amenity === 'clinic') {
+          type = 'Poste de santé';
+        }
+
+        structures.push({
+          nom: tags.name || `${type} sans nom`,
+          type: type,
+          lat: lat,
+          lng: lng,
+          adresse: tags['addr:full'] || tags['addr:street'] || 'Adresse non disponible',
+          tel: tags.phone || 'Non disponible',
+          distance: calculateDistance(lat, lng, lat, lng)
+        });
+      });
+    }
+
+    return structures;
+  } catch (err) {
+    console.error("❌ Erreur Overpass API:", err);
+    return [];
+  }
+};
+
 export const getNearbyStructures = async (req, res) => {
   try {
     const { latitude, longitude, radius = 10 } = req.query;
@@ -26,13 +87,14 @@ export const getNearbyStructures = async (req, res) => {
     const lng = parseFloat(longitude);
     const maxRadius = parseFloat(radius);
 
-    // Récupérer toutes les structures
-    const structures = await Structure.find();
+    console.log(`🔍 Recherche structures près de: ${lat}, ${lng} (rayon: ${maxRadius}km)`);
+
+    // Récupérer les structures via Overpass API
+    const allStructures = await getStructuresFromOverpass(lat, lng, maxRadius * 1000);
 
     // Calculer la distance et filtrer
-    const nearbyStructures = structures
+    const nearbyStructures = allStructures
       .map(s => ({
-        _id: s._id,
         nom: s.nom,
         type: s.type,
         lat: s.lat,
@@ -42,7 +104,10 @@ export const getNearbyStructures = async (req, res) => {
         distance: calculateDistance(lat, lng, s.lat, s.lng)
       }))
       .filter(s => s.distance <= maxRadius)
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 20); // Limiter à 20 résultats
+
+    console.log(`✅ Structures trouvées: ${nearbyStructures.length}`);
 
     res.json({
       message: "Structures trouvées",
@@ -50,19 +115,8 @@ export const getNearbyStructures = async (req, res) => {
       structures: nearbyStructures
     });
   } catch (err) {
+    console.error("❌ Erreur getNearbyStructures:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
-export const getAllStructures = async (req, res) => {
-  try {
-    const structures = await Structure.find();
-    res.json({
-      message: "Toutes les structures",
-      count: structures.length,
-      structures
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};

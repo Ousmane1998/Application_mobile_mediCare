@@ -287,13 +287,8 @@ export async function logout() {
   }
 }
 
-// Structures
+// Structures (via OpenStreetMap API)
 export async function getNearbyStructures(latitude: number, longitude: number, radius: number = 10) {
   return fetch(`${API_URL}/structures/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`)
-    .then(res => res.json());
-}
-
-export async function getAllStructures() {
-  return fetch(`${API_URL}/structures`)
     .then(res => res.json());
 }
