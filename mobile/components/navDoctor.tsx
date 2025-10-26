@@ -47,6 +47,13 @@ export default function NavDoctor() {
         }}
       />
       <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'Messages',
+          tabBarIcon: ({ color }) => <Ionicons name="chatbubbles-outline" color={color} size={60} />,
+        }}
+      />
+      <Tabs.Screen
         name="availability"
         options={{
           title: 'Disponibilités',

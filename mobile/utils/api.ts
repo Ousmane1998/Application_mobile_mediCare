@@ -19,25 +19,35 @@ export const SOCKET_URL = API_URL.replace(/\/api$/, '');
 
 
 export async function authFetch(path: string, options: RequestInit = {}) {
-  const token = await AsyncStorage.getItem('authToken');
-  const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  console.log("🌍 URL finale utilisée :", `${API_URL}${path}`);
-  console.log("🪪 Token envoyé :", token);
-  console.log("📦 Corps de la requête :", options.body);
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    const headers = new Headers(options.headers || {});
+    headers.set('Content-Type', 'application/json');
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    console.log("🌍 URL finale utilisée :", `${API_URL}${path}`);
+    console.log("🪪 Token envoyé :", token);
+    console.log("📦 Corps de la requête :", options.body);
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const data = await res.json().catch(() => undefined);
+    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    console.log("📊 Statut réponse :", res.status, res.statusText);
+    
+    const data = await res.json().catch(() => undefined);
+    console.log("📥 Données reçues :", data);
 
-  if (!res.ok) {
-    const error: any = new Error(data?.message || 'Erreur API');
-    error.debug = data?.debug || null;
-    console.log("📥 Erreur backend complète :", data);
-    throw error;
+    if (!res.ok) {
+      const errorMessage = data?.message || data?.error || `Erreur HTTP ${res.status}`;
+      const error: any = new Error(errorMessage);
+      error.debug = data?.debug || null;
+      error.status = res.status;
+      console.log("❌ Erreur backend complète :", data);
+      throw error;
+    }
+
+    return data;
+  } catch (err: any) {
+    console.error("❌ Erreur authFetch :", err.message);
+    throw err;
   }
-
-  return data;
 }
 
 
@@ -54,6 +64,7 @@ export type UserProfile = {
   specialite?: string;
   hopital?: string;
   photo?: string;
+  medecinId?: string;
 };
 
 // Profile
@@ -96,8 +107,13 @@ export async function getMeasuresHistory(patientId: string) {
   return authFetch(`/measures/history/${encodeURIComponent(patientId)}`);
 }
 
-export async function getMeasureById(id: string) {
-  return authFetch(`/measures/${encodeURIComponent(id)}`);
+export async function getMeasures(patientId: string) {
+  return authFetch(`/measures/${encodeURIComponent(patientId)}`);
+}
+
+// Advices
+export async function getAdvices(patientId: string) {
+  return authFetch(`/advices/${encodeURIComponent(patientId)}`);
 }
 
 // Appointments
@@ -124,19 +140,50 @@ export async function updateAppointment(id: string, payload: Partial<{ statut: '
 }
 
 // Messages
-export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }) {
-  return authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
+export type MessageItem = {
+  _id: string;
+  senderId: string;
+  receiverId: string;
+  text: string;
+  isRead?: boolean;
+  createdAt: string;
+};
+
+export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }): Promise<MessageItem> {
+  const response = await authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
+  return response.data || response;
 }
 
-export async function getMessages(params?: Record<string, string>) {
-  const qs = params ? ('?' + new URLSearchParams(params).toString()) : '';
-  return authFetch(`/messages${qs}`);
+export async function getMessages(user1: string, user2: string): Promise<MessageItem[]> {
+  return authFetch(`/messages?user1=${encodeURIComponent(user1)}&user2=${encodeURIComponent(user2)}`);
 }
-//list medecins
+
+// List medecins
 export async function getMedecins() {
   return authFetch('/users/medecins');
 }
-// utils/api.tsx (ou où est ta fonction)
+
+// Get medecin by ID
+export async function getMedecinById(medecinId: string) {
+  return authFetch(`/users/${medecinId}`);
+}
+
+// Get my patients (for doctor)
+export async function listMyPatients(): Promise<Patient[]> {
+  return authFetch('/users/my-patients');
+}
+
+export type Patient = {
+  _id: string;
+  nom: string;
+  prenom: string;
+  email?: string;
+  photo?: string;
+  pathologie?: string;
+  telephone?: string;
+};
+
+// Availability
 export async function getAvailabilityByMedecin(medecinId: string) {
   return authFetch(`/availability?medecinId=${medecinId}`);
 }
@@ -153,9 +200,6 @@ export async function deleteAvailabilityApi(id: string) {
   return authFetch(`/availability/${id}`, { method: 'DELETE' });
 }
 
-
-
-
 // Create Patients 
 export async function createPatient(payload: {
   nom: string;
@@ -165,13 +209,13 @@ export async function createPatient(payload: {
   age?: string;
   adresse?: string;
   pathologie?: string;
-   idMedecin?: string;
+  idMedecin?: string;
 }) {
   return authFetch('/auth/registerPatient', {
     method: 'POST',
     body: JSON.stringify({
       ...payload,
-      telephone: Number(payload.telephone), // ✅ Convertir en nombre
+      telephone: Number(payload.telephone),
     }),
   });
 }
@@ -179,9 +223,8 @@ export async function createPatient(payload: {
 // Notifications
 export type NotificationItem = {
   _id: string;
-  id?: string;
   userId: string;
-  type?: 'message' | 'rdv' | 'alerte' | string;
+  type: string;
   message?: string;
   isRead?: boolean;
   data?: any;
@@ -233,3 +276,20 @@ export async function adminDeleteUser(id: string) {
   return authFetch(`/users/${id}`, { method: 'DELETE' });
 }
 
+// Logout
+export async function logout() {
+  try {
+    await authFetch('/auth/logout', { method: 'POST' });
+  } catch (err) {
+    console.error("Erreur logout:", err);
+  } finally {
+    // Supprimer le token même si la requête échoue
+    await AsyncStorage.removeItem('authToken');
+  }
+}
+
+// Structures (via OpenStreetMap API)
+export async function getNearbyStructures(latitude: number, longitude: number, radius: number = 10) {
+  return fetch(`${API_URL}/structures/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`)
+    .then(res => res.json());
+}

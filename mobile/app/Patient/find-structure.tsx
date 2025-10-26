@@ -5,82 +5,84 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../components/header";
 import NavPatient from "../../components/navPatient";
+import { getNearbyStructures } from "../../utils/api";
 
-type StructureType = "Hôpital" | "Pharmacie" | "Poste de santé";
+type StructureType = "Hopital" | "Pharmacie" | "Poste de santé";
 
 interface Structure {
-  id: number;
-  name: string;
+  _id: string;
+  nom: string;
   type: StructureType;
-  latitude: number;
-  longitude: number;
-  address: string;
-  phone: string;
-  distance: string;
+  lat: number;
+  lng: number;
+  adresse: string;
+  tel: string;
+  distance: number;
 }
 
 export default function FindStructureScreen() {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [structures, setStructures] = useState<Structure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [radius, setRadius] = useState<number>(10);
+
+  const loadStructures = async (lat: number, lng: number, rad: number) => {
+    try {
+      console.log(`📍 Chargement structures: lat=${lat}, lng=${lng}, radius=${rad}km`);
+      const response = await getNearbyStructures(lat, lng, rad);
+      console.log(`📊 Réponse API:`, response);
+      if (response.structures && Array.isArray(response.structures)) {
+        console.log(`✅ ${response.structures.length} structures reçues`);
+        response.structures.forEach((s: Structure) => {
+          console.log(`  - ${s.nom}: ${s.distance?.toFixed(2) || '?'} km`);
+        });
+        setStructures(response.structures);
+      } else {
+        setStructures([]);
+      }
+    } catch (err: any) {
+      console.error("Erreur lors du chargement des structures:", err);
+      alert("Erreur lors du chargement des structures");
+    }
+  };
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        alert("Permission de localisation refusée");
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          alert("Permission de localisation refusée");
+          setLoading(false);
+          return;
+        }
+
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        });
+
+        // Récupérer les structures proches via l'API
+        await loadStructures(loc.coords.latitude, loc.coords.longitude, radius);
+      } catch (err: any) {
+        console.error("Erreur lors du chargement des structures:", err);
+        alert("Erreur lors du chargement des structures");
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const loc = await Location.getCurrentPositionAsync({});
-      setLocation({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      });
-
-      // 🏥 Données fictives (tu peux les récupérer via ton API plus tard)
-      const data: Structure[] = [
-        {
-          id: 1,
-          name: "Hôpital Principal de Dakar",
-          type: "Hôpital",
-          latitude: loc.coords.latitude + 0.001,
-          longitude: loc.coords.longitude + 0.001,
-          address: "Avenue Faidherbe, Dakar",
-          phone: "+221338234545",
-          distance: "0.0 km",
-        },
-        {
-          id: 2,
-          name: "Pharmacie de la Gare",
-          type: "Pharmacie",
-          latitude: loc.coords.latitude + 0.002,
-          longitude: loc.coords.longitude - 0.001,
-          address: "Gare routière, Dakar",
-          phone: "+221338223344",
-          distance: "0.5 km",
-        },
-        {
-          id: 3,
-          name: "Poste de Santé Médina",
-          type: "Poste de santé",
-          latitude: loc.coords.latitude - 0.001,
-          longitude: loc.coords.longitude - 0.001,
-          address: "Rue 22 Médina, Dakar",
-          phone: "+221338245678",
-          distance: "1.2 km",
-        },
-      ];
-
-      setStructures(data);
-      setLoading(false);
     })();
   }, []);
 
+  // Recharger quand le rayon change
+  useEffect(() => {
+    if (location) {
+      loadStructures(location.latitude, location.longitude, radius);
+    }
+  }, [radius]);
+
   const getMarkerColor = (type: StructureType) => {
     switch (type) {
-      case "Hôpital":
+      case "Hopital":
         return "red";
       case "Pharmacie":
         return "green";
@@ -105,6 +107,23 @@ export default function FindStructureScreen() {
       <Header />
       {location ? (
         <>
+          <View style={styles.radiusSelector}>
+            <Text style={styles.radiusLabel}>Rayon de recherche:</Text>
+            <View style={styles.radiusButtons}>
+              {[1, 2, 5, 10].map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.radiusBtn, radius === r && styles.radiusBtnActive]}
+                  onPress={() => setRadius(r)}
+                >
+                  <Text style={[styles.radiusBtnText, radius === r && styles.radiusBtnTextActive]}>
+                    {r} km
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           <MapView
             style={styles.map}
             initialRegion={{
@@ -121,9 +140,9 @@ export default function FindStructureScreen() {
             />
             {structures.map((s) => (
               <Marker
-                key={s.id}
-                coordinate={{ latitude: s.latitude, longitude: s.longitude }}
-                title={s.name}
+                key={s._id}
+                coordinate={{ latitude: s.lat, longitude: s.lng }}
+                title={s.nom}
                 description={s.type}
                 pinColor={getMarkerColor(s.type)}
               />
@@ -135,11 +154,11 @@ export default function FindStructureScreen() {
               {structures.length} structure(s) à moins de 10 km
             </Text>
             {structures.map((s) => (
-              <View key={s.id} style={styles.card}>
+              <View key={s._id} style={styles.card}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Ionicons
                     name={
-                      s.type === "Hôpital"
+                      s.type === "Hopital"
                         ? "medical-outline"
                         : s.type === "Pharmacie"
                         ? "medkit-outline"
@@ -149,17 +168,18 @@ export default function FindStructureScreen() {
                     color={getMarkerColor(s.type)}
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={styles.cardTitle}>{s.name}</Text>
+                  <Text style={styles.cardTitle}>{s.nom}</Text>
                 </View>
-                <Text style={styles.cardSubtitle}>{s.address}</Text>
-                <Text style={styles.cardSubtitle}>{s.distance}</Text>
+                <Text style={styles.cardSubtitle}>{s.adresse}</Text>
+                <Text style={styles.cardSubtitle}>Tel: {s.tel}</Text>
+                <Text style={styles.cardSubtitle}>{s.distance.toFixed(1)} km</Text>
 
                 <View style={styles.btnRow}>
                   <TouchableOpacity
                     style={styles.btn}
                     onPress={() =>
                       Linking.openURL(
-                        `https://www.google.com/maps/dir/?api=1&destination=${s.latitude},${s.longitude}`
+                        `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`
                       )
                     }
                   >
@@ -169,7 +189,7 @@ export default function FindStructureScreen() {
 
                   <TouchableOpacity
                     style={styles.btn}
-                    onPress={() => Linking.openURL(`tel:${s.phone}`)}
+                    onPress={() => Linking.openURL(`tel:${s.tel}`)}
                   >
                     <Ionicons name="call-outline" size={18} color="#fff" />
                     <Text style={styles.btnText}>Appeler</Text>
@@ -192,6 +212,13 @@ export default function FindStructureScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  radiusSelector: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  radiusLabel: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 8 },
+  radiusButtons: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  radiusBtn: { flex: 1, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: "#D1D5DB", alignItems: "center" },
+  radiusBtnActive: { backgroundColor: "#2ccdd2", borderColor: "#2ccdd2" },
+  radiusBtnText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
+  radiusBtnTextActive: { color: "#fff" },
   map: { width: "100%", height: 250 },
   list: { paddingHorizontal: 16, marginTop: 8 },
   listTitle: { fontSize: 16, color: "#111827", marginBottom: 8 },

@@ -54,8 +54,20 @@ import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
+// POST pour ajouter une mesure
 router.post("/", authMiddleware, addMeasure);
+
+// GET /history/:patientId - route spécifique
 router.get("/history/:patientId", authMiddleware, getHistory);
 router.get("/:id", authMiddleware, getById);
+
+// GET /:patientId - route générique (doit être APRÈS les routes spécifiques)
+router.get("/:patientId", authMiddleware, (req, res, next) => {
+  // Vérifier que ce n'est pas une route spéciale
+  if (req.params.patientId === 'history') {
+    return next();
+  }
+  getHistory(req, res);
+});
 
 export default router;

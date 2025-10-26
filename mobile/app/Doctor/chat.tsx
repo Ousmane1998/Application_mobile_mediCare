@@ -16,11 +16,11 @@ import {
 import { Ionicons, MaterialIcons, Entypo } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-import { getProfile, getMessages, sendMessage, getMedecinById } from "../../utils/api";
+import { getProfile, getMessages, sendMessage } from "../../utils/api";
+import { useLocalSearchParams } from "expo-router";
 
 type RootStackParamList = {
-  Home: undefined;
-  Chat: undefined;
+  Chat: { patientId: string; patientName: string };
 };
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Chat">;
@@ -37,64 +37,53 @@ type Message = {
   text: string;
   senderId: string;
   receiverId: string;
-  sender: "user" | "doctor";
+  sender: "user" | "patient";
   createdAt: string;
 };
 
-type Doctor = {
-  _id: string;
-  nom: string;
-  prenom: string;
-  photo?: string;
-  specialite?: string;
-  email?: string;
-};
-
-const ChatScreen: React.FC<Props> = ({ navigation }) => {
+const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
+  const searchParams = useLocalSearchParams();
+  const patientId = (searchParams?.patientId as string) || (route?.params?.patientId as string) || "";
+  const patientName = (searchParams?.patientName as string) || (route?.params?.patientName as string) || "Patient";
+  
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [doctor, setDoctor] = useState<Doctor | null>(null);
-  const [patient, setPatient] = useState<any>(null);
+  const [doctor, setDoctor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList<Message> | null>(null);
 
-  // Charger le profil du patient et son médecin
+  // Si pas de patientId, afficher une erreur
+  if (!patientId) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ fontSize: 16, color: "#EF4444" }}>Erreur: Patient non sélectionné</Text>
+      </View>
+    );
+  }
+
+  // Charger le profil du médecin et les messages
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        
-        // Récupérer le profil du patient
+
+        // Récupérer le profil du médecin
         const { user } = await getProfile();
-        setPatient(user);
-        console.log("👤 Patient :", user._id);
+        setDoctor(user);
+        console.log("👨‍⚕️ Médecin :", user._id);
+        console.log("👤 Patient :", patientId);
 
-        // Récupérer le médecin du patient (medecinId)
-        if (user.medecinId) {
-          console.log("🏥 Médecin ID :", user.medecinId);
-          
-          try {
-            // Récupérer les données du médecin
-            const medecinData = await getMedecinById(user.medecinId);
-            const medecinUser = medecinData.user || medecinData;
-            setDoctor(medecinUser);
-            console.log("👨‍⚕️ Médecin chargé :", medecinUser.prenom, medecinUser.nom);
-          } catch (err: any) {
-            console.error("❌ Erreur chargement médecin :", err.message);
-          }
+        // Charger les messages
+        const msgs = await getMessages(user._id, patientId);
+        console.log("💬 Messages chargés :", msgs.length);
 
-          // Charger les messages avec le médecin
-          const msgs = await getMessages(user._id, user.medecinId);
-          console.log("💬 Messages chargés :", msgs.length);
-          
-          // Mapper les messages
-          const mappedMessages = msgs.map((msg: any) => ({
-            ...msg,
-            sender: msg.senderId === user._id ? "user" : "doctor",
-          }));
-          setMessages(mappedMessages);
-        }
+        // Mapper les messages
+        const mappedMessages = msgs.map((msg: any) => ({
+          ...msg,
+          sender: msg.senderId === user._id ? "user" : "patient",
+        }));
+        setMessages(mappedMessages);
       } catch (err: any) {
         console.error("❌ Erreur chargement :", err.message);
       } finally {
@@ -103,7 +92,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     loadData();
-  }, []);
+  }, [patientId]);
 
   // scroll to end when messages change
   useEffect(() => {
@@ -125,14 +114,14 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSend = async () => {
-    if (!messageText.trim() || !patient || !patient.medecinId) return;
+    if (!messageText.trim() || !doctor) return;
 
     setSending(true);
     try {
       // Envoyer le message
       const newMsg = await sendMessage({
-        senderId: patient._id,
-        receiverId: patient.medecinId,
+        senderId: doctor._id,
+        receiverId: patientId,
         text: messageText.trim(),
       });
 
@@ -157,7 +146,6 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  // support "Enter" send on keyboard (android/ios external keyboards)
   const onSubmitEditing = (e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
     handleSend();
   };
@@ -166,8 +154,8 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     const isUser = item.sender === "user";
     return (
       <View style={styles.messageRow}>
-        <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.doctorBubble]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.doctorText]}>
+        <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.patientBubble]}>
+          <Text style={[styles.messageText, isUser ? styles.userText : styles.patientText]}>
             {item.text}
           </Text>
         </View>
@@ -192,13 +180,11 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.headerInfo}>
           <Image
-            source={{ uri: doctor?.photo || "https://cdn-icons-png.flaticon.com/512/921/921071.png" }}
+            source={{ uri: "https://cdn-icons-png.flaticon.com/512/921/921071.png" }}
             style={styles.avatar}
           />
           <View style={{ justifyContent: "center" }}>
-            <Text style={styles.doctorName}>
-              {doctor ? `Dr. ${doctor.prenom} ${doctor.nom}` : "Chargement..."}
-            </Text>
+            <Text style={styles.patientName}>{patientName}</Text>
             <Text style={styles.onlineStatus}>En ligne</Text>
           </View>
         </View>
@@ -210,9 +196,9 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* MESSAGES */}
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color="#2ccdd2" />
-          <Text style={{ marginTop: 12, color: '#6B7280' }}>Chargement des messages...</Text>
+          <Text style={{ marginTop: 12, color: "#6B7280" }}>Chargement des messages...</Text>
         </View>
       ) : (
         <FlatList
@@ -267,7 +253,7 @@ const styles = StyleSheet.create({
   iconBack: { paddingRight: 6 },
   headerInfo: { flexDirection: "row", alignItems: "center", flex: 1, marginLeft: 6 },
   avatar: { width: 42, height: 42, borderRadius: 21, marginRight: 10 },
-  doctorName: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  patientName: { color: "#fff", fontSize: 16, fontWeight: "600" },
   onlineStatus: { color: "#D1FAE5", fontSize: 12 },
 
   iconPhoto: { paddingLeft: 6 },
@@ -279,7 +265,6 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     marginVertical: 6,
-    // full width container that will hold bubble and time
     maxWidth: "100%",
   },
   messageBubble: {
@@ -292,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2ccdd2",
     borderBottomRightRadius: 4,
   },
-  doctorBubble: {
+  patientBubble: {
     alignSelf: "flex-start",
     backgroundColor: "#E5E7EB",
     borderBottomLeftRadius: 4,
@@ -302,11 +287,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   userText: { color: "#fff" },
-  doctorText: { color: "#111827" },
+  patientText: { color: "#111827" },
 
   timeRow: {
     marginTop: 4,
-    // width fits content
   },
   messageTime: {
     fontSize: 11,

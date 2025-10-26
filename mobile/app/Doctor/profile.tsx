@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileCard, { ProfileRow } from '../../components/ProfileCard';
-import { getProfile, type UserProfile } from '../../utils/api';
+import { getProfile, logout, type UserProfile } from '../../utils/api';
 import { useRouter, type Href } from 'expo-router';
 
 export default function DoctorProfileScreen() {
@@ -30,6 +30,28 @@ export default function DoctorProfileScreen() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter?',
+      [
+        { text: 'Annuler', onPress: () => {}, style: 'cancel' },
+        {
+          text: 'Déconnecter',
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/login' as Href);
+            } catch (err: any) {
+              Alert.alert('Erreur', err.message || 'Erreur lors de la déconnexion');
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -75,6 +97,13 @@ export default function DoctorProfileScreen() {
         <ProfileRow icon={<Ionicons name="lock-closed-outline" size={18} />} label="Mot de passe" value={'••••••••'} />
       </ProfileCard>
 
+      <View style={{ height: 12 }} />
+
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={20} color="#fff" />
+        <Text style={styles.logoutText}>Déconnexion</Text>
+      </TouchableOpacity>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </ScrollView>
   );
@@ -89,4 +118,6 @@ const styles = StyleSheet.create({
   name: { marginTop: 12, fontSize: 20, color: '#111827' },
   email: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   error: { color: '#DC2626', marginTop: 12 },
+  logoutButton: { backgroundColor: '#EF4444', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  logoutText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

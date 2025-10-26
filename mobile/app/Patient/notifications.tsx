@@ -1,37 +1,125 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getNotifications, getProfile, NotificationItem } from '../../utils/api';
 
-type Item = {
-  id: string;
-  type: 'rappel' | 'alerte' | 'rdv' | 'message';
-  title: string;
+type DisplayItem = {
+  _id: string;
+  type: 'rappel' | 'alerte' | 'rdv' | 'message' | string;
+  message: string;
+  title?: string;
   subtitle?: string;
-  time: string;
-  cta?: string;
+  createdAt: string;
   accent: string;
   icon: keyof typeof Ionicons.glyphMap;
+  isRead?: boolean;
 };
 
-const SAMPLE: Item[] = [
-  { id: '1', type: 'alerte', title: "Alerte de tension artérielle élevée", subtitle: "Votre tension est de 180/120 mmHg.", time: '09:45', cta: 'Voir', accent: '#F97316', icon: 'heart-outline' },
-  { id: '2', type: 'rappel', title: 'Rappel de médicament', subtitle: "Prendre 2 comprimés d'insuline maintenant", time: '10:00', cta: 'Snooze', accent: '#F59E0B', icon: 'bandage-outline' },
-  { id: '3', type: 'rdv', title: 'Rappel de rendez-vous', subtitle: 'Dr. Martin — Demain à 11:00', time: 'Hier', cta: 'Replanifier', accent: '#10B981', icon: 'calendar-outline' },
-  { id: '4', type: 'message', title: 'Nouveau message', subtitle: "Dr. Martin — il y a 2h\nBonjour, j'ai examiné vos derniers résultats…", time: 'Hier', accent: '#22C55E', icon: 'chatbubbles-outline' },
-  { id: '5', type: 'alerte', title: 'Alerte de glycémie basse', subtitle: 'Votre glycémie est de 65 mg/dL.', time: 'Hier, 20:15', cta: 'Voir', accent: '#EF4444', icon: 'water-outline' },
-];
+const FILTERS = ['Tout', 'Rappels', 'Alertes', 'Rendez-vous', 'Messages'] as const;
 
-const FILTERS = ['Tout', 'Rappels', 'Alertes', 'Rendez-vous'] as const;
+// Fonction pour mapper les notifications de la BD aux éléments d'affichage
+const mapNotificationToDisplay = (notif: NotificationItem): DisplayItem => {
+  const typeMap: Record<string, { accent: string; icon: keyof typeof Ionicons.glyphMap; title: string }> = {
+    'alerte': { accent: '#EF4444', icon: 'alert-circle-outline', title: 'Alerte de santé' },
+    'rappel': { accent: '#F59E0B', icon: 'bandage-outline', title: 'Rappel de médicament' },
+    'rdv': { accent: '#10B981', icon: 'calendar-outline', title: 'Rendez-vous' },
+    'message': { accent: '#22C55E', icon: 'chatbubbles-outline', title: 'Nouveau message' },
+  };
+
+  const notifType = (notif.type || 'alerte') as string;
+  const config = typeMap[notifType] || typeMap['alerte'];
+
+  return {
+    _id: notif._id || '',
+    type: notifType,
+    message: notif.message || '',
+    title: config?.title || 'Notification',
+    subtitle: notif.message || '',
+    createdAt: notif.createdAt || new Date().toISOString(),
+    accent: config?.accent || '#EF4444',
+    icon: config?.icon || 'alert-circle-outline',
+    isRead: notif.isRead,
+  };
+};
+
+// Fonction pour formater la date
+const formatTime = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'À l\'instant';
+  if (diffMins < 60) return `il y a ${diffMins}m`;
+  if (diffHours < 24) return `il y a ${diffHours}h`;
+  if (diffDays === 1) return 'Hier';
+  if (diffDays < 7) return `il y a ${diffDays}j`;
+  
+  return date.toLocaleDateString('fr-FR');
+};
 
 export default function PatientNotificationsScreen() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Tout');
+  const [notifications, setNotifications] = useState<DisplayItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Récupérer l'ID de l'utilisateur connecté
+        const { user } = await getProfile();
+        console.log("📬 Récupération des notifications pour :", user._id);
+        
+        // Récupérer les notifications
+        const notifs = await getNotifications(user._id);
+        console.log("✅ Notifications reçues :", notifs);
+        
+        // Mapper les notifications
+        const displayItems = (Array.isArray(notifs) ? notifs : []).map(mapNotificationToDisplay);
+        setNotifications(displayItems);
+      } catch (err: any) {
+        console.error("❌ Erreur lors du chargement des notifications :", err);
+        setError(err?.message || 'Erreur de chargement');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   const items = useMemo(() => {
-    if (filter === 'Tout') return SAMPLE;
-    if (filter === 'Rappels') return SAMPLE.filter(i => i.type === 'rappel');
-    if (filter === 'Alertes') return SAMPLE.filter(i => i.type === 'alerte');
-    if (filter === 'Rendez-vous') return SAMPLE.filter(i => i.type === 'rdv');
-    return SAMPLE;
-  }, [filter]);
+    if (filter === 'Tout') return notifications;
+    if (filter === 'Rappels') return notifications.filter(i => i.type === 'rappel');
+    if (filter === 'Alertes') return notifications.filter(i => i.type === 'alerte');
+    if (filter === 'Rendez-vous') return notifications.filter(i => i.type === 'rdv');
+    if (filter === 'Messages') return notifications.filter(i => i.type === 'message');
+    return notifications;
+  }, [filter, notifications]);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#2ccdd2" />
+        <Text style={{ marginTop: 12, color: '#6B7280' }}>Chargement des notifications...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+        <Text style={{ marginTop: 12, color: '#EF4444', fontSize: 16 }}>Erreur: {error}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
@@ -48,20 +136,26 @@ export default function PatientNotificationsScreen() {
         ))}
       </View>
 
-      {items.map(item => (
-        <View key={item.id} style={styles.card}>
-          <View style={styles.cardHead}>
-            <View style={[styles.iconWrap, { backgroundColor: `${item.accent}22` }]}> 
-              <Ionicons name={item.icon} size={20} color={item.accent} />
-              <View style={[styles.dot, { backgroundColor: item.accent }]} />
-            </View>
-            {!!item.cta && <Text style={[styles.cta, { color: item.accent }]}>{item.cta}</Text>}
-          </View>
-          <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.time}>{item.time}</Text>
-          {!!item.subtitle && <Text style={styles.subtitle}>{item.subtitle}</Text>}
+      {items.length === 0 ? (
+        <View style={{ alignItems: 'center', marginTop: 40 }}>
+          <Ionicons name="notifications-off-outline" size={48} color="#D1D5DB" />
+          <Text style={{ marginTop: 12, color: '#9CA3AF', fontSize: 16 }}>Aucune notification</Text>
         </View>
-      ))}
+      ) : (
+        items.map(item => (
+          <View key={item._id} style={styles.card}>
+            <View style={styles.cardHead}>
+              <View style={[styles.iconWrap, { backgroundColor: `${item.accent}22` }]}> 
+                <Ionicons name={item.icon} size={20} color={item.accent} />
+                {!item.isRead && <View style={[styles.dot, { backgroundColor: item.accent }]} />}
+              </View>
+            </View>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.time}>{formatTime(item.createdAt)}</Text>
+            {!!item.subtitle && <Text style={styles.subtitle}>{item.subtitle}</Text>}
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }

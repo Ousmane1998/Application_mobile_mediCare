@@ -4,18 +4,39 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import NavDoctor from '@/components/navDoctor';
 import { router } from 'expo-router';
-import { getProfile, authFetch, getNotifications, getAppointments, type NotificationItem, type AppointmentItem } from '../../utils/api';
+import { getProfile, authFetch, getNotifications, getAppointments, listMyPatients, type NotificationItem, type AppointmentItem, type Patient } from '../../utils/api';
 
 export default function DoctorDashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalPatients, setTotalPatients] = useState<number>(0);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [alerts, setAlerts] = useState<NotificationItem[]>([]);
+  const [messages, setMessages] = useState<NotificationItem[]>([]);
+  const [appointments, setAppointments] = useState<NotificationItem[]>([]);
   const [pendingAppointments, setPendingAppointments] = useState<number>(0);
   const [pathologies, setPathologies] = useState<Array<{ name: string; count: number }>>([]);
   const [alertsFilter, setAlertsFilter] = useState<'Toutes' | '24h' | '7j'>('Toutes');
   const [alertsType, setAlertsType] = useState<'Tous' | 'Messages' | 'Rendez-vous' | 'Alertes'>('Tous');
+  
+  const filteredPatients = useMemo(() => {
+    // Utiliser alertsType pour filtrer les patients (au lieu de patientFilter)
+    if (alertsType === 'Tous') return patients;
+    
+    const patientIds = new Set<string>();
+    
+    if (alertsType === 'Messages') {
+      messages.forEach(m => patientIds.add(m.userId));
+    } else if (alertsType === 'Rendez-vous') {
+      appointments.forEach(a => patientIds.add(a.userId));
+    } else if (alertsType === 'Alertes') {
+      alerts.forEach(a => patientIds.add(a.userId));
+    }
+    
+    return patients.filter(p => patientIds.has(p._id));
+  }, [patients, messages, appointments, alerts, alertsType]);
+  
   const filteredAlerts = useMemo(() => {
     if (!alerts?.length) return [] as NotificationItem[];
     const now = Date.now();
@@ -46,18 +67,42 @@ export default function DoctorDashboardScreen() {
       setError(null);
       const prof = await getProfile();
       const meId = (prof.user as any)._id || (prof.user as any).id;
-      const patients = await authFetch('/users/my-patients');
-      const arr = Array.isArray(patients) ? patients : (patients?.data || []);
+      
+      // Charger les patients
+      const patientsData = await listMyPatients();
+      const arr = Array.isArray(patientsData) ? patientsData : [];
       const total = arr.length || 0;
       setTotalPatients(total);
+      setPatients(arr);
+      
       // Pathologies breakdown (top 3)
       const counts: Record<string, number> = {};
       arr.forEach((u: any) => { const p = (u.pathologie || '').trim(); if (p) counts[p] = (counts[p]||0)+1; });
       const top = Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a,b)=>b.count-a.count).slice(0,3);
       setPathologies(top);
+      
       const notifs: NotificationItem[] = await getNotifications(meId);
-      const recentAlerts = (Array.isArray(notifs) ? notifs : []).filter(n => ['alerte','alert'].includes(String(n.type||'').toLowerCase())).slice(0, 5);
+      const allNotifs = Array.isArray(notifs) ? notifs : [];
+      
+      // Récupérer les IDs des patients du médecin
+      const patientIds = arr.map((p: any) => p._id);
+      
+      // Filtrer les notifications par type et par patients du médecin
+      const recentAlerts = allNotifs
+        .filter(n => ['alerte','alert','measure'].includes(String(n.type||'').toLowerCase()) && patientIds.includes(n.userId))
+        .slice(0, 5);
       setAlerts(recentAlerts);
+      
+      const messageNotifs = allNotifs
+        .filter(n => ['message'].includes(String(n.type||'').toLowerCase()) && patientIds.includes(n.userId))
+        .slice(0, 5);
+      setMessages(messageNotifs);
+      
+      const appointmentNotifs = allNotifs
+        .filter(n => ['rdv','appointment'].includes(String(n.type||'').toLowerCase()) && patientIds.includes(n.userId))
+        .slice(0, 5);
+      setAppointments(appointmentNotifs);
+      
       // Pending appointments for this doctor
       const appts: AppointmentItem[] = await getAppointments();
       const pending = (Array.isArray(appts) ? appts : []).filter(a => String((a.medecinId as any)?._id || a.medecinId) === String(meId) && String(a.statut).toLowerCase() === 'en_attente').length;
@@ -158,6 +203,22 @@ export default function DoctorDashboardScreen() {
               </TouchableOpacity>
             </View>
 
+            {filteredPatients.slice(0, 5).map((p) => (
+              <View key={p._id} style={styles.patientItem}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.itemName}>{p.prenom} {p.nom}</Text>
+                  {p.pathologie && <Text style={styles.itemSub}>{p.pathologie}</Text>}
+                  {p.email && <Text style={styles.itemSub}>{p.email}</Text>}
+                </View>
+                <TouchableOpacity 
+                  style={styles.smsButton}
+                  onPress={() => router.push(`/Doctor/chat?patientId=${p._id}&patientName=${p.prenom}%20${p.nom}`)}
+                >
+                  <Ionicons name="chatbubbles-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
             <TouchableOpacity style={styles.fab} onPress={() => router.push('/Doctor/add-patient')}>
               <Text style={styles.fabText}>Ajouter Patient</Text>
             </TouchableOpacity>
@@ -196,6 +257,7 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 15, color: '#111827' },
   itemSub: { fontSize: 13, color: '#6B7280' },
   itemSubRed: { fontSize: 13, color: '#EF4444' },
+  smsButton: { backgroundColor: '#2ccdd2', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: '#2ccdd2', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, elevation: 4 },
   fabText: { color: '#fff', fontSize: 14 },
 });
