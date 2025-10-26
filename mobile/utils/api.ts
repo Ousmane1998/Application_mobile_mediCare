@@ -95,6 +95,15 @@ export async function getMeasuresHistory(patientId: string) {
   return authFetch(`/measures/history/${encodeURIComponent(patientId)}`);
 }
 
+export async function getMeasures(patientId: string) {
+  return authFetch(`/measures/${encodeURIComponent(patientId)}`);
+}
+
+// Advices
+export async function getAdvices(patientId: string) {
+  return authFetch(`/advices/${encodeURIComponent(patientId)}`);
+}
+
 // Appointments
 export async function createAppointment(payload: { patientId: string; medecinId: string; date: string; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule';typeConsultation?: string;  }) {
   return authFetch('/appointments', { method: 'POST', body: JSON.stringify(payload) });
