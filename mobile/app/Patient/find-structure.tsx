@@ -24,6 +24,21 @@ export default function FindStructureScreen() {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [structures, setStructures] = useState<Structure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [radius, setRadius] = useState<number>(10);
+
+  const loadStructures = async (lat: number, lng: number, rad: number) => {
+    try {
+      const response = await getNearbyStructures(lat, lng, rad);
+      if (response.structures && Array.isArray(response.structures)) {
+        setStructures(response.structures);
+      } else {
+        setStructures([]);
+      }
+    } catch (err: any) {
+      console.error("Erreur lors du chargement des structures:", err);
+      alert("Erreur lors du chargement des structures");
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -42,13 +57,7 @@ export default function FindStructureScreen() {
         });
 
         // Récupérer les structures proches via l'API
-        const response = await getNearbyStructures(loc.coords.latitude, loc.coords.longitude, 10);
-        
-        if (response.structures && Array.isArray(response.structures)) {
-          setStructures(response.structures);
-        } else {
-          setStructures([]);
-        }
+        await loadStructures(loc.coords.latitude, loc.coords.longitude, radius);
       } catch (err: any) {
         console.error("Erreur lors du chargement des structures:", err);
         alert("Erreur lors du chargement des structures");
@@ -57,6 +66,13 @@ export default function FindStructureScreen() {
       }
     })();
   }, []);
+
+  // Recharger quand le rayon change
+  useEffect(() => {
+    if (location) {
+      loadStructures(location.latitude, location.longitude, radius);
+    }
+  }, [radius]);
 
   const getMarkerColor = (type: StructureType) => {
     switch (type) {
@@ -85,6 +101,23 @@ export default function FindStructureScreen() {
       <Header />
       {location ? (
         <>
+          <View style={styles.radiusSelector}>
+            <Text style={styles.radiusLabel}>Rayon de recherche:</Text>
+            <View style={styles.radiusButtons}>
+              {[1, 2, 5, 10].map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.radiusBtn, radius === r && styles.radiusBtnActive]}
+                  onPress={() => setRadius(r)}
+                >
+                  <Text style={[styles.radiusBtnText, radius === r && styles.radiusBtnTextActive]}>
+                    {r} km
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           <MapView
             style={styles.map}
             initialRegion={{
@@ -173,6 +206,13 @@ export default function FindStructureScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  radiusSelector: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  radiusLabel: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 8 },
+  radiusButtons: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  radiusBtn: { flex: 1, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: "#D1D5DB", alignItems: "center" },
+  radiusBtnActive: { backgroundColor: "#2ccdd2", borderColor: "#2ccdd2" },
+  radiusBtnText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
+  radiusBtnTextActive: { color: "#fff" },
   map: { width: "100%", height: 250 },
   list: { paddingHorizontal: 16, marginTop: 8 },
   listTitle: { fontSize: 16, color: "#111827", marginBottom: 8 },
