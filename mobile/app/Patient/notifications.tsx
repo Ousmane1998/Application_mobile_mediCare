@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getNotifications, getProfile, NotificationItem } from '../../utils/api';
 
@@ -122,7 +123,7 @@ export default function PatientNotificationsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Notifications</Text>
         <Ionicons name="funnel-outline" size={22} color="#111827" />
@@ -156,12 +157,12 @@ export default function PatientNotificationsScreen() {
           </View>
         ))
       )}
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   title: { fontSize: 20, color: '#111827' },
   filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, TextInput } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { authFetch } from '../../utils/api';
@@ -79,7 +80,7 @@ export default function MyPatientsScreen() {
   }, [items, q, selectedPatho]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Header />
       <Text style={styles.title}>Mes Patients</Text>
 
@@ -119,12 +120,12 @@ export default function MyPatientsScreen() {
       ))}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 12, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 12 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   search: { flex: 1, color: '#111827' },
