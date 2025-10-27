@@ -4,12 +4,21 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
+import { ThemeProviderApp, useAppTheme } from '../theme/ThemeContext';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProviderApp>
+      <RootLayoutInner />
+    </ThemeProviderApp>
+  );
+}
+
+function RootLayoutInner() {
+  const { theme } = useAppTheme();
+  const navTheme = theme.mode === 'dark' ? DarkTheme : DefaultTheme;
+  return (
+    <ThemeProvider value={navTheme}>
       <Stack>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
         <Stack.Screen name="welcome2" options={{ headerShown: false }} />
@@ -20,7 +29,7 @@ export default function RootLayout() {
         <Stack.Screen name="patient" options={{ headerShown: false }} />
         <Stack.Screen name="Admin" options={{ headerShown: false }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }

@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getProfile } from '../utils/api';
+import { useAppTheme } from '../theme/ThemeContext';
 import Snackbar from './Snackbar';
 import { type UserProfile } from '../utils/api';
 
 export default function Header() {
   const router = useRouter();
+  const { theme, toggle } = useAppTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     visible: false,
@@ -29,7 +32,7 @@ export default function Header() {
   }, []);
 
   return (
-    <View style={styles.topBar}>
+    <View style={[styles.topBar, { backgroundColor: theme.colors.card }]}>
       {/* Logo à gauche */}
       <Image
         source={require('../assets/images/logoMedicare.png')}
@@ -39,13 +42,19 @@ export default function Header() {
 
       {/* Icônes à droite */}
       <View style={styles.iconContainer}>
+
+        {/* Dark/Light mode toggle */}
+        <TouchableOpacity onPress={toggle}>
+          <Ionicons name={theme.mode === 'dark' ? 'sunny-outline' : 'moon-outline'} size={22} color={theme.colors.text} style={styles.icon} />
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={() => {
           const role = profile?.role;
           if (role === 'medecin') return router.push('/Doctor/notifications' as any);
           if (role === 'patient') return router.push('/Patient/notifications' as any);
           if (role === 'admin') return router.push('/Admin/notifications' as any);
         }}>
-          <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon} />
+          <Ionicons name="notifications-outline" size={24} color={theme.colors.text} style={styles.icon} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -56,10 +65,10 @@ export default function Header() {
             if (role === 'admin') return router.push('/Admin/profile' as any);
           }}
         >
-          <Ionicons name="person-circle-outline" size={26} color="black" style={styles.icon} />
+          <Ionicons name="person-circle-outline" size={26} color={theme.colors.text} style={styles.icon} />
         </TouchableOpacity>
       </View>
-
+      
       <Snackbar
         visible={snack.visible}
         message={snack.message}
