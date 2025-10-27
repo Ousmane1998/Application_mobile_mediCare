@@ -3,17 +3,18 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import Snackbar from '../../components/Snackbar';
 import { 
   createAppointment, 
   getProfile, 
   type UserProfile, 
   getAvailabilityByMedecin, 
-  getMedecins,
-  getMedecinById,
+  getMedecinById
 } from '../../utils/api';
 
 type AvailabilityType = {
+  _id?: string;
   medecinId: string;
   jour: string;
   heureDebut: string;
@@ -25,7 +26,7 @@ export default function PatientAppointmentNewScreen() {
   const router = useRouter();
   const { theme } = useAppTheme();
 
-  const [medecins, setMedecins] = useState<any[]>([]);
+  const [medecin, setMedecin] = useState<any>(null);
   const [medecinId, setMedecinId] = useState('');
   const [doctor, setDoctor] = useState<any | null>(null);
   const [hasAttachedDoctor, setHasAttachedDoctor] = useState(false);
@@ -37,6 +38,7 @@ export default function PatientAppointmentNewScreen() {
   const [heure, setHeure] = useState('');
   const [me, setMe] = useState<UserProfile | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     visible: false,
@@ -140,18 +142,18 @@ export default function PatientAppointmentNewScreen() {
   useEffect(() => {
     (async () => {
       try {
+        setLoading(true);
         const data = await getProfile();
+        console.log('📋 Profil patient reçu :', data);
         setMe(data.user);
         const docId = (data.user as any)?.medecinId;
         if (docId) {
           setHasAttachedDoctor(true);
-          setMedecinId(String(docId));
           try {
             const med = await getMedecinById(String(docId));
             const medUser = (med as any).user || med;
             setDoctor(medUser);
-            // on limite l'affichage aux infos du médecin rattaché pour aide visuelle
-            setMedecins([medUser]);
+            setMedecinId(String(docId));
           } catch (e) {
             // en cas d'échec on laisse la sélection manuelle
           }
@@ -159,7 +161,10 @@ export default function PatientAppointmentNewScreen() {
           setHasAttachedDoctor(false);
         }
       } catch (e: any) {
+        console.error('❌ Erreur profil :', e);
         setSnack({ visible: true, message: e?.message || 'Erreur de chargement du profil', type: 'error' });
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -229,6 +234,28 @@ export default function PatientAppointmentNewScreen() {
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#2ccdd2" />
+        <Text style={{ marginTop: 12, color: '#6B7280' }}>Chargement...</Text>
+      </View>
+    );
+  }
+
+  if (!medecin) {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="alert-circle" size={50} color="#EF4444" />
+        <Text style={{ marginTop: 12, fontSize: 16, color: '#111827', fontWeight: '600' }}>Aucun médecin assigné</Text>
+        <Text style={{ marginTop: 8, color: '#6B7280', textAlign: 'center' }}>Veuillez contacter l'administration pour être assigné à un médecin</Text>
+        <TouchableOpacity style={[styles.primaryBtn, { marginTop: 20 }]} onPress={() => router.back()}>
+          <Text style={styles.primaryBtnText}>Retour</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -368,14 +395,65 @@ export default function PatientAppointmentNewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#F8FAFC', marginBottom: 40, marginTop: 32 },
-  title: { fontSize: 18, color: '#000', marginBottom: 12, fontWeight: 'bold' },
-  group: { marginBottom: 12 },
-  label: { fontSize: 13, color: '#374151', marginBottom: 6 },
+  container: { flex: 1, padding: 16, backgroundColor: '#F8FAFC' },
+  centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: 18, color: '#000', fontWeight: 'bold' },
+  group: { marginBottom: 16 },
+  label: { fontSize: 13, color: '#374151', marginBottom: 8, fontWeight: '600' },
+  
+  // Médecin Card
+  medecinCard: { 
+    backgroundColor: '#fff', 
+    borderRadius: 12, 
+    padding: 14, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 12
+  },
+  medecinAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2ccdd2',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  medecinInitials: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  medecinName: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  medecinSpecialite: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  medecinHopital: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  medecinContact: { fontSize: 12, color: '#2ccdd2', marginTop: 4, fontWeight: '500' },
+  
+  // Time Slot
+  timeSlotCard: {
+    backgroundColor: '#E0F7F6',
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2ccdd2'
+  },
+  timeSlotText: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  timeSlotSubtext: { fontSize: 12, color: '#6B7280', marginTop: 4 },
+  
+  // Cards
   cardContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16 },
+  card: { 
+    backgroundColor: '#fff', 
+    borderWidth: 1, 
+    borderColor: '#E5E7EB', 
+    borderRadius: 12, 
+    paddingVertical: 10, 
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
   cardSelected: { borderColor: '#2ccdd2', backgroundColor: '#E0F7F6' },
-  cardText: { color: '#111827' },
+  cardText: { color: '#111827', fontSize: 13 },
   // Calendar styles
   dayCell: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', margin: 2, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB' },
   dayEmpty: { backgroundColor: 'transparent', borderWidth: 0 },
@@ -388,7 +466,8 @@ const styles = StyleSheet.create({
   slotDisabled: { backgroundColor: '#E5E7EB', borderColor: '#E5E7EB' },
   slotText: { color: '#111827' },
   slotTextDisabled: { color: '#9CA3AF' },
-  primaryBtn: { backgroundColor: '#2ccdd2', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 },
-  primaryBtnText: { color: '#fff', fontSize: 16 },
+  // Buttons
+  primaryBtn: { backgroundColor: '#2ccdd2', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16 },
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   error: { color: '#DC2626', marginTop: 8 },
 });

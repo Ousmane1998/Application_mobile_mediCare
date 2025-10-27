@@ -135,6 +135,11 @@ export default function PatientDashboardScreen() {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity style={[styles.blockBtn, { marginTop: 12, flexDirection: 'row', justifyContent: 'center' }]} onPress={() => router.push('/Patient/advice')}>
+          <Ionicons name="bulb-outline" size={18} color="#000" style={{ marginRight: 8 }} />
+          <Text style={styles.blockBtnText}>Mes conseils santé</Text>
+        </TouchableOpacity>
+
         <View style={{ height: 16 }} />
       </PageContainer>
       {/* <NavPatient /> */}

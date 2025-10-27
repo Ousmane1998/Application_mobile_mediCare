@@ -3,6 +3,7 @@
 import Appointment from "../models/Appointment.js";
 import User from "../models/User.js";
 import Notification from "../models/Notification.js";
+import { emitToUser } from "../utils/sendNotification.js";
 
 export const createAppointment = async (req, res) => {
   try {
@@ -22,6 +23,38 @@ export const createAppointment = async (req, res) => {
 
     console.log("📅 [createAppointment] Rendez-vous créé :", appointment._id);
 
+    // 📬 Créer une notification pour le MÉDECIN (rendez-vous en attente de confirmation)
+    try {
+      const patient = await User.findById(patientId).select('nom prenom');
+      const dateObj = new Date(date);
+      const dateStr = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', month: 'long', day: 'numeric' });
+      
+      const message = `Nouvelle demande de rendez-vous de ${patient?.prenom} ${patient?.nom} pour le ${dateStr}${heure ? ' à ' + heure : ''}`;
+      
+      await Notification.create({
+        userId: medecinId,
+        type: 'rdv',
+        message: message,
+        data: { appointmentId: appointment._id, patientId, status: 'pending' },
+        isRead: false,
+      });
+      
+      // 🔔 Émettre l'événement socket au médecin
+      emitToUser(medecinId, 'rdv', {
+        appointmentId: String(appointment._id),
+        patientId: String(patientId),
+        message: message,
+        date: dateStr,
+        heure: heure,
+        typeConsultation: typeConsultation,
+        status: 'pending'
+      });
+      
+      console.log("✅ [createAppointment] Notification créée pour médecin :", medecinId);
+    } catch (notifErr) {
+      console.error("⚠️ [createAppointment] Erreur création notification médecin :", notifErr.message);
+    }
+
     // 📬 Créer une notification pour le patient
     try {
       const dateObj = new Date(date);
@@ -30,7 +63,7 @@ export const createAppointment = async (req, res) => {
       await Notification.create({
         userId: patientId,
         type: 'rdv',
-        message: `Rendez-vous confirmé pour le ${dateStr}${heure ? ' à ' + heure : ''}`,
+        message: `Votre demande de rendez-vous pour le ${dateStr}${heure ? ' à ' + heure : ''} est en attente de confirmation`,
         data: { appointmentId: appointment._id, medecinId },
         isRead: false,
       });
