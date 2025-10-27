@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { useRouter } from 'expo-router';
 import { getProfile, updateProfile, updatePhoto, type UserProfile } from '../../utils/api';
 import Snackbar from '../../components/Snackbar';
@@ -123,7 +124,7 @@ export default function PatientProfileEditScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <PageContainer scroll style={styles.container}>
       <Text style={styles.title}>Modifier le profil</Text>
 
       <View style={[styles.group, { alignItems: 'center' }]}>
@@ -150,12 +151,12 @@ export default function PatientProfileEditScreen() {
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
       </TouchableOpacity>
       <Snackbar visible={snack.visible} message={snack.message} type={snack.type} onHide={() => setSnack((s) => ({ ...s, visible: false }))} />
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex:1,padding: 16, backgroundColor:'#fff', marginBottom: 40, marginTop: 32 },
+  container: { flex:1,padding: 16 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },

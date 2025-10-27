@@ -131,6 +131,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     paddingHorizontal: 16,
+    marginTop: 40,
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {
