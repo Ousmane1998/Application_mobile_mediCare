@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import NavDoctor from '@/components/navDoctor';
@@ -130,7 +131,7 @@ export default function DoctorDashboardScreen() {
   return (
     <View>
       <Header />
-      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {doctorName || 'Docteur'}!</Text>
 
         {loading ? (
@@ -236,14 +237,14 @@ export default function DoctorDashboardScreen() {
             {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
           </>
         )}
-      </ScrollView>
+      </PageContainer>
       {/* <NavDoctor /> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { marginTop: 12, fontSize: 22, color: '#111827', fontWeight: '600' },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },

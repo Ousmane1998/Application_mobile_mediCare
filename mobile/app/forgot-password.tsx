@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import PageContainer from '../components/PageContainer';
 import { useRouter } from 'expo-router';
 import { requestPasswordReset } from '../utils/api';
 
@@ -28,7 +29,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <PageContainer scroll style={styles.container}>
       <Text style={styles.title}>Mot de passe oublié</Text>
       <Text style={styles.subtitle}>Entrez votre email pour recevoir un code de réinitialisation.</Text>
 
@@ -47,12 +48,12 @@ export default function ForgotPasswordScreen() {
       <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
         <Text style={styles.link}>Retour</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1, marginBottom: 40, marginTop: 32 },
+  container: { padding: 24, flexGrow: 1 },
   title: { fontSize: 22, color: '#111827' },
   subtitle: { color: '#6B7280', marginTop: 6 },
   fieldGroup: { marginTop: 16 },

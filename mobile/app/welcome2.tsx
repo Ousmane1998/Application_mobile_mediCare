@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import PageContainer from '../components/PageContainer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +16,7 @@ export default function Welcome2Screen() {
   };
 
   return (
-    <View style={styles.container}>
+    <PageContainer style={styles.container}>
       <View style={styles.illustration}>
         <Image source={require('../assets/images/medicare chat.png')} style={{width: 250, height: 250}} />
       </View>
@@ -25,14 +26,6 @@ export default function Welcome2Screen() {
         <Text style={styles.subtitle}>
           Obtenez des réponses rapides, planifiez facilement des rendez-vous et partagez vos données en toute sécurité.
         </Text>
-
-        <View style={styles.bullet}>
-          <Ionicons name="bulb-outline" size={18} color="#2ccdd2" />
-          <View style={styles.bulletTextWrap}>
-            <Text style={styles.bulletTitle}>Obtenez des réponses rapides</Text>
-            <Text style={styles.bulletText}>Posez vos questions et recevez des conseils sans attendre.</Text>
-          </View>
-        </View>
 
         <View style={styles.bullet}>
           <Ionicons name="calendar-outline" size={18} color="#2ccdd2" />
@@ -51,28 +44,20 @@ export default function Welcome2Screen() {
         </View>
       </View>
 
-      <View>
         <View style={styles.dots}>
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
         </View>
-        <TouchableOpacity style={styles.primaryBtn} onPress={finishOnboarding}>
-          <Text style={styles.primaryBtnText}>Continuer</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
     paddingHorizontal: 24,
     paddingTop: 50,
     paddingBottom: 24,
-    marginBottom: 40,
-    marginTop: 32,
     justifyContent: 'space-between',
   },
   illustration: {

@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
@@ -77,7 +78,7 @@ export default function PatientDashboardScreen() {
   return (
     <View>
       <Header />
-      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {meName || 'Patient'}!</Text>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vos dernières mesures</Text>
 
@@ -135,14 +136,14 @@ export default function PatientDashboardScreen() {
         </View>
 
         <View style={{ height: 16 }} />
-      </ScrollView>
+      </PageContainer>
       {/* <NavPatient /> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   menu: { fontSize: 22, color: '#111827' },
   greeting: { marginTop: 16, fontSize: 24, color: '#111827' },

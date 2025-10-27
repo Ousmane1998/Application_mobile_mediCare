@@ -68,7 +68,7 @@ export default function AdminPasswordChangeScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 16 },
-  title: { fontSize: 18, color: '#111827', marginBottom: 12 },
+  title: { fontSize: 18, color: '#111827', marginBottom: 40, marginTop: 32 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },

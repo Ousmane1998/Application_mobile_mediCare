@@ -135,7 +135,7 @@ export default function AdminUsersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 20, color: '#111827', marginBottom: 8 },
   searchWrap: { marginTop: 4, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12 },
   searchIcon: { marginRight: 8 },

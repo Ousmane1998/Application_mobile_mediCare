@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { listHealthRecords, type HealthRecord } from '../../../utils/api';
+import { listHealthRecords, type HealthRecord } from '../../utils/api';
 
 export default function DoctorPatientHealthRecordScreen() {
   const { patientId } = useLocalSearchParams<{ patientId: string }>();
@@ -71,7 +71,7 @@ export default function DoctorPatientHealthRecordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 20, color: '#111827', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },

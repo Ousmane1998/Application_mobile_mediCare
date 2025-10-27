@@ -55,7 +55,7 @@ export default function AdminStatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 20, color: '#111827', marginBottom: 12 },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
   card: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 16, alignItems: 'center' },

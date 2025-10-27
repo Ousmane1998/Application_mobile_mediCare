@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
+import PageContainer from '../components/PageContainer';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -149,8 +150,8 @@ const [request, response, promptAsync] = Google.useAuthRequest({
   };
 
   return (
-    <ScrollView>
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <PageContainer scroll>
+      <View style={styles.container}> 
       <View style={styles.header}>        
         <Image source={require('../assets/images/logoMedicare.png')} style={{width: 75, height: 75}} />
       </View>
@@ -222,14 +223,13 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         <Text style={[styles.signup, { color: theme.colors.primary }]} onPress={() => router.push('/register-doctor')}>S&apos;inscrire</Text>
       </View>
     </View>
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 40,

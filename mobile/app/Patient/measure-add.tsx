@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Snackbar from "../../components/Snackbar";
+import PageContainer from "../../components/PageContainer";
 import { addMeasure, getProfile, type UserProfile, type MeasureType } from "../../utils/api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -172,7 +173,7 @@ useEffect(() => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <PageContainer scroll style={styles.container}>
       <Text style={styles.headerTitle}>Quel type de mesure souhaitez-vous ajouter ?</Text>
 
       <View style={styles.group}><Text style={styles.label}>Type</Text>
@@ -222,18 +223,18 @@ useEffect(() => {
       </View>
 
       <View style={styles.group}>
-        <Text style={styles.label}>Valeur</Text>
+        <Text style={styles.label}>Valeur </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TextInput
             style={[styles.input, { flex: 1 }]} value={value} onChangeText={setValue}
-            placeholder={type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
+            placeholder={type === 'tension' ? 'Ex: 120/80 mmHg' : type === 'glycemie' ? 'Ex: 90 mg/dL' : type === 'poids' ? 'Ex: 75.5 kg' : type === 'pouls' ? 'Ex: 72 bpm' : 'Ex: 37.2 °C'}
           />
           <Text style={styles.unit}>
             {type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
           </Text>
         </View>
         <Text style={styles.help}>
-          {type === 'tension' ? "Ex: 120/80 mmHg" : type === 'glycemie' ? "Ex: 90 mg/dL" : type === 'poids' ? "Ex: 75.5 kg" : type === 'pouls' ? "Ex: 72 bpm" : "Ex: 37.2 °C"}
+          {type === 'tension' ? "Entre 80/50 et 200/130 mmHg" : type === 'glycemie' ? "Entre 40 et 600 mg/dL" : type === 'poids' ? "Entre 1 et 500 kg" : type === 'pouls' ? "Entre 30 et 220 bpm" : "Entre 34 et 43 °C"}
         </Text>
       </View>
 
@@ -254,12 +255,12 @@ useEffect(() => {
         type={snack.type}
         onHide={() => setSnack((s) => ({ ...s, visible: false }))}
       />
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#F8FAFC", minHeight: "100%", marginBottom: 40, marginTop: 32 },
+  container: { padding: 16, minHeight: "100%" },
   headerTitle: { fontSize: 20, fontWeight: "700", color: "#111827", marginVertical: 12 },
   chip: {
     paddingHorizontal: 12,

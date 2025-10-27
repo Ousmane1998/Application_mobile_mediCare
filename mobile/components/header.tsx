@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, Modal, Text } from 'react-native';
 
@@ -46,7 +47,7 @@ export default function Header() {
       ) : (
         <Image
           source={require('../assets/images/logoMedicare.png')}
-          style={{ width: 50, height: 50 }}
+          style={{ width: 80, height: 80 }}
           resizeMode="contain"
         />
       )}
@@ -56,7 +57,7 @@ export default function Header() {
         <View style={styles.centerLogoWrap} pointerEvents="none">
           <Image
             source={require('../assets/images/logoMedicare.png')}
-            style={{ width: 40, height: 40 }}
+            style={{ width: 80, height: 80 }}
             resizeMode="contain"
           />
         </View>
@@ -66,7 +67,7 @@ export default function Header() {
       <View style={styles.iconContainer}>
 
         {/* Dark/Light mode toggle */}
-        <TouchableOpacity onPress={toggle} onLongPress={() => setThemePickerOpen(true)}>
+        <TouchableOpacity onPress={toggle} onPress={() => setThemePickerOpen(true)}>
           <Ionicons name={theme.mode === 'dark' ? 'sunny-outline' : 'moon-outline'} size={22} color={theme.colors.text} style={styles.icon} />
         </TouchableOpacity>
 

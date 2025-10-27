@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import PageContainer from '../components/PageContainer';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { resetPasswordWithCode } from '../utils/api';
 
@@ -36,7 +37,7 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <PageContainer scroll style={styles.container}>
       <Text style={styles.title}>Réinitialiser le mot de passe</Text>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Email ou Téléphone</Text>
@@ -63,15 +64,15 @@ export default function ResetPasswordScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
-        <Text style={styles.link}>Retour</Text>
+        <Text style={{ color: '#2ccdd2' }}>Retour</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1, marginBottom: 40, marginTop: 32 },
-  title: { fontSize: 22, color: '#111827' },
+  container: { padding: 24, flexGrow: 1 },
+  title: { fontSize: 22, color: '#111827', marginTop: 24 },
   fieldGroup: { marginTop: 16 },
   label: { color: '#374151', marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12 },
