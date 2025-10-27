@@ -1,7 +1,7 @@
 // @ts-nocheck
 import express from 'express';
 import { sendEmergencyAlert, getEmergencyAlerts, getEmergencyAlertDetail } from '../controllers/emergencyController.js';
-import { authMiddleware } from '../middlewares/authMiddleware.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
