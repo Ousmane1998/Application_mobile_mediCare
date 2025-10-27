@@ -222,9 +222,15 @@ export default function DoctorDashboardScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={styles.fab} onPress={() => router.push('/Doctor/add-patient')}>
-              <Text style={styles.fabText}>Ajouter Patient</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+              <TouchableOpacity style={[styles.fab, { position: 'relative', flex: 1, width: 'auto', height: 'auto', paddingVertical: 12, paddingHorizontal: 16 }]} onPress={() => router.push('/Doctor/add-patient')}>
+                <Text style={styles.fabText}>Ajouter Patient</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.fab, { position: 'relative', flex: 1, width: 'auto', height: 'auto', paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'center' }]} onPress={() => router.push('/Doctor/advice')}>
+                <Ionicons name="bulb-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.fabText}>Créer Conseil</Text>
+              </TouchableOpacity>
+            </View>
 
             {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
           </>

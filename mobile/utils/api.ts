@@ -127,6 +127,16 @@ export async function getAdvices(patientId: string) {
   return authFetch(`/advices/${encodeURIComponent(patientId)}`);
 }
 
+export async function createAdvice(payload: {
+  medecinId: string;
+  patientId: string;
+  titre: string;
+  contenu: string;
+  categorie: string;
+}) {
+  return authFetch('/advices', { method: 'POST', body: JSON.stringify(payload) });
+}
+
 // Appointments
 export async function createAppointment(payload: { patientId: string; medecinId: string; date: string; heure?: string; statut?: 'en_attente' | 'confirme' | 'annule';typeConsultation?: string;  }) {
   return authFetch('/appointments', { method: 'POST', body: JSON.stringify(payload) });

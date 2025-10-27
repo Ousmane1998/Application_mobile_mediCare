@@ -41,6 +41,13 @@ export default function NavPatient() {
           tabBarIcon: ({ color, size }) => <Ionicons name="medical-outline" color={color} size={60} />,
         }}
       />
+      <Tabs.Screen
+        name="advice"
+        options={{
+          title: 'Conseils',
+          tabBarIcon: ({ color, size }) => <Ionicons name="bulb-outline" color={color} size={60} />,
+        }}
+      />
     </Tabs>
   );
 }

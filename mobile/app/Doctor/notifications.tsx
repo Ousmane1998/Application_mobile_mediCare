@@ -33,10 +33,19 @@ export default function DoctorNotificationsScreen() {
     try {
       setError(null);
       const prof = await getProfile();
+      console.log('👨‍⚕️ [Notifications] Profil médecin :', prof.user._id || prof.user.id);
       setMe(prof.user);
-      const list = await getNotifications(prof.user._id || prof.user.id);
+      
+      const userId = prof.user._id || prof.user.id;
+      console.log('📬 [Notifications] Récupération des notifications pour userId :', userId);
+      
+      const list = await getNotifications(userId);
+      console.log('✅ [Notifications] Notifications reçues :', list);
+      console.log('📊 [Notifications] Nombre de notifications :', Array.isArray(list) ? list.length : 0);
+      
       setItems(Array.isArray(list) ? list : []);
     } catch (e: any) {
+      console.error('❌ [Notifications] Erreur :', e);
       setError(e?.message || 'Erreur de chargement');
     } finally {
       setLoading(false);
@@ -51,7 +60,10 @@ export default function DoctorNotificationsScreen() {
     const s = io(SOCKET_URL, { transports: ['websocket'] });
     socketRef.current = s;
     s.emit('join', String(id));
+    
+    // Écouter les alertes (mesures)
     s.on('alert', (payload: any) => {
+      console.log('🔔 [Socket] Alerte reçue :', payload);
       const n = {
         _id: `rt_${Date.now()}`,
         userId: id,
@@ -63,6 +75,37 @@ export default function DoctorNotificationsScreen() {
       } as any as NotificationItem;
       setItems((prev) => [n, ...prev]);
     });
+    
+    // Écouter les rendez-vous en attente
+    s.on('rdv', (payload: any) => {
+      console.log('📅 [Socket] Rendez-vous reçu :', payload);
+      const n = {
+        _id: `rdv_${Date.now()}`,
+        userId: id,
+        type: 'rdv',
+        message: String(payload?.message || 'Nouvelle demande de rendez-vous'),
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        data: payload,
+      } as any as NotificationItem;
+      setItems((prev) => [n, ...prev]);
+    });
+    
+    // Écouter les notifications génériques
+    s.on('notification', (payload: any) => {
+      console.log('📬 [Socket] Notification reçue :', payload);
+      const n = {
+        _id: `notif_${Date.now()}`,
+        userId: id,
+        type: payload?.type || 'notification',
+        message: String(payload?.message || 'Notification'),
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        data: payload,
+      } as any as NotificationItem;
+      setItems((prev) => [n, ...prev]);
+    });
+    
     return () => {
       try { s.disconnect(); } catch {}
       socketRef.current = null;
@@ -163,15 +206,30 @@ export default function DoctorNotificationsScreen() {
         const subtitle = n.message || '';
         const canOpenMeasure = (n as any)?.data?.measureId;
         const canOpenFiche = ((n as any)?.type === 'share_fiche' || (n as any)?.type === 'fiche') && (n as any)?.data?.patientId;
+        const isRdvPending = ((n as any)?.type === 'rdv' || (n as any)?.type === 'appointment') && (n as any)?.data?.status === 'pending';
+        const isAlerte = ['alerte', 'alert'].includes((n as any)?.type?.toLowerCase());
+        
         const onOpen = () => {
           if (canOpenMeasure) {
-            router.push(`/Doctor/measure/${(n as any).data.measureId}`);
+            router.push({
+              pathname: '/Doctor/measure-detail',
+              params: { 
+                measureId: (n as any).data.measureId,
+                patientId: (n as any).data.patientId
+              }
+            });
           } else if (canOpenFiche) {
             router.push(`/Doctor/health-record/${(n as any).data.patientId}`);
+          } else if (isRdvPending) {
+            router.push({
+              pathname: '/Doctor/appointment-confirm',
+              params: { appointmentId: (n as any).data.appointmentId }
+            });
           }
         };
+        
         return (
-          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche) ? 0.7 : 1} onPress={onOpen}>
+          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche || isRdvPending) ? 0.7 : 1} onPress={onOpen}>
             <View style={styles.cardHead}>
               <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}> 
                 <Ionicons name={icon} size={20} color={accent} />
@@ -187,6 +245,58 @@ export default function DoctorNotificationsScreen() {
             <Text style={styles.cardTitle}>{title}</Text>
             {!!time && <Text style={styles.time}>{time}</Text>}
             {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+            
+            {/* Action Buttons */}
+            {isRdvPending && (
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.confirmButton]}
+                  onPress={() => {
+                    onMarkRead(String(n._id));
+                    router.push({
+                      pathname: '/Doctor/appointment-confirm',
+                      params: { appointmentId: (n as any).data.appointmentId }
+                    });
+                  }}
+                >
+                  <Ionicons name="checkmark-circle" size={16} color="#fff" />
+                  <Text style={styles.actionButtonText}>Confirmer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.rejectButton]}
+                  onPress={() => {
+                    Alert.alert('Rejeter', 'Êtes-vous sûr de vouloir rejeter ce rendez-vous?', [
+                      { text: 'Annuler', style: 'cancel' },
+                      { text: 'Rejeter', style: 'destructive', onPress: () => onDelete(String(n._id)) }
+                    ]);
+                  }}
+                >
+                  <Ionicons name="close-circle" size={16} color="#fff" />
+                  <Text style={styles.actionButtonText}>Rejeter</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            
+            {isAlerte && (
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.viewButton]}
+                  onPress={() => {
+                    onMarkRead(String(n._id));
+                    router.push({
+                      pathname: '/Doctor/measure-detail',
+                      params: { 
+                        measureId: (n as any).data.measureId,
+                        patientId: (n as any).data.patientId
+                      }
+                    });
+                  }}
+                >
+                  <Ionicons name="eye" size={16} color="#fff" />
+                  <Text style={styles.actionButtonText}>Voir la mesure</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </TouchableOpacity>
         );
       })}
@@ -213,4 +323,12 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, color: '#111827', marginTop: 8 },
   time: { color: '#6B7280', marginTop: 4 },
   subtitle: { color: '#374151', marginTop: 6 },
+  
+  // Action Buttons
+  actionButtons: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  actionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 6 },
+  confirmButton: { backgroundColor: '#10B981' },
+  rejectButton: { backgroundColor: '#EF4444' },
+  viewButton: { backgroundColor: '#2ccdd2' },
+  actionButtonText: { fontSize: 12, fontWeight: '600', color: '#fff' },
 });
