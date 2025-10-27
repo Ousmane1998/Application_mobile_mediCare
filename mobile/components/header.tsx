@@ -1,19 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { getProfile } from '../utils/api';
+import { getProfile, getNotifications } from '../utils/api';
 import Snackbar from './Snackbar';
 import { type UserProfile } from '../utils/api';
 
 export default function Header() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     visible: false,
     message: '',
     type: 'info',
   });
+
+  const loadNotifications = async (userId: string) => {
+    try {
+      const notifs = await getNotifications(userId);
+      const unread = (Array.isArray(notifs) ? notifs : []).filter(n => !n.isRead).length;
+      setUnreadCount(unread);
+      console.log('🔔 Notifications non lues:', unread);
+    } catch (e: any) {
+      console.error('❌ Erreur chargement notifications:', e);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -21,6 +33,11 @@ export default function Header() {
         const data = await getProfile();
         const u = data.user as UserProfile;
         setProfile(u);
+        
+        // Charger les notifications
+        const userId = (u as any)._id || (u as any).id;
+        await loadNotifications(userId);
+        
         setSnack({ visible: true, message: 'Profil chargé avec succès', type: 'success' });
       } catch (e: any) {
         setSnack({ visible: true, message: e?.message || 'Erreur de chargement', type: 'error' });
@@ -45,7 +62,14 @@ export default function Header() {
           if (role === 'patient') return router.push('/Patient/notifications' as any);
           if (role === 'admin') return router.push('/Admin/notifications' as any);
         }}>
-          <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon} />
+          <View style={styles.notificationContainer}>
+            <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -93,5 +117,27 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginLeft: 12,
+  },
+  notificationContainer: {
+    position: 'relative',
+    marginLeft: 12,
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

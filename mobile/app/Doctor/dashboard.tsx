@@ -126,9 +126,9 @@ export default function DoctorDashboardScreen() {
   };
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Header />
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView style={[styles.container, { flex: 1 }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={styles.greeting}>Bonjour, {doctorName || 'Docteur'}!</Text>
 
         {loading ? (

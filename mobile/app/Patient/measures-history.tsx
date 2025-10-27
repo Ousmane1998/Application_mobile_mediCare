@@ -26,12 +26,23 @@ export default function PatientMeasuresHistoryScreen() {
       setError(null);
       const prof = await getProfile();
       const id = (prof.user as any)._id || (prof.user as any).id;
+      console.log('📊 Patient ID:', id);
+      
       const history = await getMeasuresHistory(id);
+      console.log('📊 Mesures reçues:', history);
+      
       const arr = Array.isArray(history) ? history : [];
+      console.log('📊 Nombre de mesures:', arr.length);
+      
       arr.sort((a: any,b: any)=> new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
       setItems(arr);
       setPage(1);
+      
+      if (arr.length === 0) {
+        console.warn('⚠️ Aucune mesure trouvée pour ce patient');
+      }
     } catch (e: any) {
+      console.error('❌ Erreur chargement mesures:', e);
       setError(e?.message || 'Erreur de chargement');
     } finally {
       setLoading(false);
@@ -125,17 +136,25 @@ export default function PatientMeasuresHistoryScreen() {
         ))}
       </ScrollView>
 
-      {pageSlice.map((m, idx) => (
-        <View key={(m._id || idx).toString()} style={styles.card}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={styles.badge}><Ionicons name="trending-up-outline" color="#111827" size={16} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{String(m.type).toUpperCase()} — {m.value}</Text>
-              <Text style={styles.sub}>{new Date(m.date || m.createdAt || Date.now()).toLocaleString()}</Text>
+      {pageSlice.length === 0 ? (
+        <View style={[styles.card, { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }]}>
+          <Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
+          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 16 }}>Aucune mesure trouvée</Text>
+          <Text style={{ color: '#9CA3AF', marginTop: 4, fontSize: 13 }}>Commencez par ajouter une mesure</Text>
+        </View>
+      ) : (
+        pageSlice.map((m, idx) => (
+          <View key={(m._id || idx).toString()} style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={styles.badge}><Ionicons name="trending-up-outline" color="#111827" size={16} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{String(m.type).toUpperCase()} — {m.value}</Text>
+                <Text style={styles.sub}>{new Date(m.date || m.createdAt || Date.now()).toLocaleString()}</Text>
+              </View>
             </View>
           </View>
-        </View>
-      ))}
+        ))
+      )}
 
       {pageSlice.length < filtered.length && (
         <TouchableOpacity style={styles.loadMore} onPress={() => setPage(p => p + 1)}>

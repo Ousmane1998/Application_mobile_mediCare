@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { getProfile, getAppointments, updateAppointment, type AppointmentItem } from '../../utils/api';
@@ -38,11 +39,26 @@ export default function PatientAppointmentsScreen() {
     try {
       const prof = await getProfile();
       const id = (prof.user as any)._id || (prof.user as any).id;
+      console.log('📋 Patient ID:', id);
       setMeId(id);
+      
       const all = await getAppointments();
-      const mine = (Array.isArray(all) ? all : []).filter(a => String((a.patientId as any)?._id || a.patientId) === String(id));
+      console.log('📋 Tous les rendez-vous reçus:', all);
+      
+      const mine = (Array.isArray(all) ? all : []).filter(a => {
+        const appointmentPatientId = String((a.patientId as any)?._id || a.patientId);
+        const currentUserId = String(id);
+        console.log(`🔍 Comparaison: ${appointmentPatientId} === ${currentUserId} ? ${appointmentPatientId === currentUserId}`);
+        return appointmentPatientId === currentUserId;
+      });
+      
+      console.log('✅ Rendez-vous du patient:', mine);
+      
       mine.sort((a,b)=> new Date(`${a.date} ${a.heure||'00:00'}`).getTime() - new Date(`${b.date} ${b.heure||'00:00'}`).getTime());
       setItems(mine);
+    } catch (err: any) {
+      console.error('❌ Erreur lors du chargement des rendez-vous:', err);
+      Alert.alert('Erreur', 'Impossible de charger les rendez-vous');
     } finally {
       setLoading(false);
     }
@@ -59,6 +75,16 @@ export default function PatientAppointmentsScreen() {
   const now = Date.now();
   const upcoming = items.filter(a => new Date(`${a.date} ${a.heure||'00:00'}`).getTime() >= now);
   const past = items.filter(a => new Date(`${a.date} ${a.heure||'00:00'}`).getTime() < now).reverse();
+
+  // Fonction pour formater la date
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
 
   if (loading) {
     return (
@@ -87,12 +113,37 @@ export default function PatientAppointmentsScreen() {
         <Text style={styles.cardTitle}>À venir</Text>
         {upcoming.length === 0 && <Text style={styles.textMuted}>Aucun rendez-vous à venir</Text>}
         {upcoming.map((a,i) => (
-          <View key={(a._id||i).toString()} style={styles.rowBetween}>
-            <Text style={styles.text}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
-            {badge(a.statut)}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity onPress={() => cancel(a._id)}><Text style={[styles.action, { color: '#EF4444' }]}>Annuler</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => reschedule(a)}><Text style={[styles.action, { color: '#2563EB' }]}>Reprogrammer</Text></TouchableOpacity>
+          <View key={(a._id||i).toString()} style={styles.appointmentCard}>
+            <View style={styles.appointmentHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.appointmentDate}>{formatDate(a.date)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <Ionicons name="time-outline" size={16} color="#6B7280" />
+                  <Text style={styles.appointmentTime}>{a.heure || 'Heure non définie'}</Text>
+                </View>
+              </View>
+              {badge(a.statut)}
+            </View>
+            <View style={styles.appointmentDivider} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <Ionicons name="person-circle-outline" size={20} color="#2ccdd2" />
+              <Text style={styles.appointmentDoctor}>{(a.medecinId as any)?.prenom || ''} {(a.medecinId as any)?.nom || 'Médecin'}</Text>
+            </View>
+            {a.typeConsultation && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <Ionicons name="medical-outline" size={16} color="#6B7280" />
+                <Text style={styles.appointmentType}>{a.typeConsultation}</Text>
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#EF4444' }]} onPress={() => cancel(a._id)}>
+                <Ionicons name="close-outline" size={16} color="#fff" />
+                <Text style={styles.actionBtnText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#2563EB' }]} onPress={() => reschedule(a)}>
+                <Ionicons name="refresh-outline" size={16} color="#fff" />
+                <Text style={styles.actionBtnText}>Reprogrammer</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ))}
@@ -102,9 +153,28 @@ export default function PatientAppointmentsScreen() {
         <Text style={styles.cardTitle}>Passés</Text>
         {past.length === 0 && <Text style={styles.textMuted}>Aucun rendez-vous passé</Text>}
         {past.map((a,i) => (
-          <View key={(a._id||i).toString()} style={styles.rowBetween}>
-            <Text style={styles.text}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
-            {badge(a.statut)}
+          <View key={(a._id||i).toString()} style={[styles.appointmentCard, { opacity: 0.7 }]}>
+            <View style={styles.appointmentHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.appointmentDate}>{formatDate(a.date)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <Ionicons name="time-outline" size={16} color="#6B7280" />
+                  <Text style={styles.appointmentTime}>{a.heure || 'Heure non définie'}</Text>
+                </View>
+              </View>
+              {badge(a.statut)}
+            </View>
+            <View style={styles.appointmentDivider} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <Ionicons name="person-circle-outline" size={20} color="#2ccdd2" />
+              <Text style={styles.appointmentDoctor}>{(a.medecinId as any)?.prenom || ''} {(a.medecinId as any)?.nom || 'Médecin'}</Text>
+            </View>
+            {a.typeConsultation && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <Ionicons name="medical-outline" size={16} color="#6B7280" />
+                <Text style={styles.appointmentType}>{a.typeConsultation}</Text>
+              </View>
+            )}
           </View>
         ))}
       </View>
@@ -177,14 +247,23 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
   title: { fontSize: 22, color: '#111827', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
-  cardTitle: { fontSize: 16, color: '#111827', marginBottom: 6 },
+  cardTitle: { fontSize: 16, color: '#111827', marginBottom: 12 },
   text: { color: '#374151', marginBottom: 4 },
   textMuted: { color: '#6B7280', marginBottom: 4, fontStyle: 'italic' },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 6 },
-  badge: { color: '#fff', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 999, overflow: 'hidden' },
+  badge: { color: '#fff', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, overflow: 'hidden', fontSize: 12, fontWeight: '600' },
   action: { fontWeight: '600' },
   btn: { marginTop: 8, backgroundColor: '#2ccdd2', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   btnText: { color: '#fff' },
+  appointmentCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#2ccdd2', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  appointmentDate: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  appointmentTime: { fontSize: 13, color: '#6B7280' },
+  appointmentDivider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 10 },
+  appointmentDoctor: { fontSize: 14, fontWeight: '500', color: '#111827' },
+  appointmentType: { fontSize: 12, color: '#6B7280', fontStyle: 'italic' },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 8 },
+  actionBtnText: { color: '#fff', fontWeight: '600', fontSize: 12 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 },
   modalCard: { width: '100%', backgroundColor: '#fff', borderRadius: 12, padding: 16 },
   modalTitle: { fontSize: 18, color: '#111827', marginBottom: 8 },

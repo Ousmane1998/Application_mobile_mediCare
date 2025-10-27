@@ -8,13 +8,14 @@ import { useRouter } from 'expo-router';
 
 // Notifications orientées médecin: nouveaux messages, demandes de rendez-vous, alertes patient
 
-const FILTERS = ['Tout', 'Messages', 'Rendez-vous', 'Alertes'] as const;
+const FILTERS = ['Tout', 'Messages', 'Rendez-vous', 'Alertes', 'SOS'] as const;
 
 function iconAndAccentFor(n: NotificationItem) {
   const t = (n.type || '').toLowerCase();
   if (t === 'message') return { icon: 'chatbubbles-outline' as const, accent: '#22C55E' };
   if (t === 'rdv' || t === 'appointment') return { icon: 'calendar-outline' as const, accent: '#10B981' };
   if (t === 'alerte' || t === 'alert') return { icon: 'warning-outline' as const, accent: '#EF4444' };
+  if (t === 'emergency') return { icon: 'call-outline' as const, accent: '#DC2626' };
   return { icon: 'notifications-outline' as const, accent: '#6366F1' };
 }
 
@@ -91,6 +92,21 @@ export default function DoctorNotificationsScreen() {
       setItems((prev) => [n, ...prev]);
     });
     
+    // Écouter les alertes d'urgence
+    s.on('emergency', (payload: any) => {
+      console.log('🚨 [Socket] Alerte SOS reçue :', payload);
+      const n = {
+        _id: `emergency_${Date.now()}`,
+        userId: id,
+        type: 'emergency',
+        message: String(payload?.message || '🚨 Alerte SOS'),
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        data: payload,
+      } as any as NotificationItem;
+      setItems((prev) => [n, ...prev]);
+    });
+    
     // Écouter les notifications génériques
     s.on('notification', (payload: any) => {
       console.log('📬 [Socket] Notification reçue :', payload);
@@ -123,6 +139,7 @@ export default function DoctorNotificationsScreen() {
     if (filter === 'Messages') arr = arr.filter(i => (i.type || '').toLowerCase() === 'message');
     else if (filter === 'Rendez-vous') arr = arr.filter(i => ['rdv', 'appointment'].includes((i.type || '').toLowerCase()));
     else if (filter === 'Alertes') arr = arr.filter(i => ['alerte', 'alert'].includes((i.type || '').toLowerCase()));
+    else if (filter === 'SOS') arr = arr.filter(i => (i.type || '').toLowerCase() === 'emergency');
     if (patientIdFilter !== 'all') {
       arr = arr.filter((n: any) => String(n?.data?.patientId || '') === String(patientIdFilter));
     }

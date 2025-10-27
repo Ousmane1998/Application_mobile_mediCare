@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getNotifications, getProfile, NotificationItem } from '../../utils/api';
+import { getNotifications, getProfile, markNotificationRead, NotificationItem } from '../../utils/api';
 
 type DisplayItem = {
   _id: string;
@@ -65,34 +65,58 @@ export default function PatientNotificationsScreen() {
   const [notifications, setNotifications] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const fetchNotifications = async (uid?: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Récupérer l'ID de l'utilisateur connecté si pas fourni
+      let id = uid || '';
+      if (!id) {
+        const { user } = await getProfile();
+        id = (user as any)._id || (user as any).id;
+        setUserId(id);
+      }
+      
+      console.log("📬 Récupération des notifications pour :", id);
+      
+      // Récupérer les notifications
+      const notifs = await getNotifications(id);
+      console.log("✅ Notifications reçues :", notifs);
+      
+      // Mapper les notifications
+      const displayItems = (Array.isArray(notifs) ? notifs : []).map(mapNotificationToDisplay);
+      setNotifications(displayItems);
+    } catch (err: any) {
+      console.error("❌ Erreur lors du chargement des notifications :", err);
+      setError(err?.message || 'Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Récupérer l'ID de l'utilisateur connecté
-        const { user } = await getProfile();
-        console.log("📬 Récupération des notifications pour :", user._id);
-        
-        // Récupérer les notifications
-        const notifs = await getNotifications(user._id);
-        console.log("✅ Notifications reçues :", notifs);
-        
-        // Mapper les notifications
-        const displayItems = (Array.isArray(notifs) ? notifs : []).map(mapNotificationToDisplay);
-        setNotifications(displayItems);
-      } catch (err: any) {
-        console.error("❌ Erreur lors du chargement des notifications :", err);
-        setError(err?.message || 'Erreur de chargement');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotifications();
   }, []);
+
+  const handleNotificationPress = async (notifId: string, isRead: boolean) => {
+    try {
+      if (!isRead) {
+        console.log("📝 Marquage de la notification comme lue :", notifId);
+        await markNotificationRead(notifId);
+        
+        // Mettre à jour l'état local
+        setNotifications(prev => prev.map(n => n._id === notifId ? { ...n, isRead: true } : n));
+        console.log("✅ Notification marquée comme lue");
+      } else {
+        console.log("ℹ️ Notification déjà lue");
+      }
+    } catch (err: any) {
+      console.error("❌ Erreur lors du marquage de la notification :", err);
+    }
+  };
 
   const items = useMemo(() => {
     if (filter === 'Tout') return notifications;
@@ -143,17 +167,24 @@ export default function PatientNotificationsScreen() {
         </View>
       ) : (
         items.map(item => (
-          <View key={item._id} style={styles.card}>
+          <TouchableOpacity 
+            key={item._id} 
+            style={[styles.card, !item.isRead && styles.cardUnread]}
+            onPress={() => handleNotificationPress(item._id, item.isRead || false)}
+          >
             <View style={styles.cardHead}>
               <View style={[styles.iconWrap, { backgroundColor: `${item.accent}22` }]}> 
                 <Ionicons name={item.icon} size={20} color={item.accent} />
                 {!item.isRead && <View style={[styles.dot, { backgroundColor: item.accent }]} />}
               </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.cardTitle, !item.isRead && styles.cardTitleUnread]}>{item.title}</Text>
+                <Text style={styles.time}>{formatTime(item.createdAt)}</Text>
+              </View>
+              {!item.isRead && <View style={styles.unreadIndicator} />}
             </View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.time}>{formatTime(item.createdAt)}</Text>
             {!!item.subtitle && <Text style={styles.subtitle}>{item.subtitle}</Text>}
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>
@@ -170,11 +201,14 @@ const styles = StyleSheet.create({
   filterText: { color: '#374151' },
   filterTextActive: { color: '#065F46' },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12 },
-  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardUnread: { backgroundColor: '#F0FFFE', borderLeftWidth: 4, borderLeftColor: '#2ccdd2' },
+  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   iconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   dot: { width: 8, height: 8, borderRadius: 999, position: 'absolute', top: 4, right: 4 },
   cta: { fontWeight: '600' },
-  cardTitle: { fontSize: 16, color: '#111827', marginTop: 8 },
-  time: { color: '#6B7280', marginTop: 4 },
-  subtitle: { color: '#374151', marginTop: 6 },
+  cardTitle: { fontSize: 16, color: '#111827' },
+  cardTitleUnread: { fontWeight: '600', color: '#111827' },
+  time: { color: '#6B7280', marginTop: 4, fontSize: 12 },
+  subtitle: { color: '#374151', marginTop: 8 },
+  unreadIndicator: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#2ccdd2' },
 });

@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, A
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
-import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, type AppointmentItem } from '../../utils/api';
+import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, getMedecinById, type AppointmentItem } from '../../utils/api';
 
 export default function PatientDashboardScreen() {
   const router = useRouter();
@@ -34,16 +34,34 @@ export default function PatientDashboardScreen() {
         if (!cur || time > cur._ts) byType[t] = { ...m, _ts: time };
       });
       setLatest(byType);
+      
+      // Rendez-vous: afficher le dernier rendez-vous confirmé ou en attente
       const appts = await getAppointments();
       const myAppts = (Array.isArray(appts) ? appts : []).filter(a => String((a.patientId as any)?._id || a.patientId) === String(id));
-      const future = myAppts.filter(a => new Date(`${a.date} ${a.heure || '00:00'}`).getTime() >= Date.now());
-      future.sort((a,b)=> new Date(`${a.date} ${a.heure||'00:00'}`).getTime() - new Date(`${b.date} ${b.heure||'00:00'}`).getTime());
-      setNextAppt(future[0] || null);
-      const msgs = await getMessages();
-      const listMsgs = Array.isArray(msgs) ? msgs : [];
-      const myMsgs = listMsgs.filter((m: any) => [String(m.senderId), String(m.receiverId)].includes(String(id)));
-      myMsgs.sort((a: any,b: any)=> new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-      setRecentMsg(myMsgs[0] || null);
+      // Filtrer les rendez-vous confirmés ou en attente (pas annulés)
+      const validAppts = myAppts.filter(a => a.statut !== 'annule');
+      validAppts.sort((a,b)=> new Date(`${b.date} ${b.heure||'00:00'}`).getTime() - new Date(`${a.date} ${a.heure||'00:00'}`).getTime());
+      setNextAppt(validAppts[0] || null);
+      
+      // Messages: récupérer les messages avec le médecin assigné
+      if (prof.user?.medecinId) {
+        const medecinId = (prof.user.medecinId as any)?._id || prof.user.medecinId;
+        const msgs = await getMessages(id, medecinId);
+        const listMsgs = Array.isArray(msgs) ? msgs : [];
+        // Filtrer les messages non lus
+        const unreadMsgs = listMsgs.filter((m: any) => !m.isRead && String(m.receiverId) === String(id));
+        unreadMsgs.sort((a: any,b: any)=> new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        
+        // Enrichir le message avec le nom du médecin
+        if (unreadMsgs[0]) {
+          const medecin = await getMedecinById(medecinId);
+          const medecinData = medecin?.user || medecin;
+          unreadMsgs[0].senderName = `${medecinData?.prenom || ''} ${medecinData?.nom || 'Médecin'}`.trim();
+        }
+        setRecentMsg(unreadMsgs[0] || null);
+      }
+      
+      // Notifications non lues
       const notifs = await getNotifications(id);
       const unreadCount = (Array.isArray(notifs) ? notifs : []).filter(n => !n.isRead).length;
       setUnread(unreadCount);
@@ -63,6 +81,22 @@ export default function PatientDashboardScreen() {
   const gly = latest['glycemie'];
   const tens = latest['tension'];
 
+  // Fonction pour calculer l'heure relative
+  const getRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'À l\'instant';
+    if (diffMins < 60) return `Il y a ${diffMins}m`;
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffDays < 7) return `Il y a ${diffDays}j`;
+    return date.toLocaleDateString('fr-FR');
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -72,8 +106,12 @@ export default function PatientDashboardScreen() {
     );
   }
 
+  const handleEmergency = () => {
+    router.push('/Patient/emergency-alert');
+  };
+
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Header />
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={styles.greeting}>Bonjour, {meName || 'Patient'}!</Text>
@@ -108,13 +146,28 @@ export default function PatientDashboardScreen() {
 
         <View style={styles.block}>
           <Text style={styles.blockTitle}>Prochain rendez-vous</Text>
-          <Text style={styles.blockLine}>{nextAppt ? `${(nextAppt as any).medecinId?.nom || 'Médecin'} - ${nextAppt.date} à ${nextAppt.heure || ''}` : 'Aucun prochain rendez-vous'}</Text>
+          <Text style={styles.blockLine}>
+            {nextAppt ? (
+              `${(nextAppt as any).medecinId?.prenom || ''} ${(nextAppt as any).medecinId?.nom || 'Médecin'} - ${nextAppt.date} à ${nextAppt.heure || ''}`
+            ) : (
+              'Aucun rendez-vous'
+            )}
+          </Text>
           <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-new')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
         </View>
 
         <View style={styles.block}>
           <Text style={styles.blockTitle}>Messages</Text>
-          <Text style={styles.blockLine}>{recentMsg ? (recentMsg.text || recentMsg.message || 'Nouveau message') : 'Aucun message'}</Text>
+          {recentMsg ? (
+            <>
+              <Text style={styles.blockSender}>
+                De: {(recentMsg.senderName || recentMsg.senderFullName || 'Médecin')} • {getRelativeTime(recentMsg.createdAt)}
+              </Text>
+              <Text style={styles.blockLine} numberOfLines={2}>{recentMsg.text || recentMsg.message || 'Nouveau message'}</Text>
+            </>
+          ) : (
+            <Text style={styles.blockLine}>Aucun message</Text>
+          )}
           <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/chat')}><Text style={styles.blockBtnText}>Ouvrir le chat</Text></TouchableOpacity>
         </View>
 
@@ -139,6 +192,12 @@ export default function PatientDashboardScreen() {
 
         <View style={{ height: 16 }} />
       </ScrollView>
+
+      {/* Bouton d'urgence flottant */}
+      <TouchableOpacity style={styles.floatingEmergencyBtn} onPress={handleEmergency}>
+        <Ionicons name="call" size={28} color="#fff" />
+      </TouchableOpacity>
+
       <NavPatient />
     </View>
   );
@@ -149,6 +208,7 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   menu: { fontSize: 22, color: '#111827' },
   greeting: { marginTop: 16, fontSize: 24, color: '#111827' },
+  floatingEmergencyBtn: { position: 'absolute', bottom: 90, right: 20, width: 64, height: 64, borderRadius: 32, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, elevation: 10, zIndex: 100 },
   sectionTitle: { marginTop: 16, marginBottom: 8, fontSize: 16, color: '#111827' },
 
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
@@ -164,6 +224,7 @@ const styles = StyleSheet.create({
   block: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginTop: 12 },
   blockTitle: { fontSize: 16, color: '#111827', marginBottom: 8 },
   blockLine: { color: '#111827', marginBottom: 4 },
+  blockSender: { fontSize: 12, color: '#6B7280', marginBottom: 6 },
   blockBtn: { marginTop: 8, backgroundColor: '#2ccdd2', paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
   blockBtnText: { color: '#000' },
   findStructureBtn: {

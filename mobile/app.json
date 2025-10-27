@@ -11,7 +11,11 @@
     "ios": {
       "package": "com.medicare.app",
       "bundleIdentifier": "com.medicare.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "MediCare a besoin d'accéder à votre localisation pour envoyer une alerte d'urgence à votre médecin.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "MediCare a besoin d'accéder à votre localisation pour envoyer une alerte d'urgence à votre médecin."
+      }
     },
     "android": {
       "package": "com.medicare.app",
@@ -19,7 +23,11 @@
         "backgroundColor": "#2ccdd2"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",

@@ -22,16 +22,22 @@ export const getAllOrdonnances = async (req, res) => {
  */
 export const createOrdonnance = async (req, res) => {
   try {
+    console.log("📥 [createOrdonnance] Données reçues :", req.body);
+    
     const ordonnance = new Ordonnance(req.body);
+    console.log("💊 [createOrdonnance] Ordonnance avant sauvegarde :", ordonnance);
+    
     await ordonnance.save();
 
     console.log("💊 [createOrdonnance] Ordonnance créée :", ordonnance._id);
+    console.log("✅ [createOrdonnance] Patient :", ordonnance.patient);
+    console.log("✅ [createOrdonnance] Médecin :", ordonnance.medecin);
 
     // 📬 Créer une notification pour le patient
     try {
-      const medicaments = ordonnance.medicaments || [];
+      const medicaments = ordonnance.medicaments || ordonnance.prescriptions || [];
       const medicamentsList = Array.isArray(medicaments) 
-        ? medicaments.map(m => m.nom || m).join(', ')
+        ? medicaments.map(m => m.nom || m.medicament || m).join(', ')
         : 'Nouveaux médicaments';
 
       await Notification.create({
@@ -46,9 +52,10 @@ export const createOrdonnance = async (req, res) => {
       console.error("⚠️ [createOrdonnance] Erreur création notification :", notifErr.message);
     }
 
-    res.status(201).json(ordonnance);
+    res.status(201).json({ message: "Ordonnance créée avec succès", ordonnance });
   } catch (error) {
-    res.status(400).json({ message: "Erreur lors de la création", error });
+    console.error("❌ [createOrdonnance] Erreur :", error);
+    res.status(400).json({ message: "Erreur lors de la création", error: error.message });
   }
 };
 
