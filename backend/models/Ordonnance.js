@@ -4,7 +4,6 @@ const OrdonnanceSchema = new mongoose.Schema({
   patient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true,
   },
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,7 +12,6 @@ const OrdonnanceSchema = new mongoose.Schema({
   medecin: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true,
   },
   medecinId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -44,8 +42,8 @@ const OrdonnanceSchema = new mongoose.Schema({
   fichierPDF: { type: String },
 });
 
-// Middleware pour normaliser les données avant la sauvegarde
-OrdonnanceSchema.pre('save', function(next) {
+// Middleware pour normaliser les données AVANT la validation
+OrdonnanceSchema.pre('validate', function(next) {
   // Utiliser patientId si patient n'est pas défini
   if (!this.patient && this.patientId) {
     this.patient = this.patientId;
@@ -62,6 +60,20 @@ OrdonnanceSchema.pre('save', function(next) {
       frequence: m.frequence,
       duree: m.duree,
     }));
+  }
+  next();
+});
+
+// Middleware pour valider les champs requis
+OrdonnanceSchema.pre('save', function(next) {
+  if (!this.patient) {
+    return next(new Error('Patient est requis'));
+  }
+  if (!this.medecin) {
+    return next(new Error('Médecin est requis'));
+  }
+  if (!this.prescriptions || this.prescriptions.length === 0) {
+    return next(new Error('Au moins une prescription est requise'));
   }
   next();
 });

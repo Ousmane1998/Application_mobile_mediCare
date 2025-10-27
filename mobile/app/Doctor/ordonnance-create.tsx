@@ -42,10 +42,20 @@ const OrdonnanceCreateScreen = () => {
     try {
       setLoading(true);
       const profile = await getProfile();
-      setMedecinId(profile.user._id);
+      console.log('👨‍⚕️ [Ordonnance] Profil médecin :', profile);
+      
+      const medecinIdValue = (profile.user as any)._id || (profile.user as any).id;
+      console.log('👨‍⚕️ [Ordonnance] Médecin ID :', medecinIdValue);
+      
+      if (!medecinIdValue) {
+        throw new Error('Impossible de récupérer l\'ID du médecin');
+      }
+      setMedecinId(medecinIdValue);
 
       if (patientId) {
+        console.log('🏥 [Ordonnance] Récupération patient :', patientId);
         const patientData = await authFetch(`/users/${patientId}`);
+        console.log('🏥 [Ordonnance] Données patient :', patientData);
         setPatient(patientData.user || patientData);
       }
     } catch (err: any) {
@@ -117,17 +127,23 @@ const OrdonnanceCreateScreen = () => {
         measureId: measureId || undefined,
       };
 
-      console.log('📤 Envoi ordonnance :', payload);
+      console.log('📤 [Ordonnance] Envoi payload :', JSON.stringify(payload, null, 2));
+      console.log('👨‍⚕️ [Ordonnance] Médecin ID :', medecinId);
+      console.log('🏥 [Ordonnance] Patient ID :', patientId);
+      console.log('💊 [Ordonnance] Nombre de médicaments :', medications.length);
+      
       const response = await authFetch('/ordonnances', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
 
-      console.log('✅ Ordonnance créée :', response);
+      console.log('✅ [Ordonnance] Créée avec succès :', response);
       Alert.alert('Succès', 'Ordonnance envoyée au patient');
       router.back();
     } catch (err: any) {
-      console.error('❌ Erreur :', err);
+      console.error('❌ [Ordonnance] Erreur complète :', err);
+      console.error('❌ [Ordonnance] Message :', err?.message);
+      console.error('❌ [Ordonnance] Status :', err?.status);
       Alert.alert('Erreur', err?.message || 'Impossible de créer l\'ordonnance');
     } finally {
       setSubmitting(false);
