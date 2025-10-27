@@ -259,7 +259,7 @@ useEffect(() => {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#F8FAFC", minHeight: "100%" },
+  container: { padding: 16, backgroundColor: "#F8FAFC", minHeight: "100%", marginBottom: 40, marginTop: 32 },
   headerTitle: { fontSize: 20, fontWeight: "700", color: "#111827", marginVertical: 12 },
   chip: {
     paddingHorizontal: 12,

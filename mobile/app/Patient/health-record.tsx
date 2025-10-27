@@ -4,10 +4,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import { getMyHealthRecord, getMedecins, type HealthRecord, type AppUser, createNotification, getProfile, ORG_NAME, ORG_LOGO, SECURE_FICHE_BASE, createFicheShareToken, SOCKET_URL } from '../../utils/api';
 import * as Print from 'expo-print';
+import { useAppTheme } from '../../theme/ThemeContext';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 
 export default function PatientHealthRecordScreen() {
+  const { theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rec, setRec] = useState<HealthRecord | null>(null);
@@ -41,129 +43,129 @@ export default function PatientHealthRecordScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#2ccdd2" />
-        <Text style={{ marginTop: 8, color: '#6B7280' }}>Chargement...</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 8, color: theme.colors.muted }}>Chargement...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      <View style={styles.card}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }}>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <View style={[styles.iconWrap, { backgroundColor: '#FEF9C3' }]}>
               <Ionicons name="water-outline" size={18} color="#CA8A04" />
             </View>
-            <Text style={styles.cardTitle}>Profil sanguin</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Profil sanguin</Text>
           </View>
         </View>
         <View style={styles.itemRow}>
           <Ionicons name="rainy-outline" size={16} color="#6B7280" />
-          <Text style={styles.itemText}><Text style={styles.itemLabel}>Groupe sanguin</Text> : {rec?.groupeSanguin || '—'}</Text>
+          <Text style={[styles.itemText, { color: theme.colors.text }]}><Text style={[styles.itemLabel, { color: theme.colors.text }]}>Groupe sanguin</Text> : {rec?.groupeSanguin || '—'}</Text>
         </View>
         <View style={styles.itemRow}>
           <Ionicons name="time-outline" size={16} color="#6B7280" />
-          <Text style={styles.itemText}><Text style={styles.itemLabel}>Dernière mise à jour</Text> : {rec?.derniereMiseAJour ? new Date(rec.derniereMiseAJour).toLocaleString() : '—'}</Text>
+          <Text style={[styles.itemText, { color: theme.colors.text }]}><Text style={[styles.itemLabel, { color: theme.colors.text }]}>Dernière mise à jour</Text> : {rec?.derniereMiseAJour ? new Date(rec.derniereMiseAJour).toLocaleString() : '—'}</Text>
         </View>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <View style={[styles.iconWrap, { backgroundColor: '#ECFDF5' }]}>
               <Ionicons name="warning-outline" size={18} color="#059669" />
             </View>
-            <Text style={styles.cardTitle}>Allergies</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Allergies</Text>
           </View>
         </View>
         {(rec?.allergies && rec.allergies.length > 0) ? (
           rec.allergies.map((a, i) => (
             <View key={`${a}_${i}`} style={styles.itemRow}>
               <Ionicons name="alert-circle-outline" size={16} color="#6B7280" />
-              <Text style={styles.itemText}>{a}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>{a}</Text>
             </View>
           ))
         ) : (
-          <Text style={styles.itemText}>Aucune allergie renseignée</Text>
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>Aucune allergie renseignée</Text>
         )}
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <View style={[styles.iconWrap, { backgroundColor: '#DBEAFE' }]}>
               <Ionicons name="medkit-outline" size={18} color="#2563EB" />
             </View>
-            <Text style={styles.cardTitle}>Maladies</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Maladies</Text>
           </View>
         </View>
         {(rec?.maladies && rec.maladies.length > 0) ? (
           rec.maladies.map((m, i) => (
             <View key={`${m}_${i}`} style={styles.itemRow}>
               <Ionicons name="pulse-outline" size={16} color="#6B7280" />
-              <Text style={styles.itemText}>{m}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>{m}</Text>
             </View>
           ))
         ) : (
-          <Text style={styles.itemText}>Aucune maladie renseignée</Text>
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>Aucune maladie renseignée</Text>
         )}
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <View style={[styles.iconWrap, { backgroundColor: '#E0E7FF' }]}>
               <Ionicons name="bandage-outline" size={18} color="#4F46E5" />
             </View>
-            <Text style={styles.cardTitle}>Traitements</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Traitements</Text>
           </View>
         </View>
         {(rec?.traitements && rec.traitements.length > 0) ? (
           rec.traitements.map((t, i) => (
-            <View key={`${t}_${i}`} style={styles.listItem}>
+            <View key={`${t}_${i}`} style={[styles.listItem, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }] }>
               <View>
-                <Text style={styles.listItemTitle}>{t}</Text>
+                <Text style={[styles.listItemTitle, { color: theme.colors.text }]}>{t}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </View>
           ))
         ) : (
-          <Text style={styles.itemText}>Aucun traitement renseigné</Text>
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>Aucun traitement renseigné</Text>
         )}
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <View style={[styles.iconWrap, { backgroundColor: '#FDE68A' }]}>
               <Ionicons name="book-outline" size={18} color="#CA8A04" />
             </View>
-            <Text style={styles.cardTitle}>Antécédents</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Antécédents</Text>
           </View>
         </View>
         {(rec?.antecedents && rec.antecedents.length > 0) ? (
           rec.antecedents.map((t, i) => (
             <View key={`${t}_${i}`} style={styles.itemRow}>
               <Ionicons name="document-text-outline" size={16} color="#6B7280" />
-              <Text style={styles.itemText}>{t}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>{t}</Text>
             </View>
           ))
         ) : (
-          <Text style={styles.itemText}>Aucun antécédent renseigné</Text>
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>Aucun antécédent renseigné</Text>
         )}
       </View>
 
       {error ? <Text style={{ color: '#DC2626' }}>{error}</Text> : null}
 
       <View style={{ height: 12 }} />
-      <TouchableOpacity style={styles.shareBtn} onPress={() => setShareOpen(true)}>
+      <TouchableOpacity style={[styles.shareBtn, { backgroundColor: theme.colors.primary }]} onPress={() => setShareOpen(true)}>
         <Ionicons name="share-social-outline" size={20} color="#fff" />
-        <Text style={styles.shareText}>Partager ma fiche avec un médecin</Text>
+        <Text style={[styles.shareText, { color: theme.colors.primaryText }]}>Partager ma fiche avec un médecin</Text>
       </TouchableOpacity>
 
       <View style={{ height: 8 }} />
-      <TouchableOpacity disabled={exporting} style={[styles.exportBtn, exporting && { opacity: 0.7 }]} onPress={async () => {
+      <TouchableOpacity disabled={exporting} style={[styles.exportBtn, { backgroundColor: theme.colors.primary }, exporting && { opacity: 0.7 }]} onPress={async () => {
         try {
           setExporting(true);
           const prof = await getProfile();
@@ -270,7 +272,7 @@ export default function PatientHealthRecordScreen() {
         }
       }}>
         <Ionicons name="document-outline" size={20} color="#fff" />
-        <Text style={styles.exportText}>{exporting ? 'Génération…' : 'Exporter en PDF'}</Text>
+        <Text style={[styles.exportText, { color: theme.colors.primaryText }]}>{exporting ? 'Génération…' : 'Exporter en PDF'}</Text>
       </TouchableOpacity>
     </ScrollView>
     
@@ -278,7 +280,7 @@ export default function PatientHealthRecordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },

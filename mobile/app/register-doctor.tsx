@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import {FileSystemUploadType} from 'expo-file-system/build/legacy/FileSystem.types';
 
 export default function RegisterDoctorScreen() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function RegisterDoctorScreen() {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [clinicAddress, setClinicAddress] = useState('');
   const [hopital, setHopital] = useState('');
+  const [password, setPassword] = useState('');
   const [photo, setPhoto] = useState('');
 
   const onSubmit = () => {
@@ -66,7 +68,7 @@ export default function RegisterDoctorScreen() {
         <Text style={styles.label}>Numéro de téléphone</Text>
         <TextInput
           style={styles.input}
-          placeholder="06 12 34 56 78"
+          placeholder="77 123 45 67"
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
@@ -80,6 +82,17 @@ export default function RegisterDoctorScreen() {
           placeholder="Cardiologue, generaliste,..."
           value={specialty}
           onChangeText={setSpecialty}
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text>Mot de passe</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Entrez votre mot de passe"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
         />
       </View>
 
@@ -117,12 +130,10 @@ export default function RegisterDoctorScreen() {
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Photo</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Entrez l'URL de votre photo"
-          value={photo}
-          onChangeText={setPhoto}
-        />
+        <Text>Telecharger une photo</Text>
+        <TouchableOpacity onPress={handleUpload}>
+          <Text>Telecharger une photo</Text>
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.primaryBtn} onPress={onSubmit}>
@@ -144,8 +155,8 @@ export default function RegisterDoctorScreen() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
     backgroundColor: '#fff',
   },
   headerBar: {

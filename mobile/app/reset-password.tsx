@@ -70,7 +70,7 @@ export default function ResetPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1 },
+  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 22, color: '#111827' },
   fieldGroup: { marginTop: 16 },
   label: { color: '#374151', marginBottom: 8 },

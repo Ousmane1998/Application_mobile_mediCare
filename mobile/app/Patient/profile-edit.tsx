@@ -155,7 +155,7 @@ export default function PatientProfileEditScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex:1,padding: 16, backgroundColor:'#fff' },
+  container: { flex:1,padding: 16, backgroundColor:'#fff', marginBottom: 40, marginTop: 32 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },

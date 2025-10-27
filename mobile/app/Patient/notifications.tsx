@@ -161,7 +161,7 @@ export default function PatientNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   title: { fontSize: 20, color: '#111827' },
   filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },

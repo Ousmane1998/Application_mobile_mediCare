@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, Modal, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { getProfile } from '../utils/api';
 import { useAppTheme } from '../theme/ThemeContext';
 import Snackbar from './Snackbar';
@@ -10,13 +11,15 @@ import { type UserProfile } from '../utils/api';
 
 export default function Header() {
   const router = useRouter();
-  const { theme, toggle } = useAppTheme();
+  const { theme, toggle, setMode } = useAppTheme();
+  const navigation = useNavigation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     visible: false,
     message: '',
     type: 'info',
   });
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -31,20 +34,39 @@ export default function Header() {
     })();
   }, []);
 
+  const canGoBack = typeof (navigation as any)?.canGoBack === 'function' ? (navigation as any).canGoBack() : false;
+
   return (
     <View style={[styles.topBar, { backgroundColor: theme.colors.card }]}>
-      {/* Logo à gauche */}
-      <Image
-        source={require('../assets/images/logoMedicare.png')}
-        style={{ width: 50, height: 50 }}
-        resizeMode="contain"
-      />
+      {/* Gauche: bouton retour si possible, sinon logo */}
+      {canGoBack ? (
+        <TouchableOpacity onPress={() => (navigation as any).goBack?.()} accessibilityLabel="Retour">
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+      ) : (
+        <Image
+          source={require('../assets/images/logoMedicare.png')}
+          style={{ width: 50, height: 50 }}
+          resizeMode="contain"
+        />
+      )}
+
+      {/* Centre: logo centré sur les écrans enfants (quand retour disponible) */}
+      {canGoBack && (
+        <View style={styles.centerLogoWrap} pointerEvents="none">
+          <Image
+            source={require('../assets/images/logoMedicare.png')}
+            style={{ width: 40, height: 40 }}
+            resizeMode="contain"
+          />
+        </View>
+      )}
 
       {/* Icônes à droite */}
       <View style={styles.iconContainer}>
 
         {/* Dark/Light mode toggle */}
-        <TouchableOpacity onPress={toggle}>
+        <TouchableOpacity onPress={toggle} onLongPress={() => setThemePickerOpen(true)}>
           <Ionicons name={theme.mode === 'dark' ? 'sunny-outline' : 'moon-outline'} size={22} color={theme.colors.text} style={styles.icon} />
         </TouchableOpacity>
 
@@ -75,6 +97,28 @@ export default function Header() {
         type={snack.type}
         onHide={() => setSnack((s) => ({ ...s, visible: false }))}
       />
+
+      <Modal visible={themePickerOpen} transparent animationType="fade" onRequestClose={() => setThemePickerOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: '80%', backgroundColor: theme.colors.card, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.colors.border }}>
+            <Text style={{ color: theme.colors.text, fontWeight: '700', marginBottom: 12 }}>Mode d'affichage</Text>
+            {([
+              { key: 'system', label: 'Système' },
+              { key: 'light', label: 'Clair' },
+              { key: 'dark', label: 'Sombre' },
+            ] as const).map(opt => (
+              <TouchableOpacity key={opt.key} onPress={() => { setMode(opt.key); setThemePickerOpen(false); }} style={{ paddingVertical: 10 }}>
+                <Text style={{ color: theme.colors.text }}>
+                  {opt.label} {theme.mode === opt.key ? '✓' : ''}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity onPress={() => setThemePickerOpen(false)} style={{ marginTop: 8, alignSelf: 'flex-end' }}>
+              <Text style={{ color: theme.colors.primary }}>Fermer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -95,6 +139,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
+  },
+  centerLogoWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   iconContainer: {
     flexDirection: 'row',

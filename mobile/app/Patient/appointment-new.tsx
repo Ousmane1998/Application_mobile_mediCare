@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useAppTheme } from '../../theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import Snackbar from '../../components/Snackbar';
 import { 
@@ -22,6 +23,7 @@ type AvailabilityType = {
 
 export default function PatientAppointmentNewScreen() {
   const router = useRouter();
+  const { theme } = useAppTheme();
 
   const [medecins, setMedecins] = useState<any[]>([]);
   const [medecinId, setMedecinId] = useState('');
@@ -229,10 +231,10 @@ export default function PatientAppointmentNewScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Prendre rendez-vous</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.title, { color: theme.colors.text }]}>Prendre rendez-vous</Text>
       {doctor && (
-        <Text style={{ color: '#6B7280', marginBottom: 8 }}>Avec Dr {doctor?.nom} {doctor?.prenom}</Text>
+        <Text style={{ color: theme.colors.muted, marginBottom: 8 }}>Avec Dr {doctor?.nom} {doctor?.prenom}</Text>
       )}
       {!hasAttachedDoctor && (
         <Text style={{ color: '#DC2626', marginBottom: 8 }}>Aucun médecin n'est rattaché à votre profil. Veuillez en sélectionner un.</Text>
@@ -242,18 +244,18 @@ export default function PatientAppointmentNewScreen() {
       <View style={[styles.group, loadingAvail && { opacity: 0.6 }]} pointerEvents={loadingAvail ? 'none' : 'auto'}>
         {loadingAvail && (
           <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <ActivityIndicator size="small" color="#2ccdd2" />
-            <Text style={{ color: '#6B7280', marginTop: 6 }}>Chargement des disponibilités...</Text>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <Text style={{ color: theme.colors.muted, marginTop: 6 }}>Chargement des disponibilités...</Text>
           </View>
         )}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <TouchableOpacity onPress={onPrevMonth}><Text style={{ color: '#111827' }}>{'<'}</Text></TouchableOpacity>
-          <Text style={{ color: '#111827', fontWeight: '600' }}>{monthTitle.charAt(0).toUpperCase() + monthTitle.slice(1)}</Text>
-          <TouchableOpacity onPress={onNextMonth}><Text style={{ color: '#111827' }}>{'>'}</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onPrevMonth}><Text style={{ color: theme.colors.text }}>{'<'}</Text></TouchableOpacity>
+          <Text style={{ color: theme.colors.text, fontWeight: '600' }}>{monthTitle.charAt(0).toUpperCase() + monthTitle.slice(1)}</Text>
+          <TouchableOpacity onPress={onNextMonth}><Text style={{ color: theme.colors.text }}>{'>'}</Text></TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
           {['D','L','M','M','J','V','S'].map(k => (
-            <Text key={k} style={{ width: 40, textAlign: 'center', color: '#6B7280' }}>{k}</Text>
+            <Text key={k} style={{ width: 40, textAlign: 'center', color: theme.colors.muted }}>{k}</Text>
           ))}
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
@@ -271,9 +273,15 @@ export default function PatientAppointmentNewScreen() {
                   setHeuresDisponibles(slots);
                   setSelectedSlot(null);
                 }}
-                style={[styles.dayCell, !d && styles.dayEmpty, disabled && styles.dayDisabled, selected && styles.daySelected]}
+                style={[
+                  styles.dayCell,
+                  !d && styles.dayEmpty,
+                  disabled && styles.dayDisabled,
+                  selected && styles.daySelected,
+                  selected && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+                ]}
               >
-                <Text style={[styles.dayText, selected && { color: '#fff' }, disabled && { color: '#9CA3AF' }]}>{d ?? ''}</Text>
+                <Text style={[{ color: theme.colors.text }, selected && { color: '#fff' }, disabled && { color: theme.colors.muted }]}>{d ?? ''}</Text>
               </TouchableOpacity>
             );
           })}
@@ -282,10 +290,10 @@ export default function PatientAppointmentNewScreen() {
 
       {/* Créneaux disponibles */}
       <View style={[styles.group, loadingAvail && { opacity: 0.6 }]} pointerEvents={loadingAvail ? 'none' : 'auto'}>
-        <Text style={styles.label}>Créneaux disponibles</Text>
+        <Text style={[styles.label, { color: theme.colors.text }]}>Créneaux disponibles</Text>
         <View style={styles.cardContainer}>
           {heuresDisponibles.length === 0 && (
-            <Text style={{ color: '#6B7280' }}>Sélectionnez un jour disponible</Text>
+            <Text style={{ color: theme.colors.muted }}>Sélectionnez un jour disponible</Text>
           )}
           {heuresDisponibles.map((h) => {
             const disabled = isSlotInPast(h);
@@ -295,9 +303,14 @@ export default function PatientAppointmentNewScreen() {
                 key={h}
                 disabled={disabled}
                 onPress={() => { if (!disabled) { setSelectedSlot(h); setHeure(h); } }}
-                style={[styles.slotChip, selected && styles.slotActive, disabled && styles.slotDisabled]}
+                style={[
+                  styles.slotChip,
+                  selected && styles.slotActive,
+                  disabled && styles.slotDisabled,
+                  selected && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+                ]}
               >
-                <Text style={[styles.slotText, selected && { color: '#fff' }, disabled && styles.slotTextDisabled]}>{h}</Text>
+                <Text style={[{ color: theme.colors.text }, selected && { color: theme.colors.primaryText }, disabled && { color: theme.colors.muted }]}>{h}</Text>
               </TouchableOpacity>
             );
           })}
@@ -309,15 +322,19 @@ export default function PatientAppointmentNewScreen() {
 
       {/* Type de consultation */}
       <View style={styles.group}>
-        <Text style={styles.label}>Type de consultation</Text>
+        <Text style={[styles.label, { color: theme.colors.text }]}>Type de consultation</Text>
         <View style={styles.cardContainer}>
           {typesConsultation.map((t) => (
             <TouchableOpacity
               key={t}
-              style={[styles.card, typeConsultation === t && styles.cardSelected]}
+              style={[
+                styles.card,
+                { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                typeConsultation === t && [styles.cardSelected, { borderColor: theme.colors.primary }],
+              ]}
               onPress={() => setTypeConsultation(t)}
             >
-              <Text style={styles.cardText}>{t}</Text>
+              <Text style={[styles.cardText, { color: theme.colors.text }]}>{t}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -326,17 +343,17 @@ export default function PatientAppointmentNewScreen() {
       {error && <Text style={styles.error}>{error}</Text>}
 
       <TouchableOpacity
-        style={[styles.primaryBtn, (saving || !selectedDay || !selectedSlot || loadingAvail) && { opacity: 0.7 }]}
+        style={[styles.primaryBtn, { backgroundColor: theme.colors.primary }, (saving || !selectedDay || !selectedSlot || loadingAvail) && { opacity: 0.7 }]}
         disabled={saving || !selectedDay || !selectedSlot || loadingAvail}
         onPress={onSave}
       >
         {saving ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <ActivityIndicator color="#fff" size="small" />
-            <Text style={styles.primaryBtnText}>Enregistrement…</Text>
+            <Text style={[styles.primaryBtnText, { color: theme.colors.primaryText }]}>Enregistrement…</Text>
           </View>
         ) : (
-          <Text style={styles.primaryBtnText}>Confirmer le rendez-vous</Text>
+          <Text style={[styles.primaryBtnText, { color: theme.colors.primaryText }]}>Confirmer le rendez-vous</Text>
         )}
       </TouchableOpacity>
 
@@ -351,7 +368,7 @@ export default function PatientAppointmentNewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, padding: 16, backgroundColor: '#F8FAFC', marginBottom: 40, marginTop: 32 },
   title: { fontSize: 18, color: '#000', marginBottom: 12, fontWeight: 'bold' },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },

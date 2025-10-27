@@ -112,7 +112,7 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
 export default MessagesScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
+  container: { flex: 1, backgroundColor: "#F3F4F6", marginBottom: 40, marginTop: 32 },
   header: {
     backgroundColor: "#2ccdd2",
     paddingHorizontal: 16,

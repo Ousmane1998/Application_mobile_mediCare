@@ -4,7 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Appearance } from 'react-native';
 
 export type AppTheme = {
-  mode: 'light' | 'dark';
+  mode: 'light' | 'dark' | 'system';
+  effectiveMode: 'light' | 'dark';
   colors: {
     background: string;
     text: string;
@@ -16,8 +17,9 @@ export type AppTheme = {
   };
 };
 
-const Light: AppTheme = {
+const Light = (): AppTheme => ({
   mode: 'light',
+  effectiveMode: 'light',
   colors: {
     background: '#F3F4F6',
     text: '#111827',
@@ -27,10 +29,11 @@ const Light: AppTheme = {
     primary: '#2ccdd2',
     primaryText: '#ffffff',
   },
-};
+});
 
-const Dark: AppTheme = {
+const Dark = (): AppTheme => ({
   mode: 'dark',
+  effectiveMode: 'dark',
   colors: {
     background: '#0B1020',
     text: '#E5E7EB',
@@ -40,37 +43,47 @@ const Dark: AppTheme = {
     primary: '#22b3b8',
     primaryText: '#081016',
   },
-};
+});
 
-const STORAGE_KEY = 'app_theme_mode_v1';
+const STORAGE_KEY = 'app_theme_mode_v2';
 
 export const ThemeContext = createContext<{
   theme: AppTheme;
-  setMode: (m: 'light' | 'dark') => void;
+  setMode: (m: 'light' | 'dark' | 'system') => void;
   toggle: () => void;
-}>({ theme: Light, setMode: () => {}, toggle: () => {} });
+}>({ theme: Light(), setMode: () => {}, toggle: () => {} });
 
 export const ThemeProviderApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const sys = Appearance.getColorScheme();
-  const [mode, setModeState] = useState<'light' | 'dark'>(sys === 'dark' ? 'dark' : 'light');
+  const [selectedMode, setSelectedMode] = useState<'light' | 'dark' | 'system'>('system');
+  const [systemMode, setSystemMode] = useState<'light' | 'dark'>(Appearance.getColorScheme() === 'dark' ? 'dark' : 'light');
 
   useEffect(() => {
     (async () => {
       try {
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved === 'light' || saved === 'dark') setModeState(saved);
+        if (saved === 'light' || saved === 'dark' || saved === 'system') setSelectedMode(saved);
       } catch {}
     })();
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemMode(colorScheme === 'dark' ? 'dark' : 'light');
+    });
+    return () => sub.remove();
   }, []);
 
-  const setMode = useCallback((m: 'light' | 'dark') => {
-    setModeState(m);
+  const setMode = useCallback((m: 'light' | 'dark' | 'system') => {
+    setSelectedMode(m);
     AsyncStorage.setItem(STORAGE_KEY, m).catch(() => {});
   }, []);
 
-  const toggle = useCallback(() => setMode(mode === 'light' ? 'dark' : 'light'), [mode, setMode]);
+  const toggle = useCallback(() => {
+    setMode(selectedMode === 'system' ? 'light' : selectedMode === 'light' ? 'dark' : 'system');
+  }, [selectedMode, setMode]);
 
-  const theme = useMemo(() => (mode === 'dark' ? Dark : Light), [mode]);
+  const effective: 'light' | 'dark' = selectedMode === 'system' ? systemMode : selectedMode;
+  const theme = useMemo<AppTheme>(() => {
+    const base = effective === 'dark' ? Dark() : Light();
+    return { ...base, mode: selectedMode, effectiveMode: effective };
+  }, [effective, selectedMode]);
 
   const value = useMemo(() => ({ theme, setMode, toggle }), [theme, setMode, toggle]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

@@ -124,7 +124,7 @@ export default function MyPatientsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 12 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 12, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   search: { flex: 1, color: '#111827' },

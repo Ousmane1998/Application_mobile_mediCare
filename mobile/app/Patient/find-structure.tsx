@@ -210,7 +210,7 @@ export default function FindStructureScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
+  container: { flex: 1, backgroundColor: "#F3F4F6", marginBottom: 40, marginTop: 32 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   radiusSelector: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   radiusLabel: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 8 },

@@ -120,7 +120,7 @@ export default function DoctorAppointmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
+  container: { flex: 1, backgroundColor: '#F3F4F6', marginBottom: 40, marginTop: 32 },
   filters: { flexDirection: 'row', gap: 8, padding: 16, paddingBottom: 0 },
   filterChip: { backgroundColor: '#E5E7EB', borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12 },
   filterChipActive: { backgroundColor: '#111827' },

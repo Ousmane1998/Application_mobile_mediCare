@@ -5,8 +5,10 @@ import Header from '../../components/header';
 import NavDoctor from '@/components/navDoctor';
 import { router } from 'expo-router';
 import { getProfile, authFetch, getNotifications, getAppointments, listMyPatients, type NotificationItem, type AppointmentItem, type Patient } from '../../utils/api';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function DoctorDashboardScreen() {
+  const { theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,33 +130,38 @@ export default function DoctorDashboardScreen() {
   return (
     <View>
       <Header />
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <Text style={styles.greeting}>Bonjour, {doctorName || 'Docteur'}!</Text>
+      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {doctorName || 'Docteur'}!</Text>
 
         {loading ? (
           <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-            <ActivityIndicator />
+            <ActivityIndicator color={theme.colors.primary} />
           </View>
         ) : (
           <>
             <View style={styles.cardsRow}>
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>Total Patients</Text>
-                <Text style={styles.cardValue}>{totalPatients}</Text>
+              <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+                <Text style={[styles.cardLabel, { color: theme.colors.muted }]}>Total Patients</Text>
+                <Text style={[styles.cardValue, { color: theme.colors.text }]}>{totalPatients}</Text>
               </View>
-              <View style={[styles.card, styles.cardAlert]}>
-                <Text style={styles.cardLabel}>Patients avec alertes</Text>
+              <View style={[styles.card, styles.cardAlert, { backgroundColor: theme.colors.card }]}>
+                <Text style={[styles.cardLabel, { color: theme.colors.muted }]}>Patients avec alertes</Text>
                 <Text style={[styles.cardValue, { color: '#EF4444' }]}>{alerts.length}</Text>
               </View>
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>RDV en attente</Text>
-                <Text style={styles.cardValue}>{pendingAppointments}</Text>
+              <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+                <Text style={[styles.cardLabel, { color: theme.colors.muted }]}>RDV en attente</Text>
+                <Text style={[styles.cardValue, { color: theme.colors.text }]}>{pendingAppointments}</Text>
               </View>
             </View>
 
-            <View style={styles.searchWrap}>
-              <Text style={styles.searchIcon}>🔎</Text>
-              <TextInput placeholder="Rechercher des patients" style={styles.search} />
+            <View style={[styles.searchWrap, { backgroundColor: theme.colors.card }]}>
+              <Ionicons name="search-outline" size={24} color={theme.colors.text} />
+              <TextInput
+                placeholder="Rechercher des patients"
+                style={[styles.search, { color: theme.colors.text }]}
+                placeholderTextColor={theme.colors.muted}
+                selectionColor={theme.colors.primary}
+              />
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }}>
@@ -165,9 +172,9 @@ export default function DoctorDashboardScreen() {
             </ScrollView>
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Alertes Récentes</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Alertes Récentes</Text>
               <TouchableOpacity onPress={() => router.push('/Doctor/notifications' as any)}>
-                <Text style={styles.link}>Voir tout</Text>
+                <Text style={[styles.link, { color: theme.colors.primary }]}>Voir tout</Text>
               </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
@@ -190,9 +197,9 @@ export default function DoctorDashboardScreen() {
             </ScrollView>
 
             {filteredAlerts.map((n, i) => (
-              <View key={(n._id || i).toString()} style={styles.alertItem}>
+              <View key={(n._id || i).toString()} style={[styles.alertItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }] }>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.itemName}>{n.type || 'Alerte'}</Text>
+                  <Text style={[styles.itemName, { color: theme.colors.text }]}>{n.type || 'Alerte'}</Text>
                   {!!n.message && <Text style={styles.itemSubRed}>{n.message}</Text>}
                 </View>
                 <Ionicons name="alert-circle-outline" size={24} color="#EF4444" />
@@ -200,21 +207,21 @@ export default function DoctorDashboardScreen() {
             ))}
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Mes Patients</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mes Patients</Text>
               <TouchableOpacity onPress={() => router.push('/Doctor/my-patients' as any)}>
-                <Text style={styles.link}>Voir tout</Text>
+                <Text style={[styles.link, { color: theme.colors.primary }]}>Voir tout</Text>
               </TouchableOpacity>
             </View>
 
             {filteredPatients.slice(0, 5).map((p) => (
-              <View key={p._id} style={styles.patientItem}>
+              <View key={p._id} style={[styles.patientItem, { backgroundColor: theme.colors.card }]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.itemName}>{p.prenom} {p.nom}</Text>
-                  {p.pathologie && <Text style={styles.itemSub}>{p.pathologie}</Text>}
-                  {p.email && <Text style={styles.itemSub}>{p.email}</Text>}
+                  <Text style={[styles.itemName, { color: theme.colors.text }]}>{p.prenom} {p.nom}</Text>
+                  {p.pathologie && <Text style={[styles.itemSub, { color: theme.colors.muted }]}>{p.pathologie}</Text>}
+                  {p.email && <Text style={[styles.itemSub, { color: theme.colors.muted }]}>{p.email}</Text>}
                 </View>
                 <TouchableOpacity 
-                  style={styles.smsButton}
+                  style={[styles.smsButton, { backgroundColor: theme.colors.primary }]}
                   onPress={() => router.push(`/Doctor/chat?patientId=${p._id}&patientName=${p.prenom}%20${p.nom}`)}
                 >
                   <Ionicons name="chatbubbles-outline" size={20} color="#fff" />
@@ -222,7 +229,7 @@ export default function DoctorDashboardScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={styles.fab} onPress={() => router.push('/Doctor/add-patient')}>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: theme.colors.primary }]} onPress={() => router.push('/Doctor/add-patient')}>
               <Text style={styles.fabText}>Ajouter Patient</Text>
             </TouchableOpacity>
 
@@ -230,13 +237,13 @@ export default function DoctorDashboardScreen() {
           </>
         )}
       </ScrollView>
-      <NavDoctor />
+      {/* <NavDoctor /> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { marginTop: 12, fontSize: 22, color: '#111827', fontWeight: '600' },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },

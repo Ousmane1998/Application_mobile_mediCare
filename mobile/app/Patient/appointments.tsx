@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, A
 import { useRouter } from 'expo-router';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { getProfile, getAppointments, updateAppointment, type AppointmentItem } from '../../utils/api';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function PatientAppointmentsScreen() {
   const router = useRouter();
+  const { theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [meId, setMeId] = useState<string | null>(null);
@@ -63,32 +65,32 @@ export default function PatientAppointmentsScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#2ccdd2" />
-        <Text style={{ marginTop: 8, color: '#6B7280' }}>Chargement des rendez-vous...</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 8, color: theme.colors.muted }}>Chargement des rendez-vous...</Text>
       </View>
     );
   }
 
   return (
     <View style={{ flex: 1 }}>
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
-      <Text style={styles.title}>Rendez-vous</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
+      <Text style={[styles.title, { color: theme.colors.text }]}>Rendez-vous</Text>
 
       {(items.length === 0) && (
-        <View style={[styles.card, { borderWidth: 1, borderColor: '#E5E7EB' }]}>
-          <Text style={styles.textMuted}>Aucun rendez-vous pour le moment. Tirez pour rafraîchir ou prenez un nouveau rendez-vous.</Text>
-          <TouchableOpacity style={[styles.btn, { marginTop: 12 }]} onPress={() => router.push('/Patient/appointment-new')}>
-            <Text style={styles.btnText}>Prendre rendez-vous</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border }]}> 
+          <Text style={[styles.textMuted, { color: theme.colors.muted }]}>Aucun rendez-vous pour le moment. Tirez pour rafraîchir ou prenez un nouveau rendez-vous.</Text>
+          <TouchableOpacity style={[styles.btn, { marginTop: 12, backgroundColor: theme.colors.primary }]} onPress={() => router.push('/Patient/appointment-new')}>
+            <Text style={[styles.btnText, { color: theme.colors.primaryText }]}>Prendre rendez-vous</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>À venir</Text>
-        {upcoming.length === 0 && <Text style={styles.textMuted}>Aucun rendez-vous à venir</Text>}
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.cardTitle, { color: theme.colors.text }]}>À venir</Text>
+        {upcoming.length === 0 && <Text style={[styles.textMuted, { color: theme.colors.muted }]}>Aucun rendez-vous à venir</Text>}
         {upcoming.map((a,i) => (
           <View key={(a._id||i).toString()} style={styles.rowBetween}>
-            <Text style={styles.text}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
+            <Text style={[styles.text, { color: theme.colors.text }]}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
             {badge(a.statut)}
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity onPress={() => cancel(a._id)}><Text style={[styles.action, { color: '#EF4444' }]}>Annuler</Text></TouchableOpacity>
@@ -98,12 +100,12 @@ export default function PatientAppointmentsScreen() {
         ))}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Passés</Text>
-        {past.length === 0 && <Text style={styles.textMuted}>Aucun rendez-vous passé</Text>}
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Passés</Text>
+        {past.length === 0 && <Text style={[styles.textMuted, { color: theme.colors.muted }]}>Aucun rendez-vous passé</Text>}
         {past.map((a,i) => (
           <View key={(a._id||i).toString()} style={styles.rowBetween}>
-            <Text style={styles.text}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
+            <Text style={[styles.text, { color: theme.colors.text }]}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
             {badge(a.statut)}
           </View>
         ))}
@@ -174,7 +176,7 @@ export default function PatientAppointmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 22, color: '#111827', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
   cardTitle: { fontSize: 16, color: '#111827', marginBottom: 6 },

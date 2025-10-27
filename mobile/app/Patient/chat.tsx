@@ -17,6 +17,7 @@ import { Ionicons, MaterialIcons, Entypo } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { getProfile, getMessages, sendMessage, getMedecinById } from "../../utils/api";
+import { useAppTheme } from "../../theme/ThemeContext";
 
 type RootStackParamList = {
   Home: undefined;
@@ -51,6 +52,7 @@ type Doctor = {
 };
 
 const ChatScreen: React.FC<Props> = ({ navigation }) => {
+  const { theme } = useAppTheme();
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [doctor, setDoctor] = useState<Doctor | null>(null);
@@ -180,7 +182,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
@@ -226,23 +228,24 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
       )}
 
       {/* INPUT */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }] }>
         <TouchableOpacity style={styles.iconAttach}>
           <Entypo name="attachment" size={22} color="#4B5563" />
         </TouchableOpacity>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: theme.mode === 'dark' ? '#0f172a' : '#F3F4F6', color: theme.colors.text }]}
           placeholder="Écris ton message..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={theme.colors.muted}
           value={messageText}
           onChangeText={setMessageText}
           multiline
           onSubmitEditing={onSubmitEditing}
           returnKeyType="send"
+          selectionColor={theme.colors.primary}
         />
 
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={sending}>
+        <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.primary }]} disabled={sending}>
           <Ionicons name={sending ? "hourglass" : "send"} size={20} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -253,7 +256,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 export default ChatScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
+  container: { flex: 1, backgroundColor: "#F3F4F6", marginBottom: 40, marginTop: 32 },
 
   /* HEADER */
   header: {

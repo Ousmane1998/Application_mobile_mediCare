@@ -52,7 +52,7 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1 },
+  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 22, color: '#111827' },
   subtitle: { color: '#6B7280', marginTop: 6 },
   fieldGroup: { marginTop: 16 },

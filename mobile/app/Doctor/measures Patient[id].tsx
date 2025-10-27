@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { getMeasureById } from '../../../utils/api';
+import { getMeasureById } from '../../utils/api';
 
 export default function DoctorMeasureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -70,7 +70,7 @@ export default function DoctorMeasureDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 20, color: '#111827', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
   label: { color: '#6B7280' },

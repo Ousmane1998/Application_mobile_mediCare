@@ -71,6 +71,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 50,
     paddingBottom: 24,
+    marginBottom: 40,
+    marginTop: 32,
     justifyContent: 'space-between',
   },
   illustration: {

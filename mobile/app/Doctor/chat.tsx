@@ -17,6 +17,7 @@ import { Ionicons, MaterialIcons, Entypo } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { getProfile, getMessages, sendMessage } from "../../utils/api";
+import { useAppTheme } from "../../theme/ThemeContext";
 import { useLocalSearchParams } from "expo-router";
 
 type RootStackParamList = {
@@ -42,6 +43,7 @@ type Message = {
 };
 
 const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { theme } = useAppTheme();
   const searchParams = useLocalSearchParams();
   const patientId = (searchParams?.patientId as string) || (route?.params?.patientId as string) || "";
   const patientName = (searchParams?.patientName as string) || (route?.params?.patientName as string) || "Patient";
@@ -168,7 +170,7 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
@@ -197,8 +199,8 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* MESSAGES */}
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator size="large" color="#2ccdd2" />
-          <Text style={{ marginTop: 12, color: "#6B7280" }}>Chargement des messages...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={{ marginTop: 12, color: theme.colors.muted }}>Chargement des messages...</Text>
         </View>
       ) : (
         <FlatList
@@ -212,23 +214,24 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
       )}
 
       {/* INPUT */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
         <TouchableOpacity style={styles.iconAttach}>
           <Entypo name="attachment" size={22} color="#4B5563" />
         </TouchableOpacity>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: theme.mode === 'dark' ? '#0f172a' : '#F3F4F6', color: theme.colors.text }]}
           placeholder="Écris ton message..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={theme.colors.muted}
           value={messageText}
           onChangeText={setMessageText}
           multiline
           onSubmitEditing={onSubmitEditing}
           returnKeyType="send"
+          selectionColor={theme.colors.primary}
         />
 
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={sending}>
+        <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.primary }]} disabled={sending}>
           <Ionicons name={sending ? "hourglass" : "send"} size={20} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -239,7 +242,7 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 export default ChatScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
+  container: { flex: 1, backgroundColor: "#F3F4F6", marginBottom: 40, marginTop: 32 },
 
   /* HEADER */
   header: {

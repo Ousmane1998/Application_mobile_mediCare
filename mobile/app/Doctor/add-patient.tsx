@@ -12,6 +12,7 @@ export default function DoctorAddPatientScreen() {
   const [telephone, setTelephone] = useState('');
   const [age, setAge] = useState('');
   const [adresse, setAdresse] = useState('');
+  const [idMedecin, setIdMedecin] = useState('');
 
   const [pathologie, setPathologie] = useState('Diabète');
   const [loading, setLoading] = useState(false);
@@ -39,15 +40,16 @@ export default function DoctorAddPatientScreen() {
     age,
     pathologie,
     adresse,
+    idMedecin,
   });
 
   console.log("✅ Réponse complète du backend :", res);
   setInfo('Patient créé avec succès.');
   setTimeout(() => router.back(), 700);
 } catch (e: any) {
-  console.log("🔥 Erreur complète reçue :", e);
+  console.log("Erreur complète reçue :", e);
   if (e?.debug) {
-    console.log("🧠 Détails backend :", e.debug);
+    console.log("Détails backend :", e.debug);
     alert(`Erreur serveur: ${e.debug.message}\n\n${e.debug.stack?.slice(0, 200)}...`);
   }
   setError(e?.message || "Erreur lors de l'enregistrement.");
@@ -123,7 +125,7 @@ finally {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#fff', minHeight: '100%' },
+  container: { padding: 16, backgroundColor: '#fff', minHeight: '100%', marginBottom: 40, marginTop: 32 },
   title: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 12 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },

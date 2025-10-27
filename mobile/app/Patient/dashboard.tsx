@@ -6,9 +6,11 @@ import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
 import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, type AppointmentItem } from '../../utils/api';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function PatientDashboardScreen() {
   const router = useRouter();
+  const { theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [meId, setMeId] = useState<string | null>(null);
@@ -66,8 +68,8 @@ export default function PatientDashboardScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#2ccdd2" />
-        <Text style={{ marginTop: 8, color: '#6B7280' }}>Chargement...</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 8, color: theme.colors.muted }}>Chargement...</Text>
       </View>
     );
   }
@@ -75,72 +77,72 @@ export default function PatientDashboardScreen() {
   return (
     <View>
       <Header />
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <Text style={styles.greeting}>Bonjour, {meName || 'Patient'}!</Text>
-        <Text style={styles.sectionTitle}>Vos dernières mesures</Text>
+      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {meName || 'Patient'}!</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vos dernières mesures</Text>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
           <View style={styles.cardHeaderRow}>
             <Ionicons name="trending-up-outline" size={24} color="green" />
-            <Text style={styles.cardTitle}>Glycémie</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Glycémie</Text>
           </View>
-          <Text style={styles.bigValue}>{gly?.value ? `${gly.value}` : '—'}</Text>
+          <Text style={[styles.bigValue, { color: theme.colors.text }]}>{gly?.value ? `${gly.value}` : '—'}</Text>
           <Text style={styles.statusOk}>{gly?._ts ? new Date(gly._ts).toLocaleString() : 'Aucune donnée'}</Text>
           <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
             <Text style={styles.smallBtnText}>Ajouter</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
           <View style={styles.cardHeaderRow}>
             <Ionicons name="trending-up-outline" size={24} color="green" />
-            <Text style={styles.cardTitle}>Pression Artérielle</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Pression Artérielle</Text>
           </View>
-          <Text style={styles.bigValue}>{tens?.value ? `${tens.value}` : '—'}</Text>
+          <Text style={[styles.bigValue, { color: theme.colors.text }]}>{tens?.value ? `${tens.value}` : '—'}</Text>
           <Text style={styles.statusWarn}>{tens?._ts ? new Date(tens._ts).toLocaleString() : 'Aucune donnée'}</Text>
           <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.findStructureBtn} onPress={() => router.push('/Patient/find-structure')}>
-          <Ionicons name="location-outline" size={20} color="#2ccdd2" style={{ marginRight: 8 }} />
-          <Text style={styles.findStructureText}>Trouver une structure sanitaire</Text>
+        <TouchableOpacity style={[styles.findStructureBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} onPress={() => router.push('/Patient/find-structure')}>
+          <Ionicons name="location-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+          <Text style={[styles.findStructureText, { color: theme.colors.text }]}>Trouver une structure sanitaire</Text>
         </TouchableOpacity>
 
-        <View style={styles.block}>
-          <Text style={styles.blockTitle}>Prochain rendez-vous</Text>
-          <Text style={styles.blockLine}>{nextAppt ? `${(nextAppt as any).medecinId?.nom || 'Médecin'} - ${nextAppt.date} à ${nextAppt.heure || ''}` : 'Aucun prochain rendez-vous'}</Text>
-          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-new')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
+        <View style={[styles.block, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.blockTitle, { color: theme.colors.text }]}>Prochain rendez-vous</Text>
+          <Text style={[styles.blockLine, { color: theme.colors.text }]}>{nextAppt ? `${(nextAppt as any).medecinId?.nom || 'Médecin'} - ${nextAppt.date} à ${nextAppt.heure || ''}` : 'Aucun prochain rendez-vous'}</Text>
+          <TouchableOpacity style={[styles.blockBtn, { backgroundColor: theme.colors.primary }]} onPress={() => router.push('/Patient/appointment-new')}><Text style={[styles.blockBtnText, { color: theme.colors.primaryText }]}>Prendre rendez-vous</Text></TouchableOpacity>
         </View>
 
-        <View style={styles.block}>
-          <Text style={styles.blockTitle}>Messages</Text>
-          <Text style={styles.blockLine}>{recentMsg ? (recentMsg.text || recentMsg.message || 'Nouveau message') : 'Aucun message'}</Text>
-          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/chat')}><Text style={styles.blockBtnText}>Ouvrir le chat</Text></TouchableOpacity>
+        <View style={[styles.block, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.blockTitle, { color: theme.colors.text }]}>Messages</Text>
+          <Text style={[styles.blockLine, { color: theme.colors.text }]}>{recentMsg ? (recentMsg.text || recentMsg.message || 'Nouveau message') : 'Aucun message'}</Text>
+          <TouchableOpacity style={[styles.blockBtn, { backgroundColor: theme.colors.primary }]} onPress={() => router.push('/Patient/chat')}><Text style={[styles.blockBtnText, { color: theme.colors.primaryText }]}>Ouvrir le chat</Text></TouchableOpacity>
         </View>
 
-        <View style={styles.block}>
-          <Text style={styles.blockTitle}>Notifications non lues</Text>
-          <Text style={styles.blockLine}>{unread}</Text>
+        <View style={[styles.block, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.blockTitle, { color: theme.colors.text }]}>Notifications non lues</Text>
+          <Text style={[styles.blockLine, { color: theme.colors.text }]}>{unread}</Text>
         </View>
 
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
-          <TouchableOpacity style={[styles.blockBtn, { flex: 1 }]} onPress={() => router.push('/Patient/measures-history')}>
-            <Text style={styles.blockBtnText}>Historique mesures</Text>
+          <TouchableOpacity style={[styles.blockBtn, { flex: 1, backgroundColor: theme.colors.primary }]} onPress={() => router.push('/Patient/measures-history')}>
+            <Text style={[styles.blockBtnText, { color: theme.colors.primaryText }]}>Historique mesures</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.blockBtn, { flex: 1 }]} onPress={() => router.push('/Patient/appointments')}>
-            <Text style={styles.blockBtnText}>Mes rendez-vous</Text>
+          <TouchableOpacity style={[styles.blockBtn, { flex: 1, backgroundColor: theme.colors.primary }]} onPress={() => router.push('/Patient/appointments')}>
+            <Text style={[styles.blockBtnText, { color: theme.colors.primaryText }]}>Mes rendez-vous</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ height: 16 }} />
       </ScrollView>
-      <NavPatient />
+      {/* <NavPatient /> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   menu: { fontSize: 22, color: '#111827' },
   greeting: { marginTop: 16, fontSize: 24, color: '#111827' },

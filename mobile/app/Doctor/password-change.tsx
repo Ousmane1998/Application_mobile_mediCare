@@ -63,7 +63,7 @@ export default function DoctorPasswordChangeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
+  container: { padding: 16, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: '#374151', marginBottom: 6 },

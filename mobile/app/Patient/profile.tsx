@@ -120,7 +120,7 @@ export default function PatientProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', padding: 16 },
+  container: { backgroundColor: '#F3F4F6', padding: 16, marginBottom: 40, marginTop: 32 },
   title: { fontSize: 18, color: '#111827', marginBottom: 12 },
   avatarWrap: { alignItems: 'center', marginBottom: 16 },
   avatarCircle: { width: 96, height: 96, borderRadius: 999, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },

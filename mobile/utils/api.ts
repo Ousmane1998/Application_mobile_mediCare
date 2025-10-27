@@ -35,15 +35,15 @@ export async function authFetch(path: string, options: RequestInit = {}) {
     const headers = new Headers(options.headers || {});
     headers.set('Content-Type', 'application/json');
     if (token) headers.set('Authorization', `Bearer ${token}`);
-    console.log("🌍 URL finale utilisée :", `${API_URL}${path}`);
-    console.log("🪪 Token envoyé :", token);
-    console.log("📦 Corps de la requête :", options.body);
+    console.log(" URL finale utilisée :", `${API_URL}${path}`);
+    console.log(" Token envoyé :", token);
+    console.log(" Corps de la requête :", options.body);
 
     const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-    console.log("📊 Statut réponse :", res.status, res.statusText);
+    console.log(" Statut réponse :", res.status, res.statusText);
     
     const data = await res.json().catch(() => undefined);
-    console.log("📥 Données reçues :", data);
+    console.log(" Données reçues :", data);
 
     if (!res.ok) {
       const errorMessage = data?.message || data?.error || `Erreur HTTP ${res.status}`;
@@ -193,6 +193,9 @@ export type Patient = {
   pathologie?: string;
   telephone?: string;
 };
+export async function getMeasureById(id: string) {
+  return authFetch(`/measures/${id}`);
+}
 
 // Availability
 export async function getAvailabilityByMedecin(medecinId: string) {
@@ -219,8 +222,8 @@ export async function createPatient(payload: {
   telephone: string;
   age?: string;
   adresse?: string;
-  pathologie?: string;
-  idMedecin?: string;
+  pathologie: string;
+  idMedecin: string;
 }) {
   return authFetch('/auth/registerPatient', {
     method: 'POST',
