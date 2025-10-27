@@ -1,41 +1,25 @@
+// @ts-nocheck
 // routes/notificationRoutes.js
 import express from "express";
-import { createNotification, getNotifications, getAllNotifications } from "../controllers/notificationController.js";
+import { createNotification, getNotifications, getAllNotifications, markNotificationRead, deleteNotificationCtrl } from "../controllers/notificationController.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 import Notification from "../models/Notification.js";
 
 const router = express.Router();
 
 // Créer une nouvelle notification
-router.post("/", createNotification);
+router.post("/", authMiddleware, createNotification);
 
 // Récupérer TOUTES les notifications 
-router.get("/all", getAllNotifications);
+router.get("/all", authMiddleware, getAllNotifications);
 
 // Récupérer toutes les notifications d'un utilisateur
-router.get("/", getNotifications);
+router.get("/", authMiddleware, getNotifications);
 
 // Marquer une notification comme lue
-router.put("/:id/read", async (req, res) => {
-  try {
-    const notif = await Notification.findByIdAndUpdate(
-      req.params.id,
-      { isRead: true },
-      { new: true }
-    );
-    res.json({ message: "Notification marquée comme lue", notif });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+router.put("/:id/read", authMiddleware, markNotificationRead);
 
 // Supprimer une notification
-router.delete("/:id", async (req, res) => {
-  try {
-    await Notification.findByIdAndDelete(req.params.id);
-    res.json({ message: "Notification supprimée" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+router.delete("/:id", authMiddleware, deleteNotificationCtrl);
 
 export default router;

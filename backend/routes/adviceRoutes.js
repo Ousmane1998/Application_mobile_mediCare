@@ -1,5 +1,6 @@
 import express from "express";
 import { createAdvice, getAdvice } from "../controllers/adviceController.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 /**
  * @openapi
@@ -46,13 +47,13 @@ import { createAdvice, getAdvice } from "../controllers/adviceController.js";
 const router = express.Router();
 
 // POST pour créer un conseil
-router.post("/", createAdvice);
+router.post("/", authMiddleware, createAdvice);
 
 // GET / - récupérer tous les conseils (sans paramètre)
-router.get("/", getAdvice);
+router.get("/", authMiddleware, getAdvice);
 
 // GET /:patientId - récupérer les conseils d'un patient spécifique
-router.get("/:patientId", (req, res, next) => {
+router.get("/:patientId", authMiddleware, (req, res, next) => {
   // Vérifier que ce n'est pas une route spéciale
   if (!req.params.patientId || req.params.patientId === '') {
     return next();

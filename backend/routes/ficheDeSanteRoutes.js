@@ -6,6 +6,7 @@ import {
   updateFiche,
   deleteFiche,
 } from "../controllers/ficheDeSanteController.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ const router = express.Router();
  *       200:
  *         description: Liste des fiches
  */
-router.get("/", getAllFiches);
+router.get("/", authMiddleware, getAllFiches);
 
 /**
  * @swagger
@@ -44,7 +45,7 @@ router.get("/", getAllFiches);
  *       201:
  *         description: Fiche créée
  */
-router.post("/", createFiche);
+router.post("/", authMiddleware, createFiche);
 
 /**
  * @swagger
@@ -60,7 +61,7 @@ router.post("/", createFiche);
  *       200:
  *         description: Fiche mise à jour
  */
-router.put("/:id", updateFiche);
+router.put("/:id", authMiddleware, updateFiche);
 
 /**
  * @swagger
@@ -76,6 +77,6 @@ router.put("/:id", updateFiche);
  *       200:
  *         description: Fiche supprimée
  */
-router.delete("/:id", deleteFiche);
+router.delete("/:id", authMiddleware, deleteFiche);
 
 export default router;

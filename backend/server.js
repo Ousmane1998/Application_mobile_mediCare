@@ -28,6 +28,8 @@ import geolocationRoutes from "./routes/geolocationRoutes.js";
 import ficheRoutes from "./routes/ficheDeSanteRoutes.js";
 import ordonnanceRoutes from "./routes/ordonnanceRoutes.js";
 import structureRoutes from "./routes/structureRoutes.js";
+import ficheShareRoutes from "./routes/ficheShareRoutes.js";
+import { publicViewFiche } from "./controllers/shareController.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
 import { setupSocketIO } from "./utils/sendNotification.js";
@@ -78,6 +80,10 @@ app.use("/api/fiches", ficheRoutes);
 app.use("/api/ordonnance", ordonnanceRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/structures", structureRoutes);
+app.use("/api/fiches", ficheShareRoutes);
+
+// Public fiche view via token
+app.get('/public/fiche', publicViewFiche);
 
 // Error handler
 app.use(errorHandler);

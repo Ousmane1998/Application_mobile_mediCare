@@ -47,7 +47,16 @@ export const createAppointment = async (req, res) => {
 
 export const getAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find().populate("patientId medecinId");
+    const user = req.user; // from authMiddleware
+    const query = {};
+    if (user) {
+      if (user.role === 'medecin') {
+        query.medecinId = user._id;
+      } else if (user.role === 'patient') {
+        query.patientId = user._id;
+      }
+    }
+    const appointments = await Appointment.find(query).populate("patientId medecinId");
     res.json(appointments);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -59,53 +68,52 @@ export const updateAppointment = async (req, res) => {
     const { id } = req.params;
     const { statut, date, heure } = req.body;
 
-    const updateData = {};
+    const appt = await Appointment.findById(id);
+    if (!appt) return res.status(404).json({ message: 'Rendez-vous non trouvé' });
+
+    // If changing status, enforce that only the assigned doctor can do it
     if (statut) {
-      if (!["en_attente", "confirme", "annule"].includes(statut)) {
-        return res.status(400).json({ message: "Statut invalide" });
+      if (!['en_attente', 'confirme', 'annule'].includes(statut)) {
+        return res.status(400).json({ message: 'Statut invalide' });
       }
-      updateData.statut = statut;
+      const user = req.user;
+      if (!user) return res.status(401).json({ message: 'Non autorisé' });
+      const isDoctorOwner = String(user._id) === String(appt.medecinId);
+      const isAdmin = user.role === 'admin';
+      if (!isDoctorOwner && !isAdmin) {
+        return res.status(403).json({ message: 'Seul le médecin peut modifier le statut' });
+      }
+      appt.statut = statut;
     }
-    if (date) updateData.date = date;
-    if (heure) updateData.heure = heure;
+    if (date) appt.date = date;
+    if (heure) appt.heure = heure;
 
-    const appointment = await Appointment.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
+    await appt.save();
 
-    if (!appointment) {
-      return res.status(404).json({ message: "Rendez-vous non trouvé" });
-    }
+    console.log('📅 [updateAppointment] Rendez-vous mis à jour :', id, 'Statut :', statut);
 
-    console.log("📅 [updateAppointment] Rendez-vous mis à jour :", id, "Statut :", statut);
-
-    // 📬 Créer une notification si le statut change
     if (statut) {
       try {
         const statusMessages = {
-          'confirme': 'Votre rendez-vous a été confirmé',
-          'annule': 'Votre rendez-vous a été annulé',
-          'en_attente': 'Votre rendez-vous est en attente de confirmation',
+          confirme: 'Votre rendez-vous a été confirmé',
+          annule: 'Votre rendez-vous a été annulé',
+          en_attente: 'Votre rendez-vous est en attente de confirmation',
         };
-
         await Notification.create({
-          userId: appointment.patientId,
+          userId: appt.patientId,
           type: 'rdv',
           message: statusMessages[statut] || 'Mise à jour du rendez-vous',
-          data: { appointmentId: appointment._id, medecinId: appointment.medecinId },
+          data: { appointmentId: appt._id, medecinId: appt.medecinId },
           isRead: false,
         });
-        console.log("✅ [updateAppointment] Notification créée pour patient :", appointment.patientId);
+        console.log('✅ [updateAppointment] Notification créée pour patient :', appt.patientId);
       } catch (notifErr) {
-        console.error("⚠️ [updateAppointment] Erreur création notification :", notifErr.message);
+        console.error('⚠️ [updateAppointment] Erreur création notification :', notifErr.message);
       }
     }
 
-    res.status(200).json({
-      message: "Rendez-vous mis à jour avec succès",
-      appointment,
-    });
+    res.status(200).json({ message: 'Rendez-vous mis à jour avec succès', appointment: appt });
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur", error: err.message });
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
   }
 };

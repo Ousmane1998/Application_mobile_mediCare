@@ -11,17 +11,49 @@ export const createNotification = async (req, res) => {
   }
 };
 
+export const markNotificationRead = async (req, res) => {
+  try {
+    const me = req.user;
+    if (!me) return res.status(401).json({ message: 'Non authentifié' });
+    const notif = await Notification.findById(req.params.id);
+    if (!notif) return res.status(404).json({ message: 'Notification introuvable' });
+    const isOwner = String(notif.userId) === String(me._id);
+    const isAdmin = me.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: 'Accès refusé' });
+    notif.isRead = true;
+    await notif.save();
+    res.json({ message: 'Notification marquée comme lue', notif });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const deleteNotificationCtrl = async (req, res) => {
+  try {
+    const me = req.user;
+    if (!me) return res.status(401).json({ message: 'Non authentifié' });
+    const notif = await Notification.findById(req.params.id);
+    if (!notif) return res.status(404).json({ message: 'Notification introuvable' });
+    const isOwner = String(notif.userId) === String(me._id);
+    const isAdmin = me.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: 'Accès refusé' });
+    await notif.deleteOne();
+    res.json({ message: 'Notification supprimée' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export const getNotifications = async (req, res) => {
   try {
-    const { userId } = req.query;
-    console.log("📬 [getNotifications] Récupération des notifications pour userId :", userId);
-    
-    if (!userId) {
-      console.log("❌ [getNotifications] userId manquant");
-      return res.status(400).json({ message: "userId est requis" });
+    const me = req.user;
+    if (!me) return res.status(401).json({ message: 'Non authentifié' });
+    const requestedUserId = req.query.userId || String(me._id);
+    const isAdmin = me.role === 'admin';
+    if (!isAdmin && String(requestedUserId) !== String(me._id)) {
+      return res.status(403).json({ message: 'Accès refusé' });
     }
-    
-    const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
+    const notifications = await Notification.find({ userId: requestedUserId }).sort({ createdAt: -1 });
     console.log("✅ [getNotifications] Notifications trouvées :", notifications.length);
     console.log("📋 [getNotifications] Détails :", JSON.stringify(notifications, null, 2));
     
@@ -41,11 +73,10 @@ export const getNotifications = async (req, res) => {
 
 export const getAllNotifications = async (req, res) => {
   try {
-    console.log("📬 [getAllNotifications] Récupération de TOUTES les notifications");
-    
+    const me = req.user;
+    if (!me) return res.status(401).json({ message: 'Non authentifié' });
+    if (me.role !== 'admin') return res.status(403).json({ message: 'Réservé admin' });
     const notifications = await Notification.find().sort({ createdAt: -1 }).limit(50);
-    console.log("✅ [getAllNotifications] Total notifications :", notifications.length);
-    
     res.json(notifications);
   } catch (err) {
     console.error("❌ [getAllNotifications] Erreur :", err.message);

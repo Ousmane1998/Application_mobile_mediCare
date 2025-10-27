@@ -1,5 +1,6 @@
 // routes/ordonnanceRoutes.js
 import express from "express";
+import authMiddleware from "../middlewares/authMiddleware.js";
 import {
   getAllOrdonnances,
   createOrdonnance,
@@ -25,7 +26,7 @@ const router = express.Router();
  *       200:
  *         description: Liste des ordonnances
  */
-router.get("/", getAllOrdonnances);
+router.get("/", authMiddleware, getAllOrdonnances);
 
 /**
  * @swagger
@@ -43,7 +44,7 @@ router.get("/", getAllOrdonnances);
  *       201:
  *         description: Ordonnance créée
  */
-router.post("/", createOrdonnance);
+router.post("/", authMiddleware, createOrdonnance);
 
 /**
  * @swagger
@@ -59,6 +60,6 @@ router.post("/", createOrdonnance);
  *       200:
  *         description: Ordonnance supprimée
  */
-router.delete("/:id", deleteOrdonnance);
+router.delete("/:id", authMiddleware, deleteOrdonnance);
 
 export default router;
