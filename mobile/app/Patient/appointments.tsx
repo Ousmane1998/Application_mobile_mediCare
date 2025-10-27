@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Modal } from 'react-native';
+import { useRouter } from 'expo-router';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { getProfile, getAppointments, updateAppointment, type AppointmentItem } from '../../utils/api';
 
 export default function PatientAppointmentsScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [meId, setMeId] = useState<string | null>(null);
@@ -61,7 +63,8 @@ export default function PatientAppointmentsScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
+        <ActivityIndicator size="large" color="#2ccdd2" />
+        <Text style={{ marginTop: 8, color: '#6B7280' }}>Chargement des rendez-vous...</Text>
       </View>
     );
   }
@@ -70,6 +73,15 @@ export default function PatientAppointmentsScreen() {
     <View style={{ flex: 1 }}>
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
       <Text style={styles.title}>Rendez-vous</Text>
+
+      {(items.length === 0) && (
+        <View style={[styles.card, { borderWidth: 1, borderColor: '#E5E7EB' }]}>
+          <Text style={styles.textMuted}>Aucun rendez-vous pour le moment. Tirez pour rafraîchir ou prenez un nouveau rendez-vous.</Text>
+          <TouchableOpacity style={[styles.btn, { marginTop: 12 }]} onPress={() => router.push('/Patient/appointment-new')}>
+            <Text style={styles.btnText}>Prendre rendez-vous</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>À venir</Text>

@@ -10,6 +10,7 @@ export default function DoctorDashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [doctorName, setDoctorName] = useState<string>('');
   const [totalPatients, setTotalPatients] = useState<number>(0);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [alerts, setAlerts] = useState<NotificationItem[]>([]);
@@ -67,6 +68,8 @@ export default function DoctorDashboardScreen() {
       setError(null);
       const prof = await getProfile();
       const meId = (prof.user as any)._id || (prof.user as any).id;
+      const name = `Dr ${prof?.user?.nom || ''}`.trim();
+      setDoctorName(name);
       
       // Charger les patients
       const patientsData = await listMyPatients();
@@ -126,7 +129,7 @@ export default function DoctorDashboardScreen() {
     <View>
       <Header />
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <Text style={styles.title}>Tableau de bord</Text>
+        <Text style={styles.greeting}>Bonjour, {doctorName || 'Docteur'}!</Text>
 
         {loading ? (
           <View style={{ paddingVertical: 20, alignItems: 'center' }}>
@@ -235,8 +238,7 @@ export default function DoctorDashboardScreen() {
 const styles = StyleSheet.create({
   container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-
-  title: { marginTop: 12, fontSize: 22, color: '#111827' },
+  greeting: { marginTop: 12, fontSize: 22, color: '#111827', fontWeight: '600' },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
   card: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12 },
   cardAlert: { },

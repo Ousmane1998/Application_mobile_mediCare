@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
@@ -12,6 +12,7 @@ export default function PatientDashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [meId, setMeId] = useState<string | null>(null);
+  const [meName, setMeName] = useState<string>('');
   const [latest, setLatest] = useState<Record<string, any>>({});
   const [nextAppt, setNextAppt] = useState<AppointmentItem | null>(null);
   const [recentMsg, setRecentMsg] = useState<any | null>(null);
@@ -22,6 +23,8 @@ export default function PatientDashboardScreen() {
       const prof = await getProfile();
       const id = (prof.user as any)._id || (prof.user as any).id;
       setMeId(id);
+      const fullName = `${prof.user?.prenom || ''} ${prof.user?.nom || ''}`.trim();
+      setMeName(fullName);
       const history = await getMeasuresHistory(id);
       const byType: Record<string, any> = {};
       (Array.isArray(history) ? history : []).forEach((m: any) => {
@@ -60,16 +63,22 @@ export default function PatientDashboardScreen() {
   const gly = latest['glycemie'];
   const tens = latest['tension'];
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#2ccdd2" />
+        <Text style={{ marginTop: 8, color: '#6B7280' }}>Chargement...</Text>
+      </View>
+    );
+  }
+
   return (
     <View>
       <Header />
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <Text style={styles.greeting}>Bonjour{meId ? '' : ''}!</Text>
+        <Text style={styles.greeting}>Bonjour, {meName || 'Patient'}!</Text>
         <Text style={styles.sectionTitle}>Vos dernières mesures</Text>
 
-
-      <Text style={styles.greeting}>Bonjour, Patient!</Text>
-      <Text style={styles.sectionTitle}>Vos dernières mesures</Text>
         <View style={styles.card}>
           <View style={styles.cardHeaderRow}>
             <Ionicons name="trending-up-outline" size={24} color="green" />
@@ -100,7 +109,7 @@ export default function PatientDashboardScreen() {
         <View style={styles.block}>
           <Text style={styles.blockTitle}>Prochain rendez-vous</Text>
           <Text style={styles.blockLine}>{nextAppt ? `${(nextAppt as any).medecinId?.nom || 'Médecin'} - ${nextAppt.date} à ${nextAppt.heure || ''}` : 'Aucun prochain rendez-vous'}</Text>
-          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-book')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-new')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
         </View>
 
         <View style={styles.block}>

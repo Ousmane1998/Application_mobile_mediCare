@@ -41,7 +41,8 @@ export default function PatientHealthRecordScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
+        <ActivityIndicator size="large" color="#2ccdd2" />
+        <Text style={{ marginTop: 8, color: '#6B7280' }}>Chargement...</Text>
       </View>
     );
   }
