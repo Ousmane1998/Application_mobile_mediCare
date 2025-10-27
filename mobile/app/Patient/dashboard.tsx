@@ -100,7 +100,7 @@ export default function PatientDashboardScreen() {
         <View style={styles.block}>
           <Text style={styles.blockTitle}>Prochain rendez-vous</Text>
           <Text style={styles.blockLine}>{nextAppt ? `${(nextAppt as any).medecinId?.nom || 'Médecin'} - ${nextAppt.date} à ${nextAppt.heure || ''}` : 'Aucun prochain rendez-vous'}</Text>
-          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-new')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.blockBtn} onPress={() => router.push('/Patient/appointment-book')}><Text style={styles.blockBtnText}>Prendre rendez-vous</Text></TouchableOpacity>
         </View>
 
         <View style={styles.block}>
