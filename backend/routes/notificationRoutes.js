@@ -8,7 +8,7 @@ const router = express.Router();
 // Créer une nouvelle notification
 router.post("/", createNotification);
 
-// Récupérer TOUTES les notifications (pour déboguer)
+// Récupérer TOUTES les notifications 
 router.get("/all", getAllNotifications);
 
 // Récupérer toutes les notifications d'un utilisateur

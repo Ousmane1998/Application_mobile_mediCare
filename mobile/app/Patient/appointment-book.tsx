@@ -7,7 +7,7 @@ import { createAppointment, getProfile, type UserProfile } from '../../utils/api
 import { useRouter } from 'expo-router';
 
 const SLOT_SETS: Record<string, string[]> = {
-  morning: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30'],
+  morning: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30'],
 };
 
 const TYPES = ['Suivi régulier', 'Première consultation', 'Contrôle'] as const;

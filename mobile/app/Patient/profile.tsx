@@ -102,8 +102,15 @@ export default function PatientProfileScreen() {
 
       <View style={{ height: 12 }} />
 
+      <TouchableOpacity style={styles.quickBtn} onPress={() => router.push('/Patient/health-record' as Href)}>
+        <Ionicons name="document-text-outline" size={20} color="#fff" />
+        <Text style={styles.quickBtnText}>Ma fiche de santé</Text>
+      </TouchableOpacity>
+
+      <View style={{ height: 12 }} />
+
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={20} color="#fff" />
+        <Ionicons name="log-out-outline" size={20} color="#ff0000ff" />
         <Text style={styles.logoutText}>Déconnexion</Text>
       </TouchableOpacity>
 
@@ -123,4 +130,6 @@ const styles = StyleSheet.create({
   error: { color: '#DC2626', marginTop: 12 },
   logoutButton: { backgroundColor: '#EF4444', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   logoutText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  quickBtn: { backgroundColor: '#10B981', borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  quickBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

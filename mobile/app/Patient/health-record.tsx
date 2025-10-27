@@ -1,87 +1,278 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+// @ts-nocheck
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getMyHealthRecord, getMedecins, type HealthRecord, type AppUser, createNotification, getProfile, ORG_NAME, ORG_LOGO, SECURE_FICHE_BASE, createFicheShareToken, SOCKET_URL } from '../../utils/api';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 
 export default function PatientHealthRecordScreen() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [rec, setRec] = useState<HealthRecord | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [doctors, setDoctors] = useState<AppUser[]>([]);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setError(null);
+        const r = await getMyHealthRecord();
+        setRec(r);
+      } catch (e: any) {
+        setError(e?.message || 'Erreur de chargement');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await getMedecins();
+        setDoctors(Array.isArray(list) ? list : []);
+      } catch {}
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      {/* Antécédents médicaux */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
-            <View style={[styles.iconWrap, { backgroundColor: '#D1FAE5' }]}>
-              <Ionicons name="medkit-outline" size={18} color="#10B981" />
+            <View style={[styles.iconWrap, { backgroundColor: '#FEF9C3' }]}>
+              <Ionicons name="water-outline" size={18} color="#CA8A04" />
             </View>
-            <Text style={styles.cardTitle}>Antécédents Médicaux</Text>
+            <Text style={styles.cardTitle}>Profil sanguin</Text>
           </View>
-          <TouchableOpacity><Text style={styles.link}>Voir tout</Text></TouchableOpacity>
         </View>
         <View style={styles.itemRow}>
-          <Ionicons name="alert-circle-outline" size={16} color="#6B7280" />
-          <Text style={styles.itemText}><Text style={styles.itemLabel}>Allergies</Text> : Penicilline</Text>
+          <Ionicons name="rainy-outline" size={16} color="#6B7280" />
+          <Text style={styles.itemText}><Text style={styles.itemLabel}>Groupe sanguin</Text> : {rec?.groupeSanguin || '—'}</Text>
         </View>
         <View style={styles.itemRow}>
-          <Ionicons name="location-outline" size={16} color="#6B7280" />
-          <Text style={styles.itemText}><Text style={styles.itemLabel}>Maladies Chroniques</Text> : Diabète de type 2, Hypertension</Text>
-        </View>
-        <View style={styles.itemRow}>
-          <Ionicons name="cut-outline" size={16} color="#6B7280" />
-          <Text style={styles.itemText}><Text style={styles.itemLabel}>Chirurgies</Text> : Appendicectomie (2010)</Text>
+          <Ionicons name="time-outline" size={16} color="#6B7280" />
+          <Text style={styles.itemText}><Text style={styles.itemLabel}>Dernière mise à jour</Text> : {rec?.derniereMiseAJour ? new Date(rec.derniereMiseAJour).toLocaleString() : '—'}</Text>
         </View>
       </View>
 
-      {/* Traitements actuels */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.headerLeft}>
-            <View style={[styles.iconWrap, { backgroundColor: '#DBEAFE' }]}>
-              <Ionicons name="bandage-outline" size={18} color="#2563EB" />
-            </View>
-            <Text style={styles.cardTitle}>Traitements Actuels</Text>
-          </View>
-          <TouchableOpacity><Text style={styles.link}>Voir tout</Text></TouchableOpacity>
-        </View>
-        <TouchableOpacity style={styles.listItem}>
-          <View>
-            <Text style={styles.listItemTitle}>Metformine</Text>
-            <Text style={styles.listItemSub}>500mg, 2 fois par jour</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.listItem}>
-          <View>
-            <Text style={styles.listItemTitle}>Lisinopril</Text>
-            <Text style={styles.listItemSub}>10mg, 1 fois par jour</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Rendez-vous à venir */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <View style={[styles.iconWrap, { backgroundColor: '#ECFDF5' }]}>
-              <Ionicons name="calendar-outline" size={18} color="#059669" />
+              <Ionicons name="warning-outline" size={18} color="#059669" />
             </View>
-            <Text style={styles.cardTitle}>Rendez-vous à Venir</Text>
+            <Text style={styles.cardTitle}>Allergies</Text>
           </View>
-          <TouchableOpacity><Text style={styles.link}>Voir tout</Text></TouchableOpacity>
         </View>
-
-        <View style={styles.appointmentRow}>
-          <View style={styles.dateBadge}>
-            <Text style={styles.dateDay}>LUN</Text>
-            <Text style={styles.dateNum}>28</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.appTitle}>Dr. Dubois (Cardiologue)</Text>
-            <Text style={styles.appSub}>10:30 — Suivi annuel{"\n"}Hôpital Central</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </View>
+        {(rec?.allergies && rec.allergies.length > 0) ? (
+          rec.allergies.map((a, i) => (
+            <View key={`${a}_${i}`} style={styles.itemRow}>
+              <Ionicons name="alert-circle-outline" size={16} color="#6B7280" />
+              <Text style={styles.itemText}>{a}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.itemText}>Aucune allergie renseignée</Text>
+        )}
       </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.iconWrap, { backgroundColor: '#DBEAFE' }]}>
+              <Ionicons name="medkit-outline" size={18} color="#2563EB" />
+            </View>
+            <Text style={styles.cardTitle}>Maladies</Text>
+          </View>
+        </View>
+        {(rec?.maladies && rec.maladies.length > 0) ? (
+          rec.maladies.map((m, i) => (
+            <View key={`${m}_${i}`} style={styles.itemRow}>
+              <Ionicons name="pulse-outline" size={16} color="#6B7280" />
+              <Text style={styles.itemText}>{m}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.itemText}>Aucune maladie renseignée</Text>
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.iconWrap, { backgroundColor: '#E0E7FF' }]}>
+              <Ionicons name="bandage-outline" size={18} color="#4F46E5" />
+            </View>
+            <Text style={styles.cardTitle}>Traitements</Text>
+          </View>
+        </View>
+        {(rec?.traitements && rec.traitements.length > 0) ? (
+          rec.traitements.map((t, i) => (
+            <View key={`${t}_${i}`} style={styles.listItem}>
+              <View>
+                <Text style={styles.listItemTitle}>{t}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </View>
+          ))
+        ) : (
+          <Text style={styles.itemText}>Aucun traitement renseigné</Text>
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.iconWrap, { backgroundColor: '#FDE68A' }]}>
+              <Ionicons name="book-outline" size={18} color="#CA8A04" />
+            </View>
+            <Text style={styles.cardTitle}>Antécédents</Text>
+          </View>
+        </View>
+        {(rec?.antecedents && rec.antecedents.length > 0) ? (
+          rec.antecedents.map((t, i) => (
+            <View key={`${t}_${i}`} style={styles.itemRow}>
+              <Ionicons name="document-text-outline" size={16} color="#6B7280" />
+              <Text style={styles.itemText}>{t}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.itemText}>Aucun antécédent renseigné</Text>
+        )}
+      </View>
+
+      {error ? <Text style={{ color: '#DC2626' }}>{error}</Text> : null}
+
+      <View style={{ height: 12 }} />
+      <TouchableOpacity style={styles.shareBtn} onPress={() => setShareOpen(true)}>
+        <Ionicons name="share-social-outline" size={20} color="#fff" />
+        <Text style={styles.shareText}>Partager ma fiche avec un médecin</Text>
+      </TouchableOpacity>
+
+      <View style={{ height: 8 }} />
+      <TouchableOpacity disabled={exporting} style={[styles.exportBtn, exporting && { opacity: 0.7 }]} onPress={async () => {
+        try {
+          setExporting(true);
+          const prof = await getProfile();
+          const fullName = `${prof.user.prenom || ''} ${prof.user.nom || ''}`.trim();
+          const patientId = (prof.user as any)._id || (prof.user as any).id;
+          const now = new Date();
+          // Générer un token de partage 24h et construire l’URL publique
+          let shareUrl = '';
+          try {
+            const tok = await createFicheShareToken();
+            shareUrl = `${SOCKET_URL.replace(/\/$/, '')}/public/fiche?token=${encodeURIComponent(tok.token)}`;
+          } catch {}
+          const fallbackUrl = SECURE_FICHE_BASE ? `${SECURE_FICHE_BASE.replace(/\/$/, '')}/fiches/${encodeURIComponent(patientId)}` : '';
+          const finalUrl = shareUrl || fallbackUrl;
+          const qrImg = finalUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(finalUrl)}` : '';
+          const h = `
+            <html>
+              <head>
+                <meta charset="utf-8" />
+                <style>
+                  @page { margin: 24px; }
+                  body { font-family: Arial, sans-serif; padding: 0; position: relative; }
+                  header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 12px; border-bottom: 1px solid #e5e7eb; }
+                  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #0ea5e9; font-size: 14px; }
+                  .brand img { height: 24px; }
+                  .meta { color: #6b7280; font-size: 12px; }
+                  h1 { font-size: 20px; margin: 16px 0 0; }
+                  .sec { margin-top: 16px; }
+                  .label { color: #374151; font-weight: bold; margin-top: 8px; }
+                  ul { margin: 6px 0 0 18px; }
+                  .watermark {
+                    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+                    color: rgba(0,0,0,0.06); font-size: 64px; font-weight: 700; pointer-events: none; z-index: 0;
+                  }
+                  .content { position: relative; z-index: 1; }
+                  .qr { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+                  .muted { color: #6b7280; font-size: 12px; }
+                </style>
+              </head>
+              <body>
+                <div class="watermark">${ORG_NAME || 'MediCare'}</div>
+                <header>
+                  <div class="brand">
+                    ${ORG_LOGO ? `<img src="${ORG_LOGO}" />` : ''}
+                    <span>${ORG_NAME || 'MediCare'}</span>
+                  </div>
+                  <div class="meta">Généré le ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
+                </header>
+                <div class="content">
+                  <h1>Fiche de santé — ${fullName || 'Patient'}</h1>
+                  <div class="sec">
+                    <div class="label">Groupe sanguin</div>
+                    <div>${rec?.groupeSanguin || '—'}</div>
+                    <div class="label">Dernière mise à jour</div>
+                    <div>${rec?.derniereMiseAJour ? new Date(rec.derniereMiseAJour).toLocaleString() : '—'}</div>
+                  </div>
+                  <div class="sec">
+                    <div class="label">Allergies</div>
+                    <ul>
+                      ${(rec?.allergies || []).map((a) => `<li>${a}</li>`).join('') || '<li>Aucune</li>'}
+                    </ul>
+                  </div>
+                  <div class="sec">
+                    <div class="label">Maladies</div>
+                    <ul>
+                      ${(rec?.maladies || []).map((m) => `<li>${m}</li>`).join('') || '<li>Aucune</li>'}
+                    </ul>
+                  </div>
+                  <div class="sec">
+                    <div class="label">Traitements</div>
+                    <ul>
+                      ${(rec?.traitements || []).map((t) => `<li>${t}</li>`).join('') || '<li>Aucun</li>'}
+                    </ul>
+                  </div>
+                  <div class="sec">
+                    <div class="label">Antécédents</div>
+                    <ul>
+                      ${(rec?.antecedents || []).map((t) => `<li>${t}</li>`).join('') || '<li>Aucun</li>'}
+                    </ul>
+                  </div>
+                  ${qrImg ? `<div class="sec"><div class="label">Accès sécurisé</div><div class="qr"><img src="${qrImg}" /><div class="muted">Scannez pour accéder à la fiche sécurisée</div></div></div>` : ''}
+                </div>
+              </body>
+            </html>
+          `;
+          const { uri } = await Print.printToFileAsync({ html: h });
+          // Renommer le fichier avec un nom parlant (cela n’ajoute pas de métadonnées PDF, mais aide au partage)
+          const safeName = fullName.replace(/[^a-z0-9 _-]/gi, '_') || 'Patient';
+          const fileName = `Fiche_${safeName}_${now.toISOString().replace(/[:.]/g, '-')}.pdf`;
+          const dest = `${FileSystem.cacheDirectory}${fileName}`;
+          try { await FileSystem.copyAsync({ from: uri, to: dest }); } catch {}
+          const shareUri = (await FileSystem.getInfoAsync(dest)).exists ? dest : uri;
+          if (Platform.OS === 'ios') {
+            await Share.share({ url: shareUri, title: fileName });
+          } else {
+            const avail = await Sharing.isAvailableAsync();
+            if (avail) await Sharing.shareAsync(shareUri, { mimeType: 'application/pdf', dialogTitle: fileName });
+            else await Share.share({ message: shareUri, title: fileName });
+          }
+        } catch (e: any) {
+          Alert.alert('Erreur', e?.message || 'Export impossible');
+        } finally {
+          setExporting(false);
+        }
+      }}>
+        <Ionicons name="document-outline" size={20} color="#fff" />
+        <Text style={styles.exportText}>{exporting ? 'Génération…' : 'Exporter en PDF'}</Text>
+      </TouchableOpacity>
     </ScrollView>
+    
   );
 }
 
@@ -108,4 +299,11 @@ const styles = StyleSheet.create({
   dateNum: { color: '#059669', fontSize: 18, fontWeight: '700', lineHeight: 22 },
   appTitle: { color: '#111827', fontWeight: '600' },
   appSub: { color: '#6B7280', marginTop: 2 },
+  shareBtn: { backgroundColor: '#2563EB', borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  shareText: { color: '#fff', fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  modalCard: { width: '100%', backgroundColor: '#fff', borderRadius: 12, padding: 16 },
+  modalTitle: { fontSize: 18, color: '#111827', marginBottom: 8 },
+  optionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
+  optionText: { color: '#111827' },
 });

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function withApiSuffix(url: string) {
@@ -13,8 +14,18 @@ function withApiSuffix(url: string) {
   }
 }
 
+
+// Fiche de santé: génération de token de partage (valide 1 jour côté serveur)
+export async function createFicheShareToken(patientId?: string): Promise<{ token: string; expiresIn: number }> {
+  const payload = patientId ? { patientId } : ({} as any);
+  return authFetch('/fiches/share-token', { method: 'POST', body: JSON.stringify(payload) });
+}
+
 export const API_URL = withApiSuffix(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000');
 export const SOCKET_URL = API_URL.replace(/\/api$/, '');
+export const ORG_NAME = process.env.EXPO_PUBLIC_ORG_NAME || 'MediCare';
+export const ORG_LOGO = process.env.EXPO_PUBLIC_ORG_LOGO || '../assets/logoMediCare.png';
+export const SECURE_FICHE_BASE = process.env.EXPO_PUBLIC_SECURE_FICHE_BASE_URL || '';
 
 
 
@@ -243,6 +254,10 @@ export async function deleteNotification(id: string) {
   return authFetch(`/notifications/${id}`, { method: 'DELETE' });
 }
 
+export async function createNotification(payload: { userId: string; type: string; message?: string; data?: any }) {
+  return authFetch('/notifications', { method: 'POST', body: JSON.stringify(payload) });
+}
+
 // Admin
 export type AppUser = {
   _id: string;
@@ -292,4 +307,28 @@ export async function logout() {
 export async function getNearbyStructures(latitude: number, longitude: number, radius: number = 10) {
   return fetch(`${API_URL}/structures/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`)
     .then(res => res.json());
+}
+
+// Health records (Fiche de santé)
+export type HealthRecord = {
+  _id: string;
+  patient: any;
+  maladies?: string[];
+  traitements?: string[];
+  allergies?: string[];
+  antecedents?: string[];
+  groupeSanguin?: string;
+  derniereMiseAJour?: string;
+};
+
+export async function listHealthRecords(): Promise<HealthRecord[]> {
+  return authFetch('/fiches');
+}
+
+export async function getMyHealthRecord(): Promise<HealthRecord | null> {
+  const prof = await getProfile();
+  const id = (prof.user as any)._id || (prof.user as any).id;
+  const fiches = await listHealthRecords();
+  const rec = (Array.isArray(fiches) ? fiches : []).find((f: any) => String((f.patient?._id)||f.patient) === String(id));
+  return rec || null;
 }

@@ -20,6 +20,7 @@ function iconAndAccentFor(n: NotificationItem) {
 
 export default function DoctorNotificationsScreen() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Tout');
+  const [patientIdFilter, setPatientIdFilter] = useState<string | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,12 +76,27 @@ export default function DoctorNotificationsScreen() {
   };
 
   const filtered = useMemo(() => {
-    if (filter === 'Tout') return items;
-    if (filter === 'Messages') return items.filter(i => (i.type || '').toLowerCase() === 'message');
-    if (filter === 'Rendez-vous') return items.filter(i => ['rdv', 'appointment'].includes((i.type || '').toLowerCase()));
-    if (filter === 'Alertes') return items.filter(i => ['alerte', 'alert'].includes((i.type || '').toLowerCase()));
-    return items;
-  }, [items, filter]);
+    let arr = items;
+    if (filter === 'Messages') arr = arr.filter(i => (i.type || '').toLowerCase() === 'message');
+    else if (filter === 'Rendez-vous') arr = arr.filter(i => ['rdv', 'appointment'].includes((i.type || '').toLowerCase()));
+    else if (filter === 'Alertes') arr = arr.filter(i => ['alerte', 'alert'].includes((i.type || '').toLowerCase()));
+    if (patientIdFilter !== 'all') {
+      arr = arr.filter((n: any) => String(n?.data?.patientId || '') === String(patientIdFilter));
+    }
+    return arr;
+  }, [items, filter, patientIdFilter]);
+
+  const patientOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    (items as any[]).forEach((n) => {
+      const pid = n?.data?.patientId;
+      if (pid) {
+        const name = (n?.data?.patientName) || [n?.data?.prenom, n?.data?.nom].filter(Boolean).join(' ').trim();
+        map.set(String(pid), name && name.length > 0 ? name : String(pid));
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [items]);
 
   const onMarkRead = async (id: string) => {
     try {
@@ -123,17 +139,39 @@ export default function DoctorNotificationsScreen() {
         ))}
       </View>
 
+      {patientOptions.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+          <TouchableOpacity onPress={() => setPatientIdFilter('all')}>
+            <View style={[styles.filterChip, patientIdFilter === 'all' && styles.filterChipActive]}>
+              <Text style={[styles.filterText, patientIdFilter === 'all' && styles.filterTextActive]}>Tous les patients</Text>
+            </View>
+          </TouchableOpacity>
+          {patientOptions.map(p => (
+            <TouchableOpacity key={p.id} onPress={() => setPatientIdFilter(p.id)}>
+              <View style={[styles.filterChip, patientIdFilter === p.id && styles.filterChipActive]}>
+                <Text style={[styles.filterText, patientIdFilter === p.id && styles.filterTextActive]} numberOfLines={1}>{p.name}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
       {filtered.map(n => {
         const { icon, accent } = iconAndAccentFor(n);
         const time = n.createdAt ? new Date(n.createdAt).toLocaleString() : '';
         const title = n.type ? n.type.charAt(0).toUpperCase() + n.type.slice(1) : 'Notification';
         const subtitle = n.message || '';
         const canOpenMeasure = (n as any)?.data?.measureId;
+        const canOpenFiche = ((n as any)?.type === 'share_fiche' || (n as any)?.type === 'fiche') && (n as any)?.data?.patientId;
         const onOpen = () => {
-          if (canOpenMeasure) router.push(`/Doctor/measure/${(n as any).data.measureId}`);
+          if (canOpenMeasure) {
+            router.push(`/Doctor/measure/${(n as any).data.measureId}`);
+          } else if (canOpenFiche) {
+            router.push(`/Doctor/health-record/${(n as any).data.patientId}`);
+          }
         };
         return (
-          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={canOpenMeasure ? 0.7 : 1} onPress={onOpen}>
+          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche) ? 0.7 : 1} onPress={onOpen}>
             <View style={styles.cardHead}>
               <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}> 
                 <Ionicons name={icon} size={20} color={accent} />
