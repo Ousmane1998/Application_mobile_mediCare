@@ -49,10 +49,10 @@ export default function Welcome2Screen() {
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
         </View>
-
         <TouchableOpacity style={styles.primaryBtn} onPress={finishOnboarding}>
-          <Text style={styles.primaryBtnText}>Commencer</Text>
+          <Text style={styles.primaryBtnText}>Suivant</Text>
         </TouchableOpacity>
+      </View>
     </PageContainer>
   );
 }
