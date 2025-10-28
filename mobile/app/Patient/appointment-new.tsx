@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,6 +50,11 @@ export default function PatientAppointmentNewScreen() {
 
   const typesConsultation = ['Suivi régulier', 'Consultation initiale', 'Urgence', 'Téléconsultation'];
   const [typeConsultation, setTypeConsultation] = useState('Suivi régulier');
+
+  // Validation helpers
+  const sanitize = (s: string) => String(s || '').replace(/[\t\n\r]+/g, ' ').trim();
+  const hasDanger = (s: string) => /[<>]/.test(String(s || ''));
+  const isValidType = (t: string) => typesConsultation.includes(t);
 
   // Calendar UX states and helpers
   const now = new Date();
@@ -204,14 +210,20 @@ export default function PatientAppointmentNewScreen() {
   }, [selectedDay, monthRef]);
 
   const onSave = async () => {
-    if (!me?._id) {
-      setSnack({ visible: true, message: 'Profil non chargé.', type: 'error' });
-      return;
-    }
-    if (!medecinId || !selectedDay || !selectedSlot) {
-      setSnack({ visible: true, message: 'Sélectionnez une date et une heure.', type: 'error' });
-      return;
-    }
+    const validate = (): string | null => {
+      if (!me?._id) return 'Profil non chargé.';
+      if (!medecinId) return 'Aucun médecin sélectionné.';
+      if (!selectedDay) return 'Veuillez sélectionner une date.';
+      if (!selectedSlot) return 'Veuillez sélectionner un créneau horaire.';
+      if (isSlotInPast(selectedSlot)) return 'Le créneau choisi est déjà passé.';
+      if (!selectedDateIso) return 'Date invalide.';
+      if (!isValidType(typeConsultation)) return 'Type de consultation invalide.';
+      if (hasDanger(typeConsultation)) return 'Caractères interdits détectés.';
+      return null;
+    };
+
+    const v = validate();
+    if (v) { setSnack({ visible: true, message: v, type: 'error' }); return; }
     const isoDate = selectedDateIso;
 
     try {
@@ -222,7 +234,7 @@ export default function PatientAppointmentNewScreen() {
         medecinId,
         date: isoDate,
         heure: selectedSlot,
-        typeConsultation,
+        typeConsultation: sanitize(typeConsultation),
         statut: 'en_attente'
       });
       setSnack({ visible: true, message: 'Rendez-vous confirmé.', type: 'success' });
@@ -258,7 +270,7 @@ export default function PatientAppointmentNewScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <Text style={[styles.title, { color: theme.colors.text }]}>Prendre rendez-vous</Text>
       {doctor && (
         <Text style={{ color: theme.colors.muted, marginBottom: 8 }}>Avec Dr {doctor?.nom} {doctor?.prenom}</Text>
@@ -390,12 +402,12 @@ export default function PatientAppointmentNewScreen() {
         type={snack.type}
         onHide={() => setSnack((s) => ({ ...s, visible: false }))}
       />
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, padding: 16 },
   centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 18, color: '#000', fontWeight: 'bold' },

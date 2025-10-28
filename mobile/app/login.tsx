@@ -30,32 +30,27 @@ const [request, response, promptAsync] = Google.useAuthRequest({
   scopes: ["profile", "email"],
 });
 
-
-
+  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
+  const hasDanger = (s: string) => /[<>]/.test(s || '');
+  const emailRegex = /^\S+@\S+\.\S+$/;
+  const phoneRegex = /^7\d{8}$/;
+  const validate = () => {
+    const ident = sanitize(emailOrPhone);
+    const pwd = String(password);
+    if (!ident || !pwd) return 'mail ou telephone requis.';
+    if (hasDanger(ident)) return 'Caractères interdits détectés (<, >).';
+    if (ident.includes('@')) {
+      if (!emailRegex.test(ident) || ident.length > 100) return 'Format email invalide. Format attendu: string@string.string.';
+    } else {
+      if (!phoneRegex.test(ident)) return 'Format téléphone invalide. Format attendu: 7X XXX XX XX.';
+    }
+    if (pwd.length < 6 || pwd.length > 64) return 'Le mot de passe doit contenir entre 6 et 64 caractères.';
+    return null;
+  };
 
   const onLogin = async () => {
-    const emailRegex = /^\S+@\S+\.\S+$/;
-    const phoneRegex = /^7\d{8}$/;
-    if (!emailOrPhone || !password) {
-      setError('mail ou telephone requis.');
-      return;
-    }
-    const isEmail = emailOrPhone.includes('@');
-    if (isEmail) {
-      if (!emailRegex.test(emailOrPhone)) {
-        setError('Format email invalide. Format attendu: string@string.string.');
-        return;
-      }
-    } else {
-      if (!phoneRegex.test(emailOrPhone)) {
-        setError('Format téléphone invalide. Format attendu: 7X XXX XX XX.');
-        return;
-      }
-    }
-    if (String(password).length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.');
-      return;
-    }
+    const msg = validate();
+    if (msg) { setError(msg); return; }
     setLoading(true);
     setError(null);
     try {
@@ -65,7 +60,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
       const res = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifiant: emailOrPhone, password }),
+        body: JSON.stringify({ identifiant: sanitize(emailOrPhone), password }),
       });
       const raw = await res.text();
       console.log("📡 Réponse brute :", res.status, raw);
@@ -172,6 +167,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
           onChangeText={setEmailOrPhone}
           keyboardType="email-address"
           autoCapitalize="none"
+          maxLength={100}
           placeholderTextColor={theme.colors.muted}
           selectionColor={theme.colors.primary}
 
@@ -187,6 +183,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
+            maxLength={64}
             placeholderTextColor={theme.colors.muted}
             selectionColor={theme.colors.primary}
           />
@@ -199,7 +196,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: theme.colors.primary }, loading && { opacity: 0.7 }]} disabled={loading} onPress={onLogin}>
+      <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: theme.colors.primary }, (loading || !!validate()) && { opacity: 0.7 }]} disabled={loading || !!validate()} onPress={onLogin}>
         <Text style={[styles.primaryBtnText, { color: theme.colors.primaryText }]}>{loading ? 'Connexion…' : 'Se Connecter'}</Text>
       </TouchableOpacity>
 

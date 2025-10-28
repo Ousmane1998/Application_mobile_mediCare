@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import PageContainer from '../../components/PageContainer';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getMeasureById } from '../../utils/api';
 
@@ -44,8 +46,13 @@ export default function DoctorMeasureDetailScreen() {
 
   const when = measure.date || measure.createdAt;
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      <Text style={styles.title}>Détail de la mesure</Text>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Détail de la mesure</Text>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.label}>Type</Text>
@@ -65,12 +72,12 @@ export default function DoctorMeasureDetailScreen() {
           <Text style={styles.sub}>{String(measure.patientId?._id || measure.patientId)}</Text>
         </View>
       ) : null}
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   title: { fontSize: 20, color: '#111827', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
   label: { color: '#6B7280' },

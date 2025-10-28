@@ -9,6 +9,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import PageContainer from "../../components/PageContainer";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getProfile, listMyPatients, Patient } from "../../utils/api";
 
@@ -57,10 +58,15 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.patientCard}
       onPress={() => navigation.navigate("Chat", { patientId: item._id, patientName: `${item.prenom} ${item.nom}` })}
     >
-      <Image
-        source={{ uri: item.photo || "https://cdn-icons-png.flaticon.com/512/921/921071.png" }}
-        style={styles.avatar}
-      />
+      {item.photo ? (
+        <Image source={{ uri: item.photo }} style={styles.avatar} />
+      ) : (
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarInitials}>
+            {`${(item.prenom||'').charAt(0)}${(item.nom||'').charAt(0)}`.toUpperCase() || '??'}
+          </Text>
+        </View>
+      )}
       <View style={styles.patientInfo}>
         <Text style={styles.patientName}>{item.prenom} {item.nom}</Text>
         <Text style={styles.patientEmail}>{item.email}</Text>
@@ -72,7 +78,7 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <PageContainer style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Messages</Text>
         </View>
@@ -80,12 +86,12 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
           <ActivityIndicator size="large" color="#2ccdd2" />
           <Text style={{ marginTop: 12, color: "#6B7280" }}>Chargement...</Text>
         </View>
-      </View>
+      </PageContainer>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <PageContainer style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
         <Text style={styles.subtitle}>Vos patients</Text>
@@ -105,20 +111,20 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         />
       )}
-    </View>
+    </PageContainer>
   );
 };
 
 export default MessagesScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6", marginBottom: 40, marginTop: 32 },
+  container: { flex: 1, backgroundColor: "#F3F4F6" },
   header: {
     backgroundColor: "#2ccdd2",
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#fff" },
+  title: { fontSize: 24, color: "#fff" },
   subtitle: { fontSize: 14, color: "#D1FAE5", marginTop: 4 },
   listContainer: { paddingHorizontal: 12, paddingVertical: 12 },
   patientCard: {
@@ -134,10 +140,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 12 },
+  avatarCircle: { width: 50, height: 50, borderRadius: 25, marginRight: 12, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
+  avatarInitials: { color: '#fff', fontWeight: '700' },
   patientInfo: { flex: 1 },
-  patientName: { fontSize: 16, fontWeight: "600", color: "#111827" },
+  patientName: { fontSize: 16, color: "#111827" },
   patientEmail: { fontSize: 13, color: "#6B7280", marginTop: 2 },
-  patientPathologie: { fontSize: 12, color: "#2ccdd2", marginTop: 4, fontWeight: "500" },
+  patientPathologie: { fontSize: 12, color: "#2ccdd2", marginTop: 4 },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",

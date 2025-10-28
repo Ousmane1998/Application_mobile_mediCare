@@ -117,7 +117,7 @@ const AppointmentConfirmScreen = () => {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="alert-circle" size={50} color="#EF4444" />
-        <Text style={{ marginTop: 12, color: '#111827', fontWeight: '600' }}>
+        <Text style={{ marginTop: 12, color: '#111827' }}>
           Rendez-vous non trouvé
         </Text>
         <TouchableOpacity
@@ -328,7 +328,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
     color: '#111827',
   },
 
@@ -347,7 +346,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    fontWeight: '600',
   },
 
   // Section
@@ -357,7 +355,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#111827',
     marginBottom: 12,
   },
@@ -383,12 +380,10 @@ const styles = StyleSheet.create({
   },
   patientInitials: {
     fontSize: 16,
-    fontWeight: '600',
     color: '#fff',
   },
   patientName: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#111827',
   },
   patientEmail: {
@@ -400,7 +395,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#2ccdd2',
     marginTop: 2,
-    fontWeight: '500',
   },
 
   // Detail Card
@@ -422,7 +416,6 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#111827',
     marginTop: 4,
   },
@@ -486,7 +479,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '600',
     fontSize: 14,
   },
 });

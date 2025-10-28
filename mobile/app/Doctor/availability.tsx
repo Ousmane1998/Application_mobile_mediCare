@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfile, getAvailabilityByMedecin, setAvailability, updateAvailability, deleteAvailabilityApi, type UserProfile } from '../../utils/api';
 import RNPickerSelect from 'react-native-picker-select';
@@ -76,7 +77,7 @@ export default function DoctorAvailabilityScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Text style={styles.title}>Mes disponibilités</Text>
 
       {/* Form Card */}
@@ -191,42 +192,42 @@ export default function DoctorAvailabilityScreen() {
       ))}
 
       {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
-  title: { fontSize: 18, color: '#111827', marginBottom: 16, fontWeight: '600' },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
+  title: { fontSize: 18, color: '#111827', marginBottom: 16 },
   
   // Form Card
   formCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E5E7EB' },
-  formTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 16 },
+  formTitle: { fontSize: 16, color: '#111827', marginBottom: 16 },
   formGroup: { marginBottom: 16 },
-  formLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
+  formLabel: { fontSize: 13, color: '#374151', marginBottom: 8 },
   
   // Hours
   hoursRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  hoursLabel: { fontSize: 12, color: '#6B7280', marginBottom: 6, fontWeight: '500' },
+  hoursLabel: { fontSize: 12, color: '#6B7280', marginBottom: 6 },
   hoursArrow: { paddingBottom: 12, alignItems: 'center', justifyContent: 'center' },
   
   // Summary
   summary: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#E0F7F6', borderRadius: 8, marginBottom: 16, gap: 10 },
-  summaryText: { fontSize: 14, fontWeight: '600', color: '#0f766e' },
+  summaryText: { fontSize: 14, color: '#0f766e' },
   
   // Old styles
   formRow: { marginBottom: 10 },
   row2: { flexDirection: 'row', alignItems: 'center' },
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   primaryBtn: { backgroundColor: '#10B981', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 8, flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  primaryBtnText: { color: '#fff', fontSize: 16 },
   card: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#E5E7EB' },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   badge: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#D1FAE5' },
   name: { fontSize: 16, color: '#111827' },
   sub: { fontSize: 13, color: '#6B7280', marginTop: 2 },
-  status: { fontWeight: '600' },
-  action: { fontWeight: '600' },
+  status: {},
+  action: {},
 });
 
 // Heures de 09h à 17h par heure complète

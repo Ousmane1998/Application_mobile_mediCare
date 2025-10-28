@@ -105,7 +105,7 @@ const MeasureDetailScreen = () => {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="alert-circle" size={50} color="#EF4444" />
-        <Text style={{ marginTop: 12, color: '#111827', fontWeight: '600' }}>Données indisponibles</Text>
+        <Text style={{ marginTop: 12, color: '#111827' }}>Données indisponibles</Text>
         <TouchableOpacity style={[styles.button, { marginTop: 20 }]} onPress={() => router.back()}>
           <Text style={styles.buttonText}>Retour</Text>
         </TouchableOpacity>
@@ -262,7 +262,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
     color: '#111827',
   },
 
@@ -289,12 +288,10 @@ const styles = StyleSheet.create({
   },
   patientInitials: {
     fontSize: 16,
-    fontWeight: '600',
     color: '#fff',
   },
   patientName: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#111827',
   },
   patientEmail: {
@@ -326,7 +323,6 @@ const styles = StyleSheet.create({
   },
   measureType: {
     fontSize: 16,
-    fontWeight: '600',
     color: '#111827',
   },
   measureDate: {
@@ -341,7 +337,6 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 36,
-    fontWeight: 'bold',
   },
   unit: {
     fontSize: 14,
@@ -360,7 +355,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    fontWeight: '600',
   },
 
   // Actions
@@ -387,7 +381,6 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 13,
-    fontWeight: '600',
     color: '#fff',
   },
   button: {
@@ -398,7 +391,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '600',
   },
 
   // Recommendations
@@ -414,7 +406,6 @@ const styles = StyleSheet.create({
   },
   recommendationsTitle: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#111827',
     marginBottom: 12,
   },

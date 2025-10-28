@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   badge: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E5E7EB' },
   name: { fontSize: 16, color: '#111827' },
   sub: { fontSize: 13, color: '#6B7280', marginTop: 2 },
-  role: { fontWeight: '700', color: '#111827' },
+  role: { color: '#111827' },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
   action: { fontWeight: '600' },
 });

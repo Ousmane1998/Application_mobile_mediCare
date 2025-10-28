@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, TouchableOpacity, RefreshControl } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Header from '../../components/header';
@@ -76,10 +77,12 @@ export default function DoctorsActivationScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Header />
       <View style={styles.topBar}>
-        <Ionicons name="menu" size={22} color="#111827" />
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color="#111827" />
+        </TouchableOpacity>
         <Text style={styles.topBarTitle}>Activation des Médecins</Text>
         <Ionicons name="search" size={18} color="#111827" />
       </View>
@@ -107,12 +110,12 @@ export default function DoctorsActivationScreen() {
       ))}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 12, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 12 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   topBarTitle: { fontSize: 18, color: '#111827' },
 

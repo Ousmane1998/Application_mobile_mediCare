@@ -24,11 +24,10 @@ function RootLayoutInner() {
         <Stack.Screen name="welcome2" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register-doctor" options={{ headerShown: false }} />
-        {/* Removed register-patient: route file not present */}
         <Stack.Screen name="Doctor" options={{ headerShown: false }} />
         <Stack.Screen name="Patient" options={{ headerShown: false }} />
         <Stack.Screen name="Admin" options={{ headerShown: false }} />
-      </Stack>
+        </Stack>
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );

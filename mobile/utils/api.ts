@@ -345,3 +345,7 @@ export async function getMyHealthRecord(): Promise<HealthRecord | null> {
   const rec = (Array.isArray(fiches) ? fiches : []).find((f: any) => String((f.patient?._id)||f.patient) === String(id));
   return rec || null;
 }
+
+export async function updateHealthRecord(id: string, payload: Partial<HealthRecord>) {
+  return authFetch(`/fiches/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) });
+}

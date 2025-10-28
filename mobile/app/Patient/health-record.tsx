@@ -1,7 +1,9 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { getMyHealthRecord, getMedecins, type HealthRecord, type AppUser, createNotification, getProfile, ORG_NAME, ORG_LOGO, SECURE_FICHE_BASE, createFicheShareToken, SOCKET_URL } from '../../utils/api';
 import * as Print from 'expo-print';
 import { useAppTheme } from '../../theme/ThemeContext';
@@ -9,6 +11,7 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 
 export default function PatientHealthRecordScreen() {
+  const router = useRouter();
   const { theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +53,13 @@ export default function PatientHealthRecordScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Ma fiche de santé</Text>
+      </View>
       <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
@@ -274,13 +283,13 @@ export default function PatientHealthRecordScreen() {
         <Ionicons name="document-outline" size={20} color="#fff" />
         <Text style={[styles.exportText, { color: theme.colors.primaryText }]}>{exporting ? 'Génération…' : 'Exporter en PDF'}</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </PageContainer>
     
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },

@@ -206,7 +206,6 @@ const AdviceDoctorScreen = () => {
                       styles.categoryButtonText,
                       selectedCategory === cat && {
                         color: categoryColors[cat],
-                        fontWeight: "600",
                       },
                     ]}
                   >
@@ -382,7 +381,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "600",
     color: "#111827",
   },
 
@@ -398,7 +396,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#111827",
     marginBottom: 12,
   },
@@ -417,7 +414,6 @@ const styles = StyleSheet.create({
   },
   selectPatientText: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#14b8a6",
   },
 
@@ -441,7 +437,6 @@ const styles = StyleSheet.create({
   },
   patientInitials: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#fff",
   },
   patientInfo: {
@@ -449,7 +444,6 @@ const styles = StyleSheet.create({
   },
   patientName: {
     fontSize: 13,
-    fontWeight: "600",
     color: "#0f766e",
   },
   patientEmail: {
@@ -479,7 +473,6 @@ const styles = StyleSheet.create({
   },
   categoryButtonText: {
     fontSize: 13,
-    fontWeight: "500",
     color: "#6B7280",
   },
 
@@ -522,7 +515,6 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#6B7280",
   },
   submitButton: {
@@ -540,7 +532,6 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#fff",
   },
 
@@ -568,7 +559,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 16,
-    fontWeight: "600",
     color: "#111827",
   },
 
@@ -602,7 +592,6 @@ const styles = StyleSheet.create({
   },
   patientListInitials: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#fff",
   },
   patientListInfo: {
@@ -610,7 +599,6 @@ const styles = StyleSheet.create({
   },
   patientListName: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#111827",
   },
   patientListEmail: {

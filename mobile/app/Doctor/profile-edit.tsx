@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { useRouter } from 'expo-router';
 import { getProfile, updateProfile, updatePhoto, type UserProfile } from '../../utils/api';
 import * as ImagePicker from 'expo-image-picker';
@@ -13,6 +14,36 @@ export default function DoctorProfileEditScreen() {
   const [form, setForm] = useState<{ nom: string; prenom: string; email?: string; adresse?: string; age?: string; telephone?: string; specialite?: string; hopital?: string }>({ nom: '', prenom: '' });
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | undefined>(undefined);
+
+  // Validation helpers
+  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
+  const hasDanger = (s: string) => /[<>]/.test(s || '');
+  const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s || '');
+  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s || '');
+  const normalizePhone = (s: string) => (s || '').replace(/\D+/g, '');
+  const isPhone = (digits: string) => /^7\d{8}$/.test(digits || '');
+  const isAge = (s: string) => /^\d{1,3}$/.test(s || '') && Number(s) >= 0 && Number(s) <= 120;
+
+  const validate = (): string | null => {
+    const v = {
+      nom: sanitize(form.nom),
+      prenom: sanitize(form.prenom),
+      email: sanitize(form.email || ''),
+      adresse: sanitize(form.adresse || ''),
+      age: sanitize(form.age || ''),
+      telephone: normalizePhone(form.telephone || ''),
+      specialite: sanitize(form.specialite || ''),
+      hopital: sanitize(form.hopital || ''),
+    };
+    if (!v.nom || !v.prenom || !v.email || !v.adresse || !v.age || !v.telephone) return 'Tous les champs requis.';
+    if ([v.nom, v.prenom, v.adresse, v.specialite, v.hopital].some(hasDanger)) return 'Caractères interdits (<, >).';
+    if (!isName(v.nom) || !isName(v.prenom)) return 'Nom/Prénom: 2–50 lettres.';
+    if (!isEmail(v.email) || v.email.length > 100) return 'Email invalide.';
+    if (!isPhone(v.telephone)) return 'Téléphone invalide (7XXXXXXXX).';
+    if (v.adresse.length > 120 || v.specialite.length > 60 || v.hopital.length > 80) return 'Texte trop long.';
+    if (!isAge(v.age)) return 'Âge invalide (0–120).';
+    return null;
+  };
 
   useEffect(() => {
     (async () => {
@@ -39,36 +70,20 @@ export default function DoctorProfileEditScreen() {
   }, []);
 
   const onSave = async () => {
-    if (!form.nom || !form.prenom || !form.email || !form.adresse || !form.age || !form.telephone) {
-      Alert.alert('Validation', 'Tous les champs sont requis.');
-      return;
-    }
-    const emailRegex = /^\S+@\S+\.\S+$/;
-    const phoneRegex = /^7\d{8}$/;
-    if (!emailRegex.test(form.email)) {
-      Alert.alert('Validation', 'Format email invalide. Format attendu: string@string.string.');
-      return;
-    }
-    if (!phoneRegex.test(form.telephone)) {
-      Alert.alert('Validation', 'Format téléphone invalide. Format attendu: 7XXXXXXXX.');
-      return;
-    }
-    if (isNaN(Number(form.age))) {
-      Alert.alert('Validation', "Âge invalide.");
-      return;
-    }
+    const v = validate();
+    if (v) { Alert.alert('Validation', v); return; }
     try {
       setSaving(true);
       setError(null);
       await updateProfile({
-        nom: form.nom,
-        prenom: form.prenom,
-        email: form.email,
-        adresse: form.adresse,
-        age: Number(form.age),
-        telephone: form.telephone,
-        specialite: form.specialite,
-        hopital: form.hopital,
+        nom: sanitize(form.nom),
+        prenom: sanitize(form.prenom),
+        email: sanitize(form.email || ''),
+        adresse: sanitize(form.adresse || ''),
+        age: Number(sanitize(form.age || '')),
+        telephone: normalizePhone(form.telephone || ''),
+        specialite: sanitize(form.specialite || ''),
+        hopital: sanitize(form.hopital || ''),
       });
       Alert.alert('Succès', 'Profil modifié avec succès.', [{ text: 'OK', onPress: () => router.back() }]);
     } catch (e: any) {
@@ -119,7 +134,7 @@ export default function DoctorProfileEditScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <PageContainer scroll style={styles.container}>
       <Text style={styles.title}>Modifier le profil</Text>
 
       <View style={[styles.group, { alignItems: 'center' }]}>
@@ -133,21 +148,21 @@ export default function DoctorProfileEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} /></View>
-      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} /></View>
-      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput style={styles.input} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" /></View>
-      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} /></View>
-      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" /></View>
-      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" /></View>
-      <View style={styles.group}><Text style={styles.label}>Spécialité</Text><TextInput style={styles.input} value={form.specialite} onChangeText={(v) => setForm((f) => ({ ...f, specialite: v }))} /></View>
-      <View style={styles.group}><Text style={styles.label}>Hôpital</Text><TextInput style={styles.input} value={form.hopital} onChangeText={(v) => setForm((f) => ({ ...f, hopital: v }))} /></View>
+      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} maxLength={50} /></View>
+      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} maxLength={50} /></View>
+      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput style={styles.input} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" maxLength={100} /></View>
+      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} maxLength={120} /></View>
+      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" maxLength={3} /></View>
+      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" maxLength={16} /></View>
+      <View style={styles.group}><Text style={styles.label}>Spécialité</Text><TextInput style={styles.input} value={form.specialite} onChangeText={(v) => setForm((f) => ({ ...f, specialite: v }))} maxLength={60} /></View>
+      <View style={styles.group}><Text style={styles.label}>Hôpital</Text><TextInput style={styles.input} value={form.hopital} onChangeText={(v) => setForm((f) => ({ ...f, hopital: v }))} maxLength={80} /></View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
+      <TouchableOpacity style={[styles.primaryBtn, (saving || !!validate()) && { opacity: 0.7 }]} disabled={saving || !!validate()} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </PageContainer>
   );
 }
 

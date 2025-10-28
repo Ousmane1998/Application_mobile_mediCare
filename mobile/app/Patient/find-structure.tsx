@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from "react-native";
+import PageContainer from "../../components/PageContainer";
 import MapView, { Marker, Region } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../components/header";
 import NavPatient from "../../components/navPatient";
 import { getNearbyStructures } from "../../utils/api";
+import {router} from "expo-router";
+import { useAppTheme } from "../../theme/ThemeContext";
 
-type StructureType = "Hopital" | "Pharmacie" | "Poste de santé";
+const { theme } = useAppTheme();
+
+type StructureType = "Hopital" | "Pharmacie" | "Clinique";
 
 interface Structure {
   _id: string;
@@ -86,7 +91,7 @@ export default function FindStructureScreen() {
         return "red";
       case "Pharmacie":
         return "green";
-      case "Poste de santé":
+      case "Clinique":
         return "blue";
       default:
         return "gray";
@@ -103,8 +108,14 @@ export default function FindStructureScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <PageContainer style={styles.container}>
       <Header />
+      <View>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Trouver une structure</Text>
+      </View>
       {location ? (
         <>
           <View style={styles.radiusSelector}>
@@ -205,19 +216,20 @@ export default function FindStructureScreen() {
         </Text>
       )}
       <NavPatient />
-    </View>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6", marginBottom: 40, marginTop: 32 },
+  container: { flex: 1 },
+  title: { fontSize: 16, color: "#111827", marginBottom: 8 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   radiusSelector: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
-  radiusLabel: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 8 },
+  radiusLabel: { fontSize: 14, color: "#111827", marginBottom: 8 },
   radiusButtons: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   radiusBtn: { flex: 1, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: "#D1D5DB", alignItems: "center" },
   radiusBtnActive: { backgroundColor: "#2ccdd2", borderColor: "#2ccdd2" },
-  radiusBtnText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
+  radiusBtnText: { fontSize: 12, color: "#6B7280" },
   radiusBtnTextActive: { color: "#fff" },
   map: { width: "100%", height: 250 },
   list: { paddingHorizontal: 16, marginTop: 8 },

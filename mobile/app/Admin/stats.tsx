@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import PageContainer from '../../components/PageContainer';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { adminGetStats, type AdminStats } from '../../utils/api';
 
 export default function AdminStatsScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +41,13 @@ export default function AdminStatsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      <Text style={styles.title}>Statistiques</Text>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Statistiques</Text>
+      </View>
 
       <View style={styles.cardsRow}>
         <View style={styles.card}><Text style={styles.label}>Total</Text><Text style={styles.value}>{stats?.total ?? 0}</Text></View>
@@ -50,12 +59,12 @@ export default function AdminStatsScreen() {
       </View>
 
       {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   title: { fontSize: 20, color: '#111827', marginBottom: 12 },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
   card: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 16, alignItems: 'center' },

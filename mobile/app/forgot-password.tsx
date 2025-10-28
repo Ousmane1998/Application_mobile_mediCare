@@ -11,13 +11,25 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
+  const hasDanger = (s: string) => /[<>]/.test(s || '');
+  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s || '');
+  const validate = () => {
+    const v = sanitize(identifier);
+    if (!v) return 'Email requis.';
+    if (hasDanger(v)) return 'Caractères interdits (<, >).';
+    if (!isEmail(v) || v.length > 100) return 'Email invalide.';
+    return null;
+  };
+
   const onSubmit = async () => {
     setError(null);
     setInfo(null);
-    if (!identifier) { setError('Email requis.'); return; }
+    const v = validate();
+    if (v) { setError(v); return; }
     try {
       setLoading(true);
-      await requestPasswordReset(identifier);
+      await requestPasswordReset(sanitize(identifier));
       setInfo('Un code de réinitialisation vous a été envoyé par email.');
       router.push('/reset-password' as any);
       router.setParams({ identifier });
@@ -35,13 +47,13 @@ export default function ForgotPasswordScreen() {
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} value={identifier} onChangeText={setIdentifier} placeholder="ex: example@example.com" autoCapitalize="none" />
+        <TextInput style={styles.input} value={identifier} onChangeText={setIdentifier} placeholder="ex: example@example.com" autoCapitalize="none" maxLength={100} />
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, loading && { opacity: 0.7 }]} disabled={loading} onPress={onSubmit}>
+      <TouchableOpacity style={[styles.primaryBtn, (loading || !!validate()) && { opacity: 0.7 }]} disabled={loading || !!validate()} onPress={onSubmit}>
         <Text style={styles.primaryBtnText}>{loading ? 'Envoi…' : 'Envoyer le code'}</Text>
       </TouchableOpacity>
 

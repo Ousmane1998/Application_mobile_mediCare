@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Snackbar from "../../components/Snackbar";
 import PageContainer from "../../components/PageContainer";
@@ -35,6 +36,65 @@ export default function PatientMeasureAddScreen() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [notes, setNotes] = useState('');
   // pickers already declared above; remove duplicates
+
+  // Input filters per measure type
+  const filterDecimal = (t: string) => {
+    const cleaned = (t || '').replace(/[^0-9.,]/g, '');
+    let out = '';
+    let seenSep = false;
+    for (const ch of cleaned) {
+      if (ch === '.' || ch === ',') {
+        if (!seenSep) { out += ch; seenSep = true; }
+      } else {
+        out += ch;
+      }
+    }
+    return out;
+  };
+  const filterInteger = (t: string, maxLen = 3) => (t || '').replace(/\D/g, '').slice(0, maxLen);
+  const filterBP = (t: string) => {
+    let s = (t || '').replace(/[^0-9/]/g, '');
+    const parts = s.split('/').slice(0, 2).map(p => p.replace(/\D/g, '').slice(0, 3));
+    return parts.join(parts.length > 1 ? '/' : '');
+  };
+  const onChangeValue = (t: string) => {
+    if (type === 'tension') setValue(filterBP(t));
+    else if (type === 'pouls') setValue(filterInteger(t, 3));
+    else setValue(filterDecimal(t));
+  };
+  const getKeyboard = () => {
+    if (type === 'tension') return Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default';
+    if (type === 'pouls') return 'number-pad';
+    return Platform.OS === 'ios' ? 'decimal-pad' : 'numeric';
+  };
+
+  // Inline validation for value field
+  const getValueError = (): string | null => {
+    if (!value) return null; // no hard error when empty while typing
+    const val = value.trim();
+    const onlyNumber = /^\d+(?:[\.,]\d+)?$/;
+    const bpRegex = /^\d{2,3}\/\d{2,3}$/;
+    if (type === 'tension') {
+      if (!bpRegex.test(val)) return "Format tension invalide (ex: 120/80)";
+      const [sysStr, diaStr] = val.split('/');
+      const sys = parseInt(sysStr, 10); const dia = parseInt(diaStr, 10);
+      if (sys < 80 || sys > 200 || dia < 50 || dia > 130) return 'Plages: sys 80–200, dia 50–130';
+      return null;
+    }
+    if (type === 'pouls') {
+      if (!/^\d+$/.test(val)) return 'Entier attendu (bpm)';
+      const v = parseInt(val, 10); if (v < 30 || v > 220) return 'Entre 30 et 220 bpm';
+      return null;
+    }
+    // decimal types
+    if (!onlyNumber.test(val)) return 'Valeur numérique attendue';
+    const v = parseFloat(val.replace(',', '.'));
+    if (type === 'glycemie' && (v < 40 || v > 600)) return 'Glycémie: 40–600 mg/dL';
+    if (type === 'poids' && (v < 1 || v > 500)) return 'Poids: 1–500 kg';
+    if (type === 'temperature' && (v < 34 || v > 43)) return 'Température: 34–43 °C';
+    return null;
+  };
+  const valueError = getValueError();
 
 useEffect(() => {
   (async () => {
@@ -174,7 +234,12 @@ useEffect(() => {
 
   return (
     <PageContainer scroll style={styles.container}>
-      <Text style={styles.headerTitle}>Quel type de mesure souhaitez-vous ajouter ?</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Quel type de mesure souhaitez-vous ajouter ?</Text>
+      </View>
 
       <View style={styles.group}><Text style={styles.label}>Type</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -226,16 +291,21 @@ useEffect(() => {
         <Text style={styles.label}>Valeur </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TextInput
-            style={[styles.input, { flex: 1 }]} value={value} onChangeText={setValue}
+            style={[styles.input, { flex: 1 }, !!valueError && value ? { borderColor: '#DC2626' } : null]} value={value} onChangeText={onChangeValue}
             placeholder={type === 'tension' ? 'Ex: 120/80 mmHg' : type === 'glycemie' ? 'Ex: 90 mg/dL' : type === 'poids' ? 'Ex: 75.5 kg' : type === 'pouls' ? 'Ex: 72 bpm' : 'Ex: 37.2 °C'}
+            keyboardType={getKeyboard() as any}
           />
           <Text style={styles.unit}>
             {type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
           </Text>
         </View>
-        <Text style={styles.help}>
-          {type === 'tension' ? "Entre 80/50 et 200/130 mmHg" : type === 'glycemie' ? "Entre 40 et 600 mg/dL" : type === 'poids' ? "Entre 1 et 500 kg" : type === 'pouls' ? "Entre 30 et 220 bpm" : "Entre 34 et 43 °C"}
-        </Text>
+        {value && valueError ? (
+          <Text style={[styles.help, { color: '#DC2626' }]}>{valueError}</Text>
+        ) : (
+          <Text style={styles.help}>
+            {type === 'tension' ? "Entre 80/50 et 200/130 mmHg" : type === 'glycemie' ? "Entre 40 et 600 mg/dL" : type === 'poids' ? "Entre 1 et 500 kg" : type === 'pouls' ? "Entre 30 et 220 bpm" : "Entre 34 et 43 °C"}
+          </Text>
+        )}
       </View>
 
       <View style={styles.group}>
@@ -245,7 +315,7 @@ useEffect(() => {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
+      <TouchableOpacity style={[styles.primaryBtn, (saving || !!valueError) && { opacity: 0.7 }]} disabled={saving || !!valueError} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Sauvegarder'}</Text>
       </TouchableOpacity>
 

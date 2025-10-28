@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Modal } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { useRouter } from 'expo-router';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { getProfile, getAppointments, updateAppointment, type AppointmentItem } from '../../utils/api';
@@ -73,7 +74,7 @@ export default function PatientAppointmentsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
+    <PageContainer scroll style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
       <Text style={[styles.title, { color: theme.colors.text }]}>Rendez-vous</Text>
 
       {(items.length === 0) && (
@@ -90,7 +91,14 @@ export default function PatientAppointmentsScreen() {
         {upcoming.length === 0 && <Text style={[styles.textMuted, { color: theme.colors.muted }]}>Aucun rendez-vous à venir</Text>}
         {upcoming.map((a,i) => (
           <View key={(a._id||i).toString()} style={styles.rowBetween}>
-            <Text style={[styles.text, { color: theme.colors.text }]}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <View style={styles.avatarSmall}>
+                <Text style={styles.avatarInitialsSmall}>
+                  {`${(((a.medecinId as any)?.prenom)||'').charAt(0)}${(((a.medecinId as any)?.nom)||'').charAt(0)}`.toUpperCase() || '??'}
+                </Text>
+              </View>
+              <Text style={[styles.text, { color: theme.colors.text }]} numberOfLines={1}>{a.date} • {a.heure || ''} • {((a.medecinId as any)?.prenom||'') + ' ' + (((a.medecinId as any)?.nom)||'Médecin')}</Text>
+            </View>
             {badge(a.statut)}
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity onPress={() => cancel(a._id)}><Text style={[styles.action, { color: '#EF4444' }]}>Annuler</Text></TouchableOpacity>
@@ -105,12 +113,19 @@ export default function PatientAppointmentsScreen() {
         {past.length === 0 && <Text style={[styles.textMuted, { color: theme.colors.muted }]}>Aucun rendez-vous passé</Text>}
         {past.map((a,i) => (
           <View key={(a._id||i).toString()} style={styles.rowBetween}>
-            <Text style={[styles.text, { color: theme.colors.text }]}>{a.date} • {a.heure || ''} • {(a.medecinId as any)?.nom || 'Médecin'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={styles.avatarSmall}>
+                <Text style={styles.avatarInitialsSmall}>
+                  {`${(((a.medecinId as any)?.prenom)||'').charAt(0)}${(((a.medecinId as any)?.nom)||'').charAt(0)}`.toUpperCase() || '??'}
+                </Text>
+              </View>
+              <Text style={[styles.text, { color: theme.colors.text }]}>{a.date} • {a.heure || ''} • {((a.medecinId as any)?.prenom||'') + ' ' + (((a.medecinId as any)?.nom)||'Médecin')}</Text>
+            </View>
             {badge(a.statut)}
           </View>
         ))}
       </View>
-    </ScrollView>
+    </PageContainer>
     <Modal visible={resModal.open} transparent animationType="fade" onRequestClose={() => setResModal({ open: false, appt: null })}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
@@ -176,7 +191,7 @@ export default function PatientAppointmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   title: { fontSize: 22, color: '#111827', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
   cardTitle: { fontSize: 16, color: '#111827', marginBottom: 6 },

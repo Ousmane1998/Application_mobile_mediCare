@@ -89,9 +89,14 @@ export default function PatientDashboardScreen() {
           </View>
           <Text style={[styles.bigValue, { color: theme.colors.text }]}>{gly?.value ? `${gly.value}` : '—'}</Text>
           <Text style={styles.statusOk}>{gly?._ts ? new Date(gly._ts).toLocaleString() : 'Aucune donnée'}</Text>
-          <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
-            <Text style={styles.smallBtnText}>Ajouter</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+            <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
+              <Text style={styles.smallBtnText}>Ajouter</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/Patient/measures-history')}>
+              <Text style={{ color: theme.colors.primary }}>Voir l’historique</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
@@ -101,7 +106,14 @@ export default function PatientDashboardScreen() {
           </View>
           <Text style={[styles.bigValue, { color: theme.colors.text }]}>{tens?.value ? `${tens.value}` : '—'}</Text>
           <Text style={styles.statusWarn}>{tens?._ts ? new Date(tens._ts).toLocaleString() : 'Aucune donnée'}</Text>
-          <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}><Text style={styles.smallBtnText}>Ajouter</Text></TouchableOpacity>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+            <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
+              <Text style={styles.smallBtnText}>Ajouter</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/Patient/measures-history')}>
+              <Text style={{ color: theme.colors.primary }}>Voir l’historique</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <TouchableOpacity style={[styles.findStructureBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} onPress={() => router.push('/Patient/find-structure')}>

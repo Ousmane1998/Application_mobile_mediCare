@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useRef, useState, useEffect } from "react";
 import {
   View,
@@ -60,6 +61,19 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList<Message> | null>(null);
+
+  // Validation helpers for message input
+  const sanitize = (s: string) => String(s || '').replace(/[\t\n\r]+/g, ' ').trim();
+  const hasDanger = (s: string) => /[<>]/.test(String(s || ''));
+  const isValidMsg = (s: string) => {
+    const t = sanitize(s);
+    return !!t && !hasDanger(t) && t.length <= 1000;
+  };
+  const inputInvalid = (() => {
+    const t = sanitize(messageText);
+    if (t.length === 0) return false;
+    return hasDanger(t) || t.length > 1000;
+  })();
 
   // Charger le profil du patient et son médecin
   useEffect(() => {
@@ -127,7 +141,9 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSend = async () => {
-    if (!messageText.trim() || !patient || !patient.medecinId) return;
+    if (!patient || !patient.medecinId) return;
+    const text = sanitize(messageText);
+    if (!isValidMsg(text)) return;
 
     setSending(true);
     try {
@@ -135,7 +151,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
       const newMsg = await sendMessage({
         senderId: patient._id,
         receiverId: patient.medecinId,
-        text: messageText.trim(),
+        text,
       });
 
       console.log("✅ Message envoyé :", newMsg._id);
@@ -193,10 +209,18 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.headerInfo}>
-          <Image
-            source={{ uri: doctor?.photo || "https://cdn-icons-png.flaticon.com/512/921/921071.png" }}
-            style={styles.avatar}
-          />
+          {doctor?.photo ? (
+            <Image
+              source={{ uri: doctor.photo }}
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' }]}>
+              <Text style={{ color: '#fff', fontWeight: '700' }}>
+                {`${(doctor?.prenom||'').charAt(0)}${(doctor?.nom||'').charAt(0)}`.toUpperCase() || '?'}
+              </Text>
+            </View>
+          )}
           <View style={{ justifyContent: "center" }}>
             <Text style={styles.doctorName}>
               {doctor ? `Dr. ${doctor.prenom} ${doctor.nom}` : "Chargement..."}
@@ -234,7 +258,15 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
 
         <TextInput
-          style={[styles.input, { backgroundColor: theme.mode === 'dark' ? '#0f172a' : '#F3F4F6', color: theme.colors.text }]}
+          style={[
+            styles.input,
+            {
+              backgroundColor: theme.mode === 'dark' ? '#0f172a' : '#F3F4F6',
+              color: theme.colors.text,
+              borderWidth: inputInvalid ? 1 : 0,
+              borderColor: inputInvalid ? '#DC2626' : 'transparent',
+            },
+          ]}
           placeholder="Écris ton message..."
           placeholderTextColor={theme.colors.muted}
           value={messageText}
@@ -243,11 +275,19 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
           onSubmitEditing={onSubmitEditing}
           returnKeyType="send"
           selectionColor={theme.colors.primary}
+          maxLength={1000}
         />
 
-        <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.primary }]} disabled={sending}>
+        <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.primary }, (!isValidMsg(messageText) || sending) && { opacity: 0.7 }]} disabled={sending || !isValidMsg(messageText)}>
           <Ionicons name={sending ? "hourglass" : "send"} size={20} color="#fff" />
         </TouchableOpacity>
+      </View>
+
+      {/* character counter */}
+      <View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
+        <Text style={{ alignSelf: 'flex-end', color: inputInvalid ? '#DC2626' : theme.colors.muted, fontSize: 11 }}>
+          {sanitize(messageText).length}/1000
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );

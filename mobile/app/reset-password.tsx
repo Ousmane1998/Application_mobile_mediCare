@@ -15,18 +15,35 @@ export default function ResetPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
+  const hasDanger = (s: string) => /[<>]/.test(s || '');
+  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s || '');
+  const normalizePhone = (s: string) => (s || '').replace(/\D+/g, '');
+  const isPhone = (digits: string) => /^7\d{8}$/.test(digits || '');
+  const strongPwd = (s: string) => /^(?=.*[A-Za-z])(?=.*\d).{8,64}$/.test(s || '');
+  const isCode = (s: string) => /^[A-Za-z0-9]{4,8}$/.test(s || '');
+
+  const validate = () => {
+    const ident = sanitize(identifier);
+    const identOk = ident.includes('@') ? (isEmail(ident) && ident.length <= 100) : isPhone(normalizePhone(ident));
+    if (!ident || !identOk) return "Identifiant invalide (email ou 7XXXXXXXX).";
+    if (hasDanger(ident)) return 'Caractères interdits (<, >).';
+    const cd = sanitize(code).toUpperCase();
+    if (!isCode(cd)) return 'Code invalide (4–8 caractères alphanumériques).';
+    if (!password || !confirm) return 'Tous les champs sont requis.';
+    if (!strongPwd(password)) return 'Mot de passe: 8–64, min. 1 lettre et 1 chiffre.';
+    if (password !== confirm) return 'Les mots de passe ne correspondent pas.';
+    return null;
+  };
+
   const onSubmit = async () => {
     setError(null);
     setInfo(null);
-    if (!identifier || !code || !password || !confirm) {
-      setError('Tous les champs sont requis.');
-      return;
-    }
-    if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return; }
-    if (password.length < 6) { setError('6 caractères minimum.'); return; }
+    const v = validate();
+    if (v) { setError(v); return; }
     try {
       setLoading(true);
-      await resetPasswordWithCode(identifier, code, password);
+      await resetPasswordWithCode(sanitize(identifier), sanitize(code).toUpperCase(), password);
       setInfo('Mot de passe réinitialisé.');
       setTimeout(() => router.replace('/login'), 800);
     } catch (e: any) {
@@ -41,25 +58,25 @@ export default function ResetPasswordScreen() {
       <Text style={styles.title}>Réinitialiser le mot de passe</Text>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Email ou Téléphone</Text>
-        <TextInput style={styles.input} value={identifier} onChangeText={setIdentifier} autoCapitalize="none" />
+        <TextInput style={styles.input} value={identifier} onChangeText={setIdentifier} autoCapitalize="none" maxLength={100} />
       </View>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Code de vérification</Text>
-        <TextInput style={styles.input} value={code} onChangeText={setCode} autoCapitalize="characters" />
+        <TextInput style={styles.input} value={code} onChangeText={(t) => setCode(t.replace(/\s+/g, ''))} autoCapitalize="characters" maxLength={8} />
       </View>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Nouveau mot de passe</Text>
-        <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
+        <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} maxLength={64} />
       </View>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Confirmer le mot de passe</Text>
-        <TextInput style={styles.input} secureTextEntry value={confirm} onChangeText={setConfirm} />
+        <TextInput style={styles.input} secureTextEntry value={confirm} onChangeText={setConfirm} maxLength={64} />
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, loading && { opacity: 0.7 }]} disabled={loading} onPress={onSubmit}>
+      <TouchableOpacity style={[styles.primaryBtn, (loading || !!validate()) && { opacity: 0.7 }]} disabled={loading || !!validate()} onPress={onSubmit}>
         <Text style={styles.primaryBtnText}>{loading ? 'Réinitialisation…' : 'Réinitialiser'}</Text>
       </TouchableOpacity>
 

@@ -54,6 +54,20 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList<Message> | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
+
+  // Validation helpers for message input
+  const sanitize = (s: string) => String(s || '').replace(/[\t\n\r]+/g, ' ').trim();
+  const hasDanger = (s: string) => /[<>]/.test(String(s || ''));
+  const isValidMsg = (s: string) => {
+    const t = sanitize(s);
+    return !!t && !hasDanger(t) && t.length <= 1000;
+  };
+  const inputInvalid = (() => {
+    const t = sanitize(messageText);
+    if (t.length === 0) return false;
+    return hasDanger(t) || t.length > 1000;
+  })();
 
   // Si pas de patientId, afficher une erreur
   if (!patientId) {
@@ -116,7 +130,9 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleSend = async () => {
-    if (!messageText.trim() || !doctor) return;
+    if (!doctor) return;
+    const text = sanitize(messageText);
+    if (!isValidMsg(text)) { setInputError('Message invalide.'); return; }
 
     setSending(true);
     try {
@@ -124,7 +140,7 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
       const newMsg = await sendMessage({
         senderId: doctor._id,
         receiverId: patientId,
-        text: messageText.trim(),
+        text,
       });
 
       console.log("✅ Message envoyé :", newMsg._id);
@@ -141,6 +157,7 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
       setMessages((prev) => [...prev, msgToAdd]);
       setMessageText("");
+      setInputError(null);
     } catch (err: any) {
       console.error("❌ Erreur envoi :", err.message);
     } finally {
@@ -213,6 +230,12 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         />
       )}
 
+      {inputError ? (
+        <View style={{ paddingHorizontal: 12 }}>
+          <Text style={{ color: '#DC2626' }}>{inputError}</Text>
+        </View>
+      ) : null}
+
       {/* INPUT */}
       <View style={[styles.inputContainer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
         <TouchableOpacity style={styles.iconAttach}>
@@ -220,18 +243,27 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         </TouchableOpacity>
 
         <TextInput
-          style={[styles.input, { backgroundColor: theme.mode === 'dark' ? '#0f172a' : '#F3F4F6', color: theme.colors.text }]}
+          style={[
+            styles.input,
+            {
+              backgroundColor: theme.mode === 'dark' ? '#0f172a' : '#F3F4F6',
+              color: theme.colors.text,
+              borderWidth: inputInvalid ? 1 : 0,
+              borderColor: inputInvalid ? '#DC2626' : 'transparent',
+            },
+          ]}
           placeholder="Écris ton message..."
           placeholderTextColor={theme.colors.muted}
           value={messageText}
-          onChangeText={setMessageText}
+          onChangeText={(t) => { setMessageText(t); if (inputError) setInputError(null); }}
           multiline
           onSubmitEditing={onSubmitEditing}
           returnKeyType="send"
           selectionColor={theme.colors.primary}
+          maxLength={1000}
         />
 
-        <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.primary }]} disabled={sending}>
+        <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.primary }, (!isValidMsg(messageText) || sending) && { opacity: 0.7 }]} disabled={sending || !isValidMsg(messageText)}>
           <Ionicons name={sending ? "hourglass" : "send"} size={20} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -256,7 +288,7 @@ const styles = StyleSheet.create({
   iconBack: { paddingRight: 6 },
   headerInfo: { flexDirection: "row", alignItems: "center", flex: 1, marginLeft: 6 },
   avatar: { width: 42, height: 42, borderRadius: 21, marginRight: 10 },
-  patientName: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  patientName: { color: "#fff", fontSize: 16 },
   onlineStatus: { color: "#D1FAE5", fontSize: 12 },
 
   iconPhoto: { paddingLeft: 6 },

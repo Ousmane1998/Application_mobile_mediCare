@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getAppointments, updateAppointment, type AppointmentItem, getProfile } from '../../utils/api';
 
@@ -60,6 +61,11 @@ export default function DoctorAppointmentsScreen() {
             <View style={[styles.badgeDate, item.statut==='confirme' && { backgroundColor: '#ECFDF5' }, item.statut==='annule' && { backgroundColor: '#FEE2E2' }]}>
               <Text style={[styles.badgeText, item.statut==='confirme' && { color: '#059669' }, item.statut==='annule' && { color: '#DC2626' }]}>{d}</Text>
             </View>
+            <View style={styles.avatarSmall}>
+              <Text style={styles.avatarInitialsSmall}>
+                {`${(item.patientId?.prenom||'').charAt(0)}${(item.patientId?.nom||'').charAt(0)}`.toUpperCase() || '??'}
+              </Text>
+            </View>
             <View>
               <Text style={styles.title}>{patientName}</Text>
               <Text style={styles.sub}>{item.heure ? `${item.heure} • ` : ''}{item.typeConsultation || 'Consultation'}</Text>
@@ -94,7 +100,7 @@ export default function DoctorAppointmentsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <PageContainer style={styles.container}>
       <View style={styles.filters}>
         {['en_attente','confirme','annule','all'].map(f => (
           <TouchableOpacity key={f} onPress={() => setFilter(f as any)} style={[styles.filterChip, filter===f && styles.filterChipActive]}>
@@ -115,31 +121,33 @@ export default function DoctorAppointmentsScreen() {
           </View>
         )}
       />
-    </View>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6', marginBottom: 40, marginTop: 32 },
+  container: { flex: 1 },
   filters: { flexDirection: 'row', gap: 8, padding: 16, paddingBottom: 0 },
   filterChip: { backgroundColor: '#E5E7EB', borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12 },
   filterChipActive: { backgroundColor: '#111827' },
   filterText: { color: '#111827' },
-  filterTextActive: { color: '#fff', fontWeight: '600' },
+  filterTextActive: { color: '#fff' },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 14 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowCenter: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   badgeDate: { minWidth: 70, backgroundColor: '#FEF3C7', borderRadius: 10, paddingVertical: 6, alignItems: 'center', marginRight: 8 },
-  badgeText: { color: '#B45309', fontSize: 12, fontWeight: '700' },
-  title: { color: '#111827', fontWeight: '700' },
+  badgeText: { color: '#B45309', fontSize: 12 },
+  avatarSmall: { width: 28, height: 28, borderRadius: 999, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsSmall: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  title: { color: '#111827' },
   sub: { color: '#6B7280', marginTop: 2 },
   statut: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#E5E7EB' },
   statutOk: { backgroundColor: '#D1FAE5' },
   statutKo: { backgroundColor: '#FEE2E2' },
-  statutText: { color: '#111827', textTransform: 'capitalize', fontWeight: '600' },
+  statutText: { color: '#111827', textTransform: 'capitalize' },
   actions: { flexDirection: 'row', gap: 8, marginTop: 12, justifyContent: 'flex-end' },
   btn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 },
   btnAccept: { backgroundColor: '#059669' },
   btnReject: { backgroundColor: '#DC2626' },
-  btnText: { color: '#fff', fontWeight: '700' },
+  btnText: { color: '#fff' },
 });

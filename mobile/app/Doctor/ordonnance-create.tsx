@@ -312,7 +312,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
     color: '#111827',
   },
 
@@ -339,12 +338,10 @@ const styles = StyleSheet.create({
   },
   patientInitials: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#fff',
   },
   patientName: {
     fontSize: 13,
-    fontWeight: '600',
     color: '#111827',
   },
   patientEmail: {
@@ -366,7 +363,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#111827',
   },
   addButton: {
@@ -385,7 +381,6 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#111827',
     marginTop: 12,
   },
@@ -412,7 +407,6 @@ const styles = StyleSheet.create({
   },
   medicationIndex: {
     fontSize: 13,
-    fontWeight: '600',
     color: '#111827',
   },
   removeButton: {
@@ -460,7 +454,6 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#6B7280',
   },
   submitButton: {
@@ -478,7 +471,6 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#fff',
   },
 });

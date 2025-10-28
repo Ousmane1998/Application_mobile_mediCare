@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
@@ -7,7 +8,7 @@ import { useRouter } from 'expo-router';
 export default function AdminDashboard() {
   const router = useRouter();
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* Top bar */}
       <Header />
 
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
       <TouchableOpacity style={styles.fab}>
         <Ionicons name="add" size={26} color="#fff" />
       </TouchableOpacity>
-    </ScrollView>
+    </PageContainer>
   );
 }
 
@@ -107,7 +108,7 @@ function UserItem({ name, role }: { name: string; role: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12 },
+  container: { paddingHorizontal: 16, paddingTop: 12 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
   topBarTitle: { fontSize: 16, color: '#111827' },
 
@@ -132,6 +133,7 @@ const styles = StyleSheet.create({
   userName: { fontSize: 15, color: '#111827' },
   userRole: { fontSize: 13, color: '#6B7280' },
   iconBtn: { padding: 6 },
+  activationCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#F3F4F6', marginTop: 10 },
 
   fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: '#2ccdd2', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6 },
 });

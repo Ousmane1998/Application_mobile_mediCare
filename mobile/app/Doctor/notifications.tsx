@@ -130,6 +130,22 @@ export default function DoctorNotificationsScreen() {
     return arr;
   }, [items, filter, patientIdFilter]);
 
+  // Helpers for sender initials (patient or other emitter)
+  const getInitials = (name?: string) => {
+    const n = String(name || '').trim();
+    if (!n) return undefined;
+    const parts = n.split(/\s+/).filter(Boolean);
+    const a = parts[0]?.charAt(0) || '';
+    const b = parts[1]?.charAt(0) || '';
+    const init = `${a}${b}`.toUpperCase();
+    return init || undefined;
+  };
+  const extractSenderInitials = (n: any) => {
+    const d = (n?.data) || {};
+    const name = d.senderName || d.patientName || [d.prenom, d.nom].filter(Boolean).join(' ').trim();
+    return getInitials(name);
+  };
+
   const patientOptions = useMemo(() => {
     const map = new Map<string, string>();
     (items as any[]).forEach((n) => {
@@ -209,6 +225,7 @@ export default function DoctorNotificationsScreen() {
         const canOpenFiche = ((n as any)?.type === 'share_fiche' || (n as any)?.type === 'fiche') && (n as any)?.data?.patientId;
         const isRdvPending = ((n as any)?.type === 'rdv' || (n as any)?.type === 'appointment') && (n as any)?.data?.status === 'pending';
         const isAlerte = ['alerte', 'alert'].includes((n as any)?.type?.toLowerCase());
+        const senderInitials = extractSenderInitials(n);
         
         const onOpen = () => {
           if (canOpenMeasure) {
@@ -232,9 +249,17 @@ export default function DoctorNotificationsScreen() {
         return (
           <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche || isRdvPending) ? 0.7 : 1} onPress={onOpen}>
             <View style={styles.cardHead}>
-              <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}> 
-                <Ionicons name={icon} size={20} color={accent} />
-                {!n.isRead && <View style={[styles.dot, { backgroundColor: accent }]} />}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {senderInitials ? (
+                  <View style={styles.avatarSmall}>
+                    <Text style={styles.avatarInitialsSmall}>{senderInitials}</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}> 
+                    <Ionicons name={icon} size={20} color={accent} />
+                    {!n.isRead && <View style={[styles.dot, { backgroundColor: accent }]} />}
+                  </View>
+                )}
               </View>
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 {!n.isRead && (
@@ -324,6 +349,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, color: '#111827', marginTop: 8 },
   time: { color: '#6B7280', marginTop: 4 },
   subtitle: { color: '#374151', marginTop: 6 },
+  avatarSmall: { width: 28, height: 28, borderRadius: 999, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsSmall: { color: '#fff', fontSize: 12, fontWeight: '700' },
   
   // Action Buttons
   actionButtons: { flexDirection: 'row', gap: 8, marginTop: 12 },
@@ -331,5 +358,5 @@ const styles = StyleSheet.create({
   confirmButton: { backgroundColor: '#10B981' },
   rejectButton: { backgroundColor: '#EF4444' },
   viewButton: { backgroundColor: '#2ccdd2' },
-  actionButtonText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  actionButtonText: { fontSize: 12, color: '#fff' },
 });

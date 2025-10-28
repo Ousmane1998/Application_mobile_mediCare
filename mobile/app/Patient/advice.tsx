@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { getProfile, getAdvices } from "@/utils/api";
+import PageContainer from "../../components/PageContainer";
 
 type Advice = {
   _id: string;
@@ -84,9 +85,10 @@ const AdviceScreen = () => {
   }
 
   return (
-    <ScrollView
+    <PageContainer
+      scroll
       style={styles.container}
-      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 24 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Header */}
@@ -215,7 +217,7 @@ const AdviceScreen = () => {
           })}
         </View>
       )}
-    </ScrollView>
+    </PageContainer>
   );
 };
 
@@ -224,7 +226,6 @@ export default AdviceScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
   },
   center: {
     flex: 1,

@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getNotifications, getProfile, NotificationItem } from '../../utils/api';
@@ -14,9 +15,27 @@ type DisplayItem = {
   accent: string;
   icon: keyof typeof Ionicons.glyphMap;
   isRead?: boolean;
+  senderInitials?: string;
 };
 
 const FILTERS = ['Tout', 'Rappels', 'Alertes', 'Rendez-vous', 'Messages'] as const;
+
+// Helpers pour extraire des initiales d'un nom
+const getInitials = (name?: string) => {
+  const n = String(name || '').trim();
+  if (!n) return undefined;
+  const parts = n.split(/\s+/).filter(Boolean);
+  const a = parts[0]?.charAt(0) || '';
+  const b = parts[1]?.charAt(0) || '';
+  const init = `${a}${b}`.toUpperCase();
+  return init || undefined;
+};
+const extractSenderInitials = (notif: NotificationItem) => {
+  const d: any = (notif as any)?.data || {};
+  // Champs possibles côté API
+  const name = d.senderName || d.doctorName || d.medecinName || [d.prenom, d.nom].filter(Boolean).join(' ').trim();
+  return getInitials(name);
+};
 
 // Fonction pour mapper les notifications de la BD aux éléments d'affichage
 const mapNotificationToDisplay = (notif: NotificationItem): DisplayItem => {
@@ -40,6 +59,7 @@ const mapNotificationToDisplay = (notif: NotificationItem): DisplayItem => {
     accent: config?.accent || '#EF4444',
     icon: config?.icon || 'alert-circle-outline',
     isRead: notif.isRead,
+    senderInitials: extractSenderInitials(notif),
   };
 };
 
@@ -62,6 +82,7 @@ const formatTime = (dateString: string): string => {
 };
 
 export default function PatientNotificationsScreen() {
+  const router = useRouter();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Tout');
   const [notifications, setNotifications] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,7 +146,12 @@ export default function PatientNotificationsScreen() {
   return (
     <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Notifications</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={22} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Notifications</Text>
+        </View>
         <Ionicons name="funnel-outline" size={22} color="#111827" />
       </View>
 
@@ -146,9 +172,17 @@ export default function PatientNotificationsScreen() {
         items.map(item => (
           <View key={item._id} style={styles.card}>
             <View style={styles.cardHead}>
-              <View style={[styles.iconWrap, { backgroundColor: `${item.accent}22` }]}> 
-                <Ionicons name={item.icon} size={20} color={item.accent} />
-                {!item.isRead && <View style={[styles.dot, { backgroundColor: item.accent }]} />}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {item.senderInitials ? (
+                  <View style={styles.avatarSmall}>
+                    <Text style={styles.avatarInitialsSmall}>{item.senderInitials}</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.iconWrap, { backgroundColor: `${item.accent}22` }]}> 
+                    <Ionicons name={item.icon} size={20} color={item.accent} />
+                    {!item.isRead && <View style={[styles.dot, { backgroundColor: item.accent }]} />}
+                  </View>
+                )}
               </View>
             </View>
             <Text style={styles.cardTitle}>{item.title}</Text>
@@ -178,4 +212,6 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, color: '#111827', marginTop: 8 },
   time: { color: '#6B7280', marginTop: 4 },
   subtitle: { color: '#374151', marginTop: 6 },
+  avatarSmall: { width: 28, height: 28, borderRadius: 999, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsSmall: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });

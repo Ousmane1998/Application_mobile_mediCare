@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import PageContainer from '../../components/PageContainer';
 
 export default function PatientMedicationsScreen() {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <Text style={styles.title}>Médicaments</Text>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Traitements en cours</Text>
@@ -11,12 +12,12 @@ export default function PatientMedicationsScreen() {
         <Text style={styles.text}>Lisinopril — Matin 9h00</Text>
         <TouchableOpacity style={styles.btn}><Text style={styles.btnText}>Ajouter un médicament</Text></TouchableOpacity>
       </View>
-    </ScrollView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16, marginBottom: 40, marginTop: 32 },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   title: { fontSize: 22, color: '#111827', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
   cardTitle: { fontSize: 16, color: '#111827', marginBottom: 6 },
