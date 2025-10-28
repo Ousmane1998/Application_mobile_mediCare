@@ -58,17 +58,6 @@ export default function Header() {
         />
       )}
 
-      {/* Centre: logo centré sur les écrans enfants (quand retour disponible) */}
-      {canGoBack && (
-        <View style={styles.centerLogoWrap} pointerEvents="none">
-          <Image
-            source={require('../assets/images/logoMedicare.png')}
-            style={{ width: 80, height: 80 }}
-            resizeMode="contain"
-          />
-        </View>
-      )}
-
       {/* Icônes à droite */}
       <View style={styles.iconContainer}>
 

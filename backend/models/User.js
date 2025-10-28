@@ -16,6 +16,8 @@ const UserSchema = new mongoose.Schema({
   medecinId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   pathologie: { type: String, default: "" },
   archived: { type: Boolean, default: false },
+  active: { type: Boolean, default: false },
+  status: { type: String, enum: ['pending', 'active', 'disabled'], default: 'pending', index: true },
 
   createdAt: { type: Date, default: Date.now },
 });

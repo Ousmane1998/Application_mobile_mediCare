@@ -10,6 +10,7 @@ import {
   getStats,
   updateUserRole,
   deleteUser,
+  setUserActivation,
 } from "../controllers/userController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
@@ -43,6 +44,7 @@ router.put("/archive/:id", archiveUser);
 // === Admin-only ===
 router.get("/stats", adminMiddleware, getStats);
 router.put("/:id/role", adminMiddleware, updateUserRole);
+router.put("/:id/activation", adminMiddleware, setUserActivation);
 router.delete("/:id", adminMiddleware, deleteUser);
 
 export default router;
