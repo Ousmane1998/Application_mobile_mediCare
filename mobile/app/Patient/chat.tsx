@@ -229,9 +229,6 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.iconPhoto}>
-          <MaterialIcons name="photo-camera" size={22} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {/* MESSAGES */}
