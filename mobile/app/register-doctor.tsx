@@ -121,17 +121,6 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Spécialité</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Cardiologue, generaliste,..."
-          value={specialty}
-          onChangeText={setSpecialty}
-          maxLength={60}
-        />
-      </View>
-
-      <View style={styles.fieldGroup}>
         <Text>Mot de passe</Text>
         <TextInput
           style={styles.input}
@@ -145,11 +134,23 @@ export default function RegisterDoctorScreen() {
 
       <Text style={styles.sectionTitle}>Informations Professionnelles</Text>
 
+      
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Numéro d&apos;agrément</Text>
+        <Text style={styles.label}>Spécialité</Text>
         <TextInput
           style={styles.input}
-          placeholder="Entrez votre numéro d'agrément"
+          placeholder="Cardiologue, generaliste,..."
+          value={specialty}
+          onChangeText={setSpecialty}
+          maxLength={60}
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Numéro d&apos;ordre</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Entrez votre numéro d'ordre"
           value={licenseNumber}
           onChangeText={setLicenseNumber}
           maxLength={50}
@@ -157,10 +158,10 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Nom de l&apos;hôpital ou du cabinet</Text>
+        <Text style={styles.label}>Structure de rattachement</Text>
         <TextInput
           style={styles.input}
-          placeholder="Entrez le nom de l'hôpital ou du cabinet ou vous etes rattaché"
+          placeholder="Entrez le nom du structure ou vous etes rattaché"
           value={hopital}
           onChangeText={setHopital}
           maxLength={80}
@@ -168,10 +169,10 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Adresse de l&apos;hôpital ou du cabinet</Text>
+        <Text style={styles.label}>Adresse de la structure</Text>
         <TextInput
           style={styles.input}
-          placeholder="Entrez votre adresse"
+          placeholder="Entrez l'adresse de la structure"
           value={clinicAddress}
           onChangeText={setClinicAddress}
           maxLength={120}

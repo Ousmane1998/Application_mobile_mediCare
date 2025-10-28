@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Activi
 import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
-import { adminListUsers, adminArchiveUser, adminDeleteUser, adminUpdateUserRole, type AppUser } from '../../utils/api';
+import { adminListUsers, adminArchiveUser, adminDeleteUser, adminUpdateUserRole, adminSetUserActivation, type AppUser } from '../../utils/api';
 
 const ROLE_CHIPS = ['Tous', 'patient', 'medecin', 'admin'] as const;
 
@@ -45,6 +45,23 @@ export default function AdminUsersScreen() {
       return hay.includes(q);
     });
   }, [users, query, roleFilter]);
+
+  const onToggleActivation = async (u: AppUser) => {
+    try {
+      setChanging(u._id);
+      const activeNow = (u as any)?.active === true || String((u as any)?.status || '').toLowerCase() === 'active';
+      if (activeNow) {
+        await adminSetUserActivation(u._id, false, 'disabled');
+      } else {
+        await adminSetUserActivation(u._id, true, 'active');
+      }
+      await load();
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Mise à jour activation impossible');
+    } finally {
+      setChanging(null);
+    }
+  };
 
   const confirmDelete = (id: string) => {
     Alert.alert('Confirmation', 'Supprimer cet utilisateur ?', [
@@ -106,7 +123,16 @@ export default function AdminUsersScreen() {
               <Text style={styles.name}>{u.prenom} {u.nom} {u.archived ? '(Archivé)' : ''}</Text>
               <Text style={styles.sub}>{u.email || ''} • {u.telephone || ''}</Text>
             </View>
-            <Text style={styles.role}>{String(u.role).toUpperCase()}</Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.role}>{String(u.role).toUpperCase()}</Text>
+              {String(u.role) === 'medecin' && (
+                <View style={[styles.statusChip, ((u as any)?.active || String((u as any)?.status||'').toLowerCase()==='active') ? styles.statusActive : (String((u as any)?.status||'').toLowerCase()==='disabled' ? styles.statusDisabled : styles.statusPending)]}>
+                  <Text style={styles.statusText}>
+                    {((u as any)?.active || String((u as any)?.status||'').toLowerCase()==='active') ? 'Actif' : (String((u as any)?.status||'').toLowerCase()==='disabled' ? 'Désactivé' : 'En attente')}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
 
           <View style={styles.rowActions}>
@@ -120,6 +146,11 @@ export default function AdminUsersScreen() {
                 style={pickerSelectStyles}
               />
             </View>
+            {String(u.role) === 'medecin' && (
+              <TouchableOpacity disabled={changing===u._id} onPress={() => onToggleActivation(u)}>
+                <Text style={[styles.action, { color: '#0ea5e9' }]}>{((u as any)?.active || String((u as any)?.status||'').toLowerCase()==='active') ? 'Désactiver' : 'Activer'}</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={() => onArchive(u._id)}>
               <Text style={[styles.action, { color: '#059669' }]}>Archiver</Text>
             </TouchableOpacity>
@@ -150,6 +181,11 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, color: '#111827' },
   sub: { fontSize: 13, color: '#6B7280', marginTop: 2 },
   role: { color: '#111827' },
+  statusChip: { marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, alignSelf: 'flex-end' },
+  statusActive: { backgroundColor: '#D1FAE5' },
+  statusPending: { backgroundColor: '#FEF3C7' },
+  statusDisabled: { backgroundColor: '#FEE2E2' },
+  statusText: { fontSize: 11, color: '#111827' },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
   action: { fontWeight: '600' },
 });

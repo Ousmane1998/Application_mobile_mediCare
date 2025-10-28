@@ -282,7 +282,7 @@ export type AppUser = {
   archived?: boolean;
 };
 
-export type AdminStats = { total: number; patients: number; medecins: number; admins: number };
+export type AdminStats = { total: number; patients: number; medecins: number; admins: number; pendingMedecins?: number };
 
 export async function adminListUsers(): Promise<AppUser[]> {
   return authFetch('/users');
@@ -302,6 +302,12 @@ export async function adminArchiveUser(id: string) {
 
 export async function adminDeleteUser(id: string) {
   return authFetch(`/users/${id}`, { method: 'DELETE' });
+}
+
+export async function adminSetUserActivation(id: string, active: boolean, status?: string) {
+  const body: any = { active };
+  if (typeof status === 'string') body.status = status;
+  return authFetch(`/users/${id}/activation`, { method: 'PUT', body: JSON.stringify(body) });
 }
 
 // Logout

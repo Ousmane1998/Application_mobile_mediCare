@@ -22,20 +22,19 @@ export default function WelcomeScreen() {
         <Text style={styles.subtitle}>
           MediCare vous aide à suivre votre santé et à collaborer avec votre médecin pour gérer les maladies chroniques comme le diabète et l&aposhypertension.
         </Text>
-
-        <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={() => goNext('/welcome2')}
-        >
-          <Text style={styles.primaryBtnText}>Suivant</Text>
-        </TouchableOpacity>
-
       </View>
       
       <View style={styles.dots}>
         <View style={[styles.dot, styles.dotActive]} />
         <View style={styles.dot} />
       </View>
+
+      <TouchableOpacity
+          style={styles.primaryBtn}
+          onPress={() => goNext('/welcome2')}
+        >
+          <Text style={styles.primaryBtnText}>Suivant</Text>
+      </TouchableOpacity>
     </PageContainer>
   );
 }
@@ -78,7 +77,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
-    marginTop: 8,
+    marginTop: 16,
   },
   primaryBtnText: {
     color: '#fff',
