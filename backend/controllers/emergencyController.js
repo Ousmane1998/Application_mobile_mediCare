@@ -9,13 +9,17 @@ import { emitToUser } from '../utils/sendNotification.js';
  */
 export async function sendEmergencyAlert(req, res) {
   try {
+    console.log('🚨 [Emergency] Alerte SOS reçue');
+    console.log('📦 Corps de la requête:', JSON.stringify(req.body, null, 2));
+    
     const { patientId, medecinId, location, lastMeasure, patientInfo, doctorInfo, timestamp } = req.body || {};
 
     if (!patientId || !medecinId) {
+      console.error('❌ Données manquantes - patientId:', patientId, 'medecinId:', medecinId);
       return res.status(400).json({ message: 'patientId et medecinId requis.' });
     }
 
-    console.log('🚨 [Emergency] Alerte SOS reçue');
+    console.log('✅ Données valides reçues');
     console.log('📍 Patient:', patientId);
     console.log('👨‍⚕️ Médecin:', medecinId);
     console.log('📍 Position:', location);
@@ -73,8 +77,14 @@ export async function sendEmergencyAlert(req, res) {
       notificationId: notification._id
     });
   } catch (err) {
-    console.error('🔥 Erreur urgence:', err);
-    return res.status(500).json({ message: 'Erreur lors de l\'envoi de l\'alerte.' });
+    console.error('🔥 Erreur urgence:', err.message);
+    console.error('📋 Stack complète:', err.stack);
+    console.error('📦 Détails:', err);
+    return res.status(500).json({ 
+      message: 'Erreur lors de l\'envoi de l\'alerte.',
+      error: err.message,
+      debug: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 }
 

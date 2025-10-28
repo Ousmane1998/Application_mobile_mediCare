@@ -15,7 +15,7 @@ type DisplayItem = {
   accent: string;
   icon: keyof typeof Ionicons.glyphMap;
   isRead?: boolean;
-  senderInitials?: string;
+  data?: any; // Données supplémentaires (ordonnanceId, etc.)
 };
 
 const FILTERS = ['Tout', 'Rappels', 'Alertes', 'Rendez-vous', 'Messages'] as const;
@@ -59,7 +59,7 @@ const mapNotificationToDisplay = (notif: NotificationItem): DisplayItem => {
     accent: config?.accent || '#EF4444',
     icon: config?.icon || 'alert-circle-outline',
     isRead: notif.isRead,
-    senderInitials: extractSenderInitials(notif),
+    data: notif.data, // Stocker les données supplémentaires
   };
 };
 
@@ -123,20 +123,37 @@ export default function PatientNotificationsScreen() {
     fetchNotifications();
   }, []);
 
-  const handleNotificationPress = async (notifId: string, isRead: boolean) => {
+  const handleNotificationPress = async (notif: DisplayItem) => {
     try {
-      if (!isRead) {
-        console.log("📝 Marquage de la notification comme lue :", notifId);
-        await markNotificationRead(notifId);
+      // Marquer comme lue
+      if (!notif.isRead) {
+        console.log("📝 Marquage de la notification comme lue :", notif._id);
+        await markNotificationRead(notif._id);
         
         // Mettre à jour l'état local
-        setNotifications(prev => prev.map(n => n._id === notifId ? { ...n, isRead: true } : n));
+        setNotifications(prev => prev.map(n => n._id === notif._id ? { ...n, isRead: true } : n));
         console.log("✅ Notification marquée comme lue");
-      } else {
-        console.log("ℹ️ Notification déjà lue");
+      }
+
+      // Redirection selon le type
+      if (notif.type === 'rappel' && notif.data?.ordonnanceId) {
+        console.log("💊 Redirection vers ordonnance :", notif.data.ordonnanceId);
+        router.push({
+          pathname: '/Patient/ordonnances',
+          params: { ordonnanceId: notif.data.ordonnanceId }
+        });
+      } else if (notif.type === 'alerte') {
+        console.log("🚨 Redirection vers alertes santé");
+        router.push('/Patient/health-alerts');
+      } else if (notif.type === 'rdv') {
+        console.log("📅 Redirection vers rendez-vous");
+        router.push('/Patient/appointments');
+      } else if (notif.type === 'message') {
+        console.log("💬 Redirection vers chat");
+        router.push('/Patient/chat');
       }
     } catch (err: any) {
-      console.error("❌ Erreur lors du marquage de la notification :", err);
+      console.error("❌ Erreur lors du traitement de la notification :", err);
     }
   };
 
@@ -197,20 +214,14 @@ export default function PatientNotificationsScreen() {
           <TouchableOpacity 
             key={item._id} 
             style={[styles.card, !item.isRead && styles.cardUnread]}
-            onPress={() => handleNotificationPress(item._id, item.isRead || false)}
+            onPress={() => handleNotificationPress(item)}
           >
             <View style={styles.cardHead}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {item.senderInitials ? (
-                  <View style={styles.avatarSmall}>
-                    <Text style={styles.avatarInitialsSmall}>{item.senderInitials}</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.iconWrap, { backgroundColor: `${item.accent}22` }]}> 
-                    <Ionicons name={item.icon} size={20} color={item.accent} />
-                    {!item.isRead && <View style={[styles.dot, { backgroundColor: item.accent }]} />}
-                  </View>
-                )}
+                <View style={[styles.iconWrap, { backgroundColor: `${item.accent}22` }]}> 
+                  <Ionicons name={item.icon} size={20} color={item.accent} />
+                  {!item.isRead && <View style={[styles.dot, { backgroundColor: item.accent }]} />}
+                </View>
               </View>
             </View>
             {!!item.subtitle && <Text style={styles.subtitle}>{item.subtitle}</Text>}

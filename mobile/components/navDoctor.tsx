@@ -38,19 +38,116 @@ export default function NavDoctor() {
   );
 
   return (
-    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: '#10B981' }}>
+    <Tabs screenOptions={{ 
+      headerShown: false, 
+      tabBarActiveTintColor: '#2ccdd2',
+      tabBarInactiveTintColor: '#9CA3AF',
+      tabBarStyle: {
+        backgroundColor: '#fff',
+        borderTopColor: '#E5E7EB',
+        borderTopWidth: 1,
+      }
+    }}>
       <Tabs.Screen
         name="dashboard"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color }) => <Ionicons name="home-outline" color={color} size={60} />,
+          tabBarIcon: ({ color }) => <Ionicons name="home-outline" color={color} size={24} />,
         }}
       />
       <Tabs.Screen
+        name="appointments"
+        options={{
+          title: 'Rendez-vous',
+          tabBarIcon: ({ color }) => <Ionicons name="calendar-outline" color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Chat',
+          tabBarIcon: ({ color }) => <Ionicons name="chatbubbles-outline" color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alertes',
+          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarIcon: ({ color }) => <BadgeIcon name="alert-circle-outline" color={color} />,
+        }}
+      />
+      {/* Pages cachées - accessibles par navigation mais pas dans la barre */}
+      <Tabs.Screen
         name="messages"
         options={{
-          title: 'Messages',
-          tabBarIcon: ({ color }) => <Ionicons name="chatbubbles-outline" color={color} size={60} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile-edit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="advice"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="my-patients"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="add-patient"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="availability"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="appointment-confirm"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="measure-detail"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="ordonnance-create"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="emergency-detail"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="password-change"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
