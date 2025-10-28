@@ -156,6 +156,9 @@ export default function EmergencyAlertScreen() {
                 timestamp: new Date().toISOString()
               };
 
+              console.log('🚨 [Emergency] Envoi de l\'alerte...');
+              console.log('📍 Données envoyées:', JSON.stringify(alertData, null, 2));
+
               // Appeler l'API pour envoyer l'alerte
               const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000'}/api/emergency/alert`, {
                 method: 'POST',
@@ -163,14 +166,22 @@ export default function EmergencyAlertScreen() {
                 body: JSON.stringify(alertData)
               });
 
-              if (!response.ok) throw new Error('Erreur lors de l\'envoi');
+              console.log('📊 Statut réponse:', response.status, response.statusText);
+
+              const responseData = await response.json().catch(() => null);
+              console.log('📥 Réponse serveur:', responseData);
+
+              if (!response.ok) {
+                throw new Error(responseData?.message || `Erreur HTTP ${response.status}`);
+              }
 
               console.log('✅ Alerte SOS envoyée');
               setSnack({ visible: true, message: '✅ Alerte SOS envoyée avec succès!', type: 'success' });
               setTimeout(() => router.back(), 1500);
             } catch (e: any) {
-              console.error('Erreur:', e);
-              setSnack({ visible: true, message: 'Erreur lors de l\'envoi: ' + e.message, type: 'error' });
+              console.error('❌ Erreur lors de l\'envoi:', e);
+              console.error('📋 Stack:', e.stack);
+              setSnack({ visible: true, message: 'Erreur: ' + (e.message || 'Erreur inconnue'), type: 'error' });
             } finally {
               setSending(false);
             }
