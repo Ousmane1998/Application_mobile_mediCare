@@ -44,6 +44,7 @@ export default function Welcome2Screen() {
         </View>
       </View>
 
+      <View style={styles.footer}>
         <View style={styles.dots}>
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
@@ -112,6 +113,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
+  },
+  footer: {
+    width: '100%',
+    gap: 12,
   },
   dots: {
     width: '100%',

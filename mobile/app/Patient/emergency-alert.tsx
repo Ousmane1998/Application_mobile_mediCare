@@ -358,7 +358,7 @@ export default function EmergencyAlertScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#F8FAFC', paddingHorizontal: 16, paddingTop: 16 },
+  container: { backgroundColor: '#F8FAFC', paddingHorizontal: 16, paddingTop: 30 },
   centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },

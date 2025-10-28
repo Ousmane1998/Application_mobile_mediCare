@@ -6,7 +6,7 @@ import PageContainer from '../../components/PageContainer';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
-import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, type AppointmentItem } from '../../utils/api';
+import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, getMedecinById, type AppointmentItem } from '../../utils/api';
 import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function PatientDashboardScreen() {
@@ -192,6 +192,15 @@ export default function PatientDashboardScreen() {
 
         <View style={{ height: 16 }} />
       </PageContainer>
+      
+      {/* Bouton Alerte SOS flottant */}
+      <TouchableOpacity 
+        style={[styles.floatingEmergencyBtn, { backgroundColor: '#EF4444' }]} 
+        onPress={() => router.push('/Patient/emergency-alert')}
+      >
+        <Ionicons name="call-outline" size={32} color="#fff" />
+      </TouchableOpacity>
+      
       {/* <NavPatient /> */}
     </View>
   );

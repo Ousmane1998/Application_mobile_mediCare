@@ -256,7 +256,20 @@ export default function PatientAppointmentNewScreen() {
     );
   }
 
-  if (!medecin) {
+  if (!doctor && hasAttachedDoctor) {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="alert-circle" size={50} color="#EF4444" />
+        <Text style={{ marginTop: 12, fontSize: 16, color: '#111827', fontWeight: '600' }}>Erreur de chargement</Text>
+        <Text style={{ marginTop: 8, color: '#6B7280', textAlign: 'center' }}>Impossible de charger les informations du médecin</Text>
+        <TouchableOpacity style={[styles.primaryBtn, { marginTop: 20 }]} onPress={() => router.back()}>
+          <Text style={styles.primaryBtnText}>Retour</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!hasAttachedDoctor) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="alert-circle" size={50} color="#EF4444" />

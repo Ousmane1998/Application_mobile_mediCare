@@ -293,7 +293,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 export default ChatScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6", marginBottom: 40, marginTop: 32 },
+  container: { flex: 1, backgroundColor: "#F3F4F6", marginTop: 32 },
 
   /* HEADER */
   header: {

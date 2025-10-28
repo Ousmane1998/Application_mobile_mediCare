@@ -110,6 +110,57 @@ export default function PatientMeasuresHistoryScreen() {
     return vals.slice(-60); // last 60 points max
   }, [filtered, typeFilter]);
 
+  // Get last and previous value for percentage change
+  const lastMeasureInfo = useMemo(() => {
+    if (typeFilter === 'tous') return null;
+    const rows = filtered.filter(m => String(m.type).toLowerCase() === typeFilter).slice();
+    rows.sort((a: any, b: any) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+    if (rows.length === 0) return null;
+    
+    const last = rows[0];
+    const prev = rows[1];
+    
+    let lastVal: number | null = null;
+    let prevVal: number | null = null;
+    
+    const raw = String(last.value ?? '').trim();
+    if (typeFilter === 'tension') {
+      const parts = raw.split('/');
+      if (parts.length >= 1) {
+        const s = parseFloat(parts[0].replace(',', '.'));
+        if (!Number.isNaN(s)) lastVal = s;
+      }
+    } else {
+      const num = parseFloat(raw.replace(',', '.'));
+      if (!Number.isNaN(num)) lastVal = num;
+    }
+    
+    if (prev) {
+      const rawPrev = String(prev.value ?? '').trim();
+      if (typeFilter === 'tension') {
+        const parts = rawPrev.split('/');
+        if (parts.length >= 1) {
+          const s = parseFloat(parts[0].replace(',', '.'));
+          if (!Number.isNaN(s)) prevVal = s;
+        }
+      } else {
+        const num = parseFloat(rawPrev.replace(',', '.'));
+        if (!Number.isNaN(num)) prevVal = num;
+      }
+    }
+    
+    let percentChange = null;
+    if (lastVal !== null && prevVal !== null && prevVal !== 0) {
+      percentChange = Math.round(((lastVal - prevVal) / prevVal) * 100);
+    }
+    
+    return {
+      value: last.value,
+      date: new Date(last.date || last.createdAt || Date.now()),
+      percentChange
+    };
+  }, [filtered, typeFilter]);
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -120,16 +171,16 @@ export default function PatientMeasuresHistoryScreen() {
 
   return (
     <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, marginTop: 24, paddingHorizontal: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.title}>Historique des mesures</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/Patient/measure-add')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <TouchableOpacity onPress={() => router.push('/Patient/measure-add')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 12 }}>
           <Ionicons name="add-circle-outline" size={20} color="#10B981" />
-          <Text style={{ color: '#10B981', fontWeight: '600' }}>Ajouter</Text>
+          <Text style={{ color: '#10B981', fontWeight: '600', fontSize: 14 }}>Ajouter</Text>
         </TouchableOpacity>
       </View>
 
@@ -167,10 +218,23 @@ export default function PatientMeasuresHistoryScreen() {
         })}
       </View>
 
+      {/* Last measure info */}
+      {typeFilter !== 'tous' && lastMeasureInfo && (
+        <View style={styles.lastMeasureBox}>
+          <Text style={styles.chartLabel}>Evolution de la {TYPES.find(t=>t.key===typeFilter)?.label.toLowerCase()}</Text>
+          <Text style={styles.lastMeasureValue}>{lastMeasureInfo.value}</Text>
+          {lastMeasureInfo.percentChange !== null && (
+            <Text style={[styles.percentChange, lastMeasureInfo.percentChange > 0 ? { color: '#EF4444' } : { color: '#10B981' }]}>
+              Cette semaine {lastMeasureInfo.percentChange > 0 ? '+' : ''}{lastMeasureInfo.percentChange}%
+            </Text>
+          )}
+        </View>
+      )}
+
       {/* Time-series line chart for selected type */}
       {typeFilter !== 'tous' && (
         <View style={styles.timeSeriesBox}>
-          <Text style={styles.chartLabel}>Evolution {TYPES.find(t=>t.key===typeFilter)?.label}</Text>
+          <Text style={styles.chartLabel}>Graphique</Text>
           {seriesData.length < 2 ? (
             <Text style={styles.chartCount}>
               Pas assez de points pour tracer la courbe
@@ -242,7 +306,34 @@ export default function PatientMeasuresHistoryScreen() {
         ))}
       </ScrollView>
 
-      {filtered.length === 0 ? (
+      {/* All measurements section */}
+      {filtered.length > 0 && (
+        <View style={{ marginTop: 20 }}>
+          <Text style={styles.sectionTitle}>Toutes les mesures</Text>
+          {pageSlice.map((m, idx) => {
+            const typeInfo = TYPES.find(t => t.key === String(m.type).toLowerCase());
+            const iconColor = typeInfo?.key === 'glycemie' ? '#2ccdd2' : typeInfo?.key === 'tension' ? '#F59E0B' : typeInfo?.key === 'poids' ? '#10B981' : typeInfo?.key === 'pouls' ? '#EF4444' : '#6B7280';
+            const iconName = typeInfo?.key === 'glycemie' ? 'water-outline' : typeInfo?.key === 'tension' ? 'pulse-outline' : typeInfo?.key === 'poids' ? 'scale-outline' : typeInfo?.key === 'pouls' ? 'heart-outline' : 'thermometer-outline';
+            
+            return (
+              <View key={(m._id || idx).toString()} style={styles.measureCard}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={[styles.measureIcon, { backgroundColor: `${iconColor}22` }]}>
+                    <Ionicons name={iconName as any} color={iconColor} size={20} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.measureName}>{String(m.type).charAt(0).toUpperCase() + String(m.type).slice(1)}: {m.value}</Text>
+                    <Text style={styles.measureTime}>{new Date(m.date || m.createdAt || Date.now()).toLocaleString('fr-FR', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+                  </View>
+                  <View style={[styles.measureDot, { backgroundColor: iconColor }]} />
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {filtered.length === 0 && (
         <View style={{ alignItems: 'center', marginTop: 40 }}>
           <Ionicons name="bar-chart-outline" size={48} color="#D1D5DB" />
           <Text style={{ marginTop: 12, color: '#9CA3AF', fontSize: 16 }}>Aucune mesure</Text>
@@ -250,17 +341,7 @@ export default function PatientMeasuresHistoryScreen() {
             <Text style={{ color: '#fff' }}>Ajouter une mesure</Text>
           </TouchableOpacity>
         </View>
-      ) : pageSlice.map((m, idx) => (
-        <View key={(m._id || idx).toString()} style={styles.card}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={styles.badge}><Ionicons name="trending-up-outline" color="#111827" size={16} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{String(m.type).toUpperCase()} — {m.value}</Text>
-              <Text style={styles.sub}>{new Date(m.date || m.createdAt || Date.now()).toLocaleString()}</Text>
-            </View>
-          </View>
-        </View>
-      ))}
+      )}
 
       {pageSlice.length < filtered.length && (
         <TouchableOpacity style={styles.loadMore} onPress={() => setPage(p => p + 1)}>
@@ -281,7 +362,7 @@ const styles = StyleSheet.create({
   chipText: { color: '#111827' },
   chipTextActive: { color: '#fff' },
   chartBox: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginTop: 10, borderWidth: 1, borderColor: '#E5E7EB' },
-  chartLabel: { color: '#111827', fontSize: 13 },
+  chartLabel: { color: '#111827', fontSize: 13, fontWeight: '600' },
   chartCount: { color: '#6B7280', fontSize: 12 },
   chartBarBg: { height: 8, backgroundColor: '#E5E7EB', borderRadius: 999, overflow: 'hidden', marginTop: 4 },
   chartBarFill: { height: 8, backgroundColor: '#2ccdd2' },
@@ -294,4 +375,13 @@ const styles = StyleSheet.create({
   sparkRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 30, marginTop: 6 },
   sparkBar: { width: 6, backgroundColor: '#10B981', borderRadius: 2 },
   timeSeriesBox: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginTop: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  lastMeasureBox: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  lastMeasureValue: { fontSize: 32, fontWeight: '700', color: '#111827', marginTop: 8 },
+  percentChange: { fontSize: 13, marginTop: 4, fontWeight: '500' },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 },
+  measureCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#E5E7EB' },
+  measureIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  measureName: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  measureTime: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  measureDot: { width: 10, height: 10, borderRadius: 5 },
 });

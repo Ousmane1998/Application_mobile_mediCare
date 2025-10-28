@@ -53,7 +53,15 @@ export const getNotifications = async (req, res) => {
     if (!isAdmin && String(requestedUserId) !== String(me._id)) {
       return res.status(403).json({ message: 'Accès refusé' });
     }
-    const notifications = await Notification.find({ userId: requestedUserId }).sort({ createdAt: -1 });
+    
+    // Chercher les notifications pour userId OU medecinId (pour les alertes d'urgence)
+    const notifications = await Notification.find({
+      $or: [
+        { userId: requestedUserId },
+        { medecinId: requestedUserId }
+      ]
+    }).sort({ createdAt: -1 });
+    
     console.log("✅ [getNotifications] Notifications trouvées :", notifications.length);
     console.log("📋 [getNotifications] Détails :", JSON.stringify(notifications, null, 2));
     

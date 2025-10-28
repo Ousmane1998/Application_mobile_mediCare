@@ -25,8 +25,6 @@ export default function PageContainer({ scroll = false, children, style, ...rest
 const styles = StyleSheet.create({
   base: {
     backgroundColor: '#fff',
-    marginTop: 40,
-    marginBottom: 40,
     flexGrow: 1,
   },
 });

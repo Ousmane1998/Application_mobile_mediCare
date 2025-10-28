@@ -314,8 +314,13 @@ export async function adminSetUserActivation(id: string, active: boolean, status
 export async function logout() {
   try {
     await authFetch('/auth/logout', { method: 'POST' });
-  } catch (err) {
-    console.error("Erreur logout:", err);
+  } catch (err: any) {
+    // Ignorer l'erreur 404 si l'endpoint n'existe pas
+    if (err?.message?.includes('404')) {
+      console.log('ℹ️ Endpoint logout non disponible, déconnexion locale');
+    } else {
+      console.error("Erreur logout:", err);
+    }
   } finally {
     // Supprimer le token même si la requête échoue
     await AsyncStorage.removeItem('authToken');

@@ -242,6 +242,7 @@ export default function DoctorNotificationsScreen() {
         const canOpenFiche = ((n as any)?.type === 'share_fiche' || (n as any)?.type === 'fiche') && (n as any)?.data?.patientId;
         const isRdvPending = ((n as any)?.type === 'rdv' || (n as any)?.type === 'appointment') && (n as any)?.data?.status === 'pending';
         const isAlerte = ['alerte', 'alert'].includes((n as any)?.type?.toLowerCase());
+        const isEmergency = (n as any)?.type === 'emergency';
         const senderInitials = extractSenderInitials(n);
         
         const onOpen = () => {
@@ -260,11 +261,22 @@ export default function DoctorNotificationsScreen() {
               pathname: '/Doctor/appointment-confirm',
               params: { appointmentId: (n as any).data.appointmentId }
             });
+          } else if (isEmergency) {
+            router.push({
+              pathname: '/Doctor/emergency-detail',
+              params: { 
+                emergencyId: (n as any)._id,
+                patientId: (n as any).data?.patientId,
+                patientInfo: JSON.stringify((n as any).data?.patientInfo || {}),
+                location: JSON.stringify((n as any).data?.location || {}),
+                lastMeasure: JSON.stringify((n as any).data?.lastMeasure || {})
+              }
+            });
           }
         };
         
         return (
-          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche || isRdvPending) ? 0.7 : 1} onPress={onOpen}>
+          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche || isRdvPending || isEmergency) ? 0.7 : 1} onPress={onOpen}>
             <View style={styles.cardHead}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {senderInitials ? (
