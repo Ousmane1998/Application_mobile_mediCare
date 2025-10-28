@@ -72,11 +72,22 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         return;
       }
       const token: string | undefined = data?.token || data?.accessToken;
-      const roleRaw: string | undefined = data?.user?.role || data?.role;
+      const user = data?.user || {};
+      const roleRaw: string | undefined = user?.role || data?.role;
+      const role = (roleRaw || '').toLowerCase();
+
+      // Block doctor login until admin activation
+      const isDoctor = role === 'doctor' || role === 'medecin';
+      const statusStr = typeof user?.status === 'string' ? String(user.status).toLowerCase() : undefined;
+      const notActive = (user?.active === false) || (user?.isActive === false) || (statusStr ? statusStr !== 'active' : false);
+      if (isDoctor && notActive) {
+        setError("Votre compte médecin doit être activé par un administrateur avant connexion.");
+        return;
+      }
+
       if (token) await AsyncStorage.setItem('authToken', token);
       if (roleRaw) await AsyncStorage.setItem('userRole', roleRaw);
 
-      const role = (roleRaw || '').toLowerCase();
       if (role === 'admin') {
         router.replace('/Admin/dashboard');
       } else if (role === 'doctor' || role === 'medecin') {
@@ -116,10 +127,21 @@ const [request, response, promptAsync] = Google.useAuthRequest({
             return;
           }
           const token: string | undefined = data?.token || data?.accessToken;
-          const roleRaw: string | undefined = data?.user?.role || data?.role;
+          const user = data?.user || {};
+          const roleRaw: string | undefined = user?.role || data?.role;
+          const role = (roleRaw || '').toLowerCase();
+
+          // Block doctor login until admin activation
+          const isDoctor = role === 'doctor' || role === 'medecin';
+          const statusStr = typeof user?.status === 'string' ? String(user.status).toLowerCase() : undefined;
+          const notActive = (user?.active === false) || (user?.isActive === false) || (statusStr ? statusStr !== 'active' : false);
+          if (isDoctor && notActive) {
+            setError("Votre compte médecin doit être activé par un administrateur avant connexion.");
+            return;
+          }
+
           if (token) await AsyncStorage.setItem('authToken', token);
           if (roleRaw) await AsyncStorage.setItem('userRole', roleRaw);
-          const role = (roleRaw || '').toLowerCase();
           if (role === 'admin') {
             router.replace('/Admin/dashboard');
           } else if (role === 'doctor' || role === 'medecin') {

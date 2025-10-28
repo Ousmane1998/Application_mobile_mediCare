@@ -31,12 +31,23 @@ export default function PatientMeasuresHistoryScreen() {
       setError(null);
       const prof = await getProfile();
       const id = (prof.user as any)._id || (prof.user as any).id;
+      console.log('📊 Patient ID:', id);
+      
       const history = await getMeasuresHistory(id);
+      console.log('📊 Mesures reçues:', history);
+      
       const arr = Array.isArray(history) ? history : [];
+      console.log('📊 Nombre de mesures:', arr.length);
+      
       arr.sort((a: any,b: any)=> new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
       setItems(arr);
       setPage(1);
+      
+      if (arr.length === 0) {
+        console.warn('⚠️ Aucune mesure trouvée pour ce patient');
+      }
     } catch (e: any) {
+      console.error('❌ Erreur chargement mesures:', e);
       setError(e?.message || 'Erreur de chargement');
     } finally {
       setLoading(false);

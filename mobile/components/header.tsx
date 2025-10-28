@@ -15,6 +15,7 @@ export default function Header() {
   const { theme, toggle, setMode } = useAppTheme();
   const navigation = useNavigation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     visible: false,
     message: '',
@@ -28,6 +29,11 @@ export default function Header() {
         const data = await getProfile();
         const u = data.user as UserProfile;
         setProfile(u);
+        
+        // Charger les notifications
+        const userId = (u as any)._id || (u as any).id;
+        await loadNotifications(userId);
+        
         setSnack({ visible: true, message: 'Profil chargé avec succès', type: 'success' });
       } catch (e: any) {
         setSnack({ visible: true, message: e?.message || 'Erreur de chargement', type: 'error' });
@@ -154,5 +160,27 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginLeft: 12,
+  },
+  notificationContainer: {
+    position: 'relative',
+    marginLeft: 12,
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

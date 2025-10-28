@@ -129,7 +129,7 @@ export default function DoctorDashboardScreen() {
   };
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Header />
       <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {doctorName || 'Docteur'}!</Text>
