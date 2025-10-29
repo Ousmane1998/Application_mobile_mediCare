@@ -510,19 +510,21 @@ export async function forgotPassword(req, res) {
     console.log(`✅ [forgotPassword] Code stocké en BD pour: ${email}`);
 
 const mailer = getMailer();
-if (mailer) {
-// Envoyer l'email en arrière-plan sans attendre
-mailer.transporter.sendMail({
-from: mailer.from,
-to: email,
-subject: "Votre code de réinitialisation",
-text: `Votre code est ${code}. Il expire dans 10 minutes.`,
-html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
-}).catch(err => console.error(`[PasswordReset] Erreur envoi email: ${err.message}`));
-} else {
-// eslint-disable-next-line no-console
-console.log(`[PasswordReset] Code for ${email}: ${code} (expires 10min)`);
-}
+    if (mailer) {
+      console.log(`📧 [forgotPassword] Mailer configuré, envoi de l'email à: ${email}`);
+      // Envoyer l'email en arrière-plan sans attendre
+      mailer.transporter.sendMail({
+        from: mailer.from,
+        to: email,
+        subject: "Votre code de réinitialisation",
+        text: `Votre code est ${code}. Il expire dans 10 minutes.`,
+        html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
+      })
+        .then(() => console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`))
+        .catch(err => console.error(`❌ [forgotPassword] Erreur envoi email: ${err.message}`, err));
+    } else {
+      console.log(`⚠️ [forgotPassword] Mailer non configuré - Code: ${code} pour ${email}`);
+    }
 
 return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
   } catch (err) {
