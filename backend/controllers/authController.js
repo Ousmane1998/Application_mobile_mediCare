@@ -44,13 +44,19 @@ function getMailer() {
     SMTP_FROM,
   } = process.env;
 
-  if (!SMTP_USER || !SMTP_PASS) return null;
+  if (!SMTP_USER || !SMTP_PASS) {
+    console.log("⚠️ [getMailer] SMTP_USER ou SMTP_PASS manquant");
+    return null;
+  }
+
+  console.log(`🔧 [getMailer] Configuration: host=${SMTP_HOST}, port=${SMTP_PORT}, user=${SMTP_USER}`);
 
   const transporter = SMTP_HOST && SMTP_PORT
     ? nodemailer.createTransport({
         host: SMTP_HOST,
         port: Number(SMTP_PORT),
         secure: Number(SMTP_PORT) === 465,
+        requireTLS: Number(SMTP_PORT) === 587,
         auth: { user: SMTP_USER, pass: SMTP_PASS },
       })
     : nodemailer.createTransport({
@@ -59,6 +65,7 @@ function getMailer() {
       });
 
   const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
+  console.log(`📧 [getMailer] From: ${from}`);
 
   return { transporter, from };
 }
