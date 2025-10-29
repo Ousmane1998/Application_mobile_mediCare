@@ -519,16 +519,27 @@ export async function forgotPassword(req, res) {
 const mailer = getMailer();
     if (mailer) {
       console.log(`📧 [forgotPassword] Mailer configuré, envoi de l'email à: ${email}`);
+      console.log(`📧 [forgotPassword] Détails: from=${mailer.from}, to=${email}`);
+      
       // Envoyer l'email en arrière-plan sans attendre
-      mailer.transporter.sendMail({
+      const emailPromise = mailer.transporter.sendMail({
         from: mailer.from,
         to: email,
         subject: "Votre code de réinitialisation",
         text: `Votre code est ${code}. Il expire dans 10 minutes.`,
         html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
-      })
-        .then(() => console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`))
-        .catch(err => console.error(`❌ [forgotPassword] Erreur envoi email: ${err.message}`, err));
+      });
+      
+      emailPromise
+        .then((info) => {
+          console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`);
+          console.log(`📧 [forgotPassword] Response: ${info.response}`);
+        })
+        .catch((err) => {
+          console.error(`❌ [forgotPassword] Erreur envoi email: ${err.message}`);
+          console.error(`❌ [forgotPassword] Code erreur: ${err.code}`);
+          console.error(`❌ [forgotPassword] Stack:`, err.stack);
+        });
     } else {
       console.log(`⚠️ [forgotPassword] Mailer non configuré - Code: ${code} pour ${email}`);
     }
