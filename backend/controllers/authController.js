@@ -1,11 +1,10 @@
-
 // @ts-nocheck
 // controllers/authController.js
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import { v2 as cloudinary } from "cloudinary";
 import { OAuth2Client } from "google-auth-library";
 
@@ -35,39 +34,17 @@ if (
   });
 }
 
-function getMailer() {
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USER,
-    SMTP_PASS,
-    SMTP_FROM,
-  } = process.env;
-
-  if (!SMTP_USER || !SMTP_PASS) {
-    console.log("⚠️ [getMailer] SMTP_USER ou SMTP_PASS manquant");
+function initSendGrid() {
+  const { SENDGRID_API_KEY } = process.env;
+  
+  if (!SENDGRID_API_KEY) {
+    console.log("⚠️ [initSendGrid] SENDGRID_API_KEY manquant");
     return null;
   }
 
-  console.log(`🔧 [getMailer] Configuration: host=${SMTP_HOST}, port=${SMTP_PORT}, user=${SMTP_USER}`);
-
-  const transporter = SMTP_HOST && SMTP_PORT
-    ? nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: Number(SMTP_PORT),
-        secure: Number(SMTP_PORT) === 465,
-        requireTLS: Number(SMTP_PORT) === 587,
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
-      })
-    : nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
-      });
-
-  const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
-  console.log(`📧 [getMailer] From: ${from}`);
-
-  return { transporter, from };
+  sgMail.setApiKey(SENDGRID_API_KEY);
+  console.log(`✅ [initSendGrid] SendGrid configuré avec succès`);
+  return sgMail;
 }
 
 
@@ -514,40 +491,33 @@ export async function forgotPassword(req, res) {
 
     await PasswordReset.deleteMany({ identifier: email.toLowerCase() });
     await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
-    console.log(`✅ [forgotPassword] Code stocké en BD pour: ${email}`);
+    console.log(` [forgotPassword] Code stocké en BD pour: ${email}`);
 
-const mailer = getMailer();
-    if (mailer) {
-      console.log(`📧 [forgotPassword] Mailer configuré, envoi de l'email à: ${email}`);
-      console.log(`📧 [forgotPassword] Détails: from=${mailer.from}, to=${email}`);
-      
+    const sgMailClient = initSendGrid();
+    if (sgMailClient) {
       try {
-        // Attendre l'envoi de l'email avec timeout
-        const info = await Promise.race([
-          mailer.transporter.sendMail({
-            from: mailer.from,
-            to: email,
-            subject: "Votre code de réinitialisation",
-            text: `Votre code est ${code}. Il expire dans 10 minutes.`,
-            html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Email timeout')), 5000)
-          )
-        ]);
-        console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`);
-        console.log(`📧 [forgotPassword] Response: ${info.response}`);
+        const msg = {
+          to: email,
+          from: `${process.env.SENDGRID_FROM_NAME} <${process.env.SENDGRID_FROM_EMAIL}>`,
+          subject: "Votre code de réinitialisation",
+          text: `Votre code est ${code}. Il expire dans 10 minutes.`,
+          html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
+        };
+        
+        console.log(` [forgotPassword] Envoi de l'email via SendGrid à: ${email}`);
+        await sgMailClient.send(msg);
+        console.log(` [forgotPassword] Email envoyé avec succès à: ${email}`);
       } catch (emailErr) {
-        console.error(`❌ [forgotPassword] Erreur envoi email: ${emailErr.message}`);
-        console.error(`❌ [forgotPassword] Code erreur: ${emailErr.code}`);
+        console.error(` [forgotPassword] Erreur envoi email: ${emailErr.message}`);
+        console.error(` [forgotPassword] Détails:`, emailErr.response?.body || emailErr);
       }
     } else {
-      console.log(`⚠️ [forgotPassword] Mailer non configuré - Code: ${code} pour ${email}`);
+      console.log(` [forgotPassword] SendGrid non configuré - Code: ${code} pour ${email}`);
     }
 
-return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
+    return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
   } catch (err) {
-    console.error(`❌ [forgotPassword] Erreur: ${err.message}`, err);
+    console.error(` [forgotPassword] Erreur: ${err.message}`, err);
     return res.status(500).json({ message: "Erreur lors de la demande de réinitialisation." });
   }
 }
