@@ -21,9 +21,13 @@ function getMailer() {
 // Lister tous les utilisateurs
 export const listUsers = async (req, res) => {
   try {
+    console.log('👥 [Admin] Récupération de la liste des utilisateurs...');
+    console.log('🔐 Utilisateur connecté:', req.user ? `${req.user.prenom} ${req.user.nom} (${req.user.role})` : 'AUCUN');
     const users = await User.find({ archived: { $ne: true } });
+    console.log(`✅ ${users.length} utilisateurs trouvés:`, users.map(u => ({ _id: u._id, nom: u.nom, prenom: u.prenom, role: u.role })));
     res.status(200).json(users);
   } catch (err) {
+    console.error('❌ Erreur listUsers:', err.message);
     res.status(500).json({ message: err.message });
   }
 };
@@ -79,10 +83,28 @@ export const getUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedUser = await User.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updatedUser) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    const { nom, prenom, email, telephone, role, specialite, hopital, pathologie } = req.body || {};
+    console.log(`✏️ [Admin] Modification de l'utilisateur ${id}:`, { nom, prenom, email, telephone, role });
+    
+    const update = {};
+    if (nom) update.nom = nom;
+    if (prenom) update.prenom = prenom;
+    if (email) update.email = email;
+    if (telephone) update.telephone = telephone;
+    if (role) update.role = role;
+    if (specialite) update.specialite = specialite;
+    if (hopital) update.hopital = hopital;
+    if (pathologie) update.pathologie = pathologie;
+
+    const updatedUser = await User.findByIdAndUpdate(id, update, { new: true });
+    if (!updatedUser) {
+      console.warn(`⚠️ Utilisateur non trouvé: ${id}`);
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    console.log(`✅ Utilisateur modifié: ${id}`);
     res.status(200).json(updatedUser);
   } catch (err) {
+    console.error('❌ Erreur updateUser:', err.message);
     res.status(500).json({ message: err.message });
   }
 };
@@ -101,13 +123,24 @@ export const archiveUser = async (req, res) => {
 
 export const getStats = async (req, res) => {
   try {
+    console.log('📊 [Admin] Récupération des stats...');
+    console.log('🔐 Utilisateur connecté:', req.user ? `${req.user.prenom} ${req.user.nom} (${req.user.role})` : 'AUCUN');
+    
+    // Compter tous les utilisateurs sans filtre d'abord
+    const allUsers = await User.countDocuments();
+    console.log('📋 Total utilisateurs en BD:', allUsers);
+    
     const total = await User.countDocuments({ archived: { $ne: true } });
     const patients = await User.countDocuments({ role: "patient", archived: { $ne: true } });
     const medecins = await User.countDocuments({ role: "medecin", archived: { $ne: true } });
     const admins = await User.countDocuments({ role: "admin", archived: { $ne: true } });
     const pendingMedecins = await User.countDocuments({ role: 'medecin', archived: { $ne: true }, $or: [{ active: false }, { status: { $ne: 'active' } }] });
+    
+    console.log('✅ Stats:', { total, patients, medecins, admins, pendingMedecins });
     res.status(200).json({ total, patients, medecins, admins, pendingMedecins });
   } catch (err) {
+    console.error('❌ Erreur getStats:', err.message);
+    console.error('❌ Stack:', err.stack);
     res.status(500).json({ message: err.message });
   }
 };
@@ -116,13 +149,20 @@ export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body || {};
+    console.log(`👤 [Admin] Modification du rôle de ${id} vers ${role}`);
     if (!role || !["patient", "medecin", "admin"].includes(String(role))) {
+      console.warn(`⚠️ Rôle invalide: ${role}`);
       return res.status(400).json({ message: "Rôle invalide" });
     }
     const updated = await User.findByIdAndUpdate(id, { role }, { new: true });
-    if (!updated) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!updated) {
+      console.warn(`⚠️ Utilisateur non trouvé: ${id}`);
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    console.log(`✅ Rôle modifié: ${id} → ${role}`);
     res.status(200).json(updated);
   } catch (err) {
+    console.error('❌ Erreur updateUserRole:', err.message);
     res.status(500).json({ message: err.message });
   }
 };
@@ -130,10 +170,16 @@ export const updateUserRole = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`🗑️ [Admin] Suppression de l'utilisateur: ${id}`);
     const deleted = await User.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!deleted) {
+      console.warn(`⚠️ Utilisateur non trouvé: ${id}`);
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    console.log(`✅ Utilisateur supprimé: ${id}`);
     res.status(200).json({ message: "Utilisateur supprimé" });
   } catch (err) {
+    console.error('❌ Erreur deleteUser:', err.message);
     res.status(500).json({ message: err.message });
   }
 };
@@ -143,18 +189,27 @@ export const setUserActivation = async (req, res) => {
   try {
     const { id } = req.params;
     const { active, status } = req.body || {};
+    console.log(`🔐 [Admin] Activation de ${id}:`, { active, status });
     const update = {};
     if (typeof active !== 'undefined') update.active = !!active;
     if (typeof status === 'string') update.status = status;
     if (Object.keys(update).length === 0) {
+      console.warn(`⚠️ Aucun champ d'activation fourni`);
       return res.status(400).json({ message: 'Aucun champ d\'activation fourni' });
     }
     const before = await User.findById(id);
-    if (!before) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    if (!before) {
+      console.warn(`⚠️ Utilisateur non trouvé: ${id}`);
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
     const wasActive = (before.active === true) || (String(before.status || '').toLowerCase() === 'active');
     const updated = await User.findByIdAndUpdate(id, update, { new: true });
-    if (!updated) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    if (!updated) {
+      console.warn(`⚠️ Utilisateur non trouvé après update: ${id}`);
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
     const isNowActive = (updated.active === true) || (String(updated.status || '').toLowerCase() === 'active');
+    console.log(`✅ Activation mise à jour: ${id} (${wasActive} → ${isNowActive})`);
 
     // If just activated and has email, try to send notification
     if (!wasActive && isNowActive && updated.email) {

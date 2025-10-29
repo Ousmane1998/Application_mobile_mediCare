@@ -292,6 +292,10 @@ export async function adminGetStats(): Promise<AdminStats> {
   return authFetch('/users/stats');
 }
 
+export async function adminUpdateUser(id: string, data: Partial<AppUser>) {
+  return authFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
 export async function adminUpdateUserRole(id: string, role: 'patient' | 'medecin' | 'admin') {
   return authFetch(`/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) });
 }
