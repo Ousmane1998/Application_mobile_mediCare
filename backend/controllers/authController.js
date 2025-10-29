@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 // controllers/authController.js
 import bcrypt from "bcrypt";
@@ -497,29 +498,29 @@ export async function forgotPassword(req, res) {
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const codeHash = await bcrypt.hash(code, 10);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-    await PasswordReset.deleteMany({ identifier: email.toLowerCase() });
-    await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
+await PasswordReset.deleteMany({ identifier: email.toLowerCase() });
+await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
 
-    const mailer = getMailer();
-    if (mailer) {
-      await mailer.transporter.sendMail({
-        from: mailer.from,
-        to: email,
-        subject: "Votre code de réinitialisation",
-        text: `Votre code est ${code}. Il expire dans 10 minutes.`,
-        html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
-      });
-    } else {
-      // eslint-disable-next-line no-console
-      console.log(`[PasswordReset] Code for ${email}: ${code} (expires 10min)`);
-    }
+const mailer = getMailer();
+if (mailer) {
+// Envoyer l'email en arrière-plan sans attendre
+mailer.transporter.sendMail({
+from: mailer.from,
+to: email,
+subject: "Votre code de réinitialisation",
+text: `Votre code est ${code}. Il expire dans 10 minutes.`,
+html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
+}).catch(err => console.error(`[PasswordReset] Erreur envoi email: ${err.message}`));
+} else {
+// eslint-disable-next-line no-console
+console.log(`[PasswordReset] Code for ${email}: ${code} (expires 10min)`);
+}
 
-    return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
-  } catch (err) {
-    return res.status(500).json({ message: "Erreur lors de la demande de réinitialisation." });
-  }
+return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
+} catch (err) {
+return res.status(500).json({ message: "Erreur lors de la demande de réinitialisation." });
+}
 }
 
 // POST /api/auth/resetPassword (email only)
