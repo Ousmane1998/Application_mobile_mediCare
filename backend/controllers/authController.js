@@ -492,15 +492,22 @@ export async function updatePhoto(req, res) {
 export async function forgotPassword(req, res) {
   try {
     const email = req.body?.identifier || req.body?.email;
+    console.log(`📧 [forgotPassword] Demande pour: ${email}`);
+    
     if (!email || !emailRegex.test(String(email))) {
+      console.log(`❌ [forgotPassword] Email invalide: ${email}`);
       return res.status(400).json({ message: "Email valide requis." });
     }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`🔐 [forgotPassword] Code généré: ${code}`);
+    
     const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-await PasswordReset.deleteMany({ identifier: email.toLowerCase() });
-await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
+    await PasswordReset.deleteMany({ identifier: email.toLowerCase() });
+    await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
+    console.log(`✅ [forgotPassword] Code stocké en BD pour: ${email}`);
 
 const mailer = getMailer();
 if (mailer) {
@@ -518,9 +525,10 @@ console.log(`[PasswordReset] Code for ${email}: ${code} (expires 10min)`);
 }
 
 return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
-} catch (err) {
-return res.status(500).json({ message: "Erreur lors de la demande de réinitialisation." });
-}
+  } catch (err) {
+    console.error(`❌ [forgotPassword] Erreur: ${err.message}`, err);
+    return res.status(500).json({ message: "Erreur lors de la demande de réinitialisation." });
+  }
 }
 
 // POST /api/auth/resetPassword (email only)
