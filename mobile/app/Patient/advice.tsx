@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
+  Share,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -48,6 +50,7 @@ const AdviceScreen = () => {
   const [advices, setAdvices] = useState<Advice[]>([]);
   const [patientId, setPatientId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savedAdvices, setSavedAdvices] = useState<string[]>([]);
 
   useEffect(() => {
     fetchAdvices();
@@ -74,6 +77,35 @@ const AdviceScreen = () => {
     setRefreshing(true);
     await fetchAdvices();
     setRefreshing(false);
+  };
+
+  const handleShare = async (advice: Advice) => {
+    try {
+      const message = `Conseil santé: ${advice.titre}\n\n${advice.contenu}\n\nDr. ${advice.medecinId.prenom} ${advice.medecinId.nom}`;
+      await Share.share({
+        message,
+        title: `Conseil - ${advice.titre}`,
+      });
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Partage impossible');
+    }
+  };
+
+  const handleSave = async (advice: Advice) => {
+    try {
+      const isSaved = savedAdvices.includes(advice._id);
+      if (isSaved) {
+        setSavedAdvices(savedAdvices.filter(id => id !== advice._id));
+        Alert.alert('Succès', 'Conseil supprimé des enregistrés');
+      } else {
+        // Marquer le conseil comme enregistré
+        setSavedAdvices([...savedAdvices, advice._id]);
+        Alert.alert('Succès', 'Conseil enregistré dans vos favoris');
+      }
+    } catch (e: any) {
+      console.error('❌ Erreur enregistrement:', e);
+      Alert.alert('Erreur', e?.message || 'Enregistrement impossible');
+    }
   };
 
   if (loading) {
@@ -203,13 +235,22 @@ const AdviceScreen = () => {
 
                 {/* Action Buttons */}
                 <View style={styles.actionButtons}>
-                  <TouchableOpacity style={styles.buttonSecondary}>
+                  <TouchableOpacity style={styles.buttonSecondary} onPress={() => handleShare(advice)}>
                     <Ionicons name="share-social" size={18} color="#14b8a6" />
                     <Text style={styles.buttonTextSecondary}>Partager</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.buttonSecondary}>
-                    <Ionicons name="bookmark" size={18} color="#14b8a6" />
-                    <Text style={styles.buttonTextSecondary}>Enregistrer</Text>
+                  <TouchableOpacity 
+                    style={[styles.buttonSecondary, savedAdvices.includes(advice._id) && styles.buttonSaved]}
+                    onPress={() => handleSave(advice)}
+                  >
+                    <Ionicons 
+                      name={savedAdvices.includes(advice._id) ? "bookmark" : "bookmark-outline"} 
+                      size={18} 
+                      color={savedAdvices.includes(advice._id) ? "#fff" : "#14b8a6"} 
+                    />
+                    <Text style={[styles.buttonTextSecondary, savedAdvices.includes(advice._id) && styles.buttonSavedText]}>
+                      {savedAdvices.includes(advice._id) ? "Enregistré" : "Enregistrer"}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -440,5 +481,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#0f766e",
+  },
+  buttonSaved: {
+    backgroundColor: "#14b8a6",
+  },
+  buttonSavedText: {
+    color: "#fff",
   },
 });

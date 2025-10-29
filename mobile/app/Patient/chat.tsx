@@ -182,15 +182,43 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderItem = ({ item }: { item: Message }) => {
     const isUser = item.sender === "user";
+    const isVoice = (item as any).type === 'voice';
+    const isViewOnce = (item as any).isViewOnce;
+    const isRead = (item as any).isRead;
+    
     return (
       <View style={styles.messageRow}>
         <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.doctorBubble]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.doctorText]}>
-            {item.text}
-          </Text>
+          {isVoice ? (
+            <View style={styles.voiceMessageContainer}>
+              <Ionicons name="mic-circle" size={24} color={isUser ? "#fff" : "#111827"} />
+              <Text style={[styles.messageText, isUser ? styles.userText : styles.doctorText]}>
+                {(item as any).voiceDuration || 0}s
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[styles.messageText, isUser ? styles.userText : styles.doctorText]}>
+                {item.text}
+              </Text>
+              {isViewOnce && (
+                <View style={styles.viewOnceBadge}>
+                  <Ionicons name="eye" size={12} color={isUser ? "#fff" : "#111827"} />
+                  <Text style={[styles.viewOnceText, isUser ? { color: "#fff" } : { color: "#111827" }]}>
+                    Vu unique
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
         </View>
         <View style={[styles.timeRow, isUser ? { alignSelf: "flex-end" } : { alignSelf: "flex-start" }]}>
-          <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
+          <View style={styles.statusContainer}>
+            {isUser && isRead && (
+              <Ionicons name="checkmark-done" size={12} color="#2ccdd2" />
+            )}
+            <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
+          </View>
         </View>
       </View>
     );
@@ -384,5 +412,30 @@ const styles = StyleSheet.create({
     padding: 10,
     marginLeft: 8,
     alignSelf: "flex-end",
+  },
+
+  /* VOICE & SPECIAL MESSAGES */
+  voiceMessageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  viewOnceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.3)",
+  },
+  viewOnceText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
 });

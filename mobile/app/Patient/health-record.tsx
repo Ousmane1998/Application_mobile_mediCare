@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform, Image } from 'react-native';
 import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -22,6 +22,7 @@ export default function PatientHealthRecordScreen() {
   const [shareOpen, setShareOpen] = useState(false);
   const [doctors, setDoctors] = useState<AppUser[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   useEffect(() => {
     (async () => {
@@ -201,7 +202,40 @@ export default function PatientHealthRecordScreen() {
 
       {/* Boutons d'action */}
       <View style={{ height: 12 }} />
-      <TouchableOpacity style={styles.qrBtn} onPress={() => setShareOpen(true)}>
+      <TouchableOpacity style={styles.qrBtn} onPress={async () => {
+        try {
+          const prof = await getProfile();
+          const patientId = (prof.user as any)._id || (prof.user as any).id;
+          
+          console.log('🔄 Génération du QR Code pour patient:', patientId);
+          
+          // Générer l'URL de partage
+          let shareUrl = '';
+          try {
+            const tok = await createFicheShareToken(patientId);
+            shareUrl = `${SOCKET_URL.replace(/\/$/, '')}/public/fiche?token=${encodeURIComponent(tok.token)}`;
+            console.log('✅ URL de partage générée:', shareUrl);
+          } catch (e: any) {
+            console.warn('⚠️ Erreur création token:', e?.message);
+          }
+          
+          // Fallback URL
+          const fallbackUrl = SECURE_FICHE_BASE ? `${SECURE_FICHE_BASE.replace(/\/$/, '')}/fiches/${encodeURIComponent(patientId)}` : '';
+          const finalUrl = shareUrl || fallbackUrl || `${SOCKET_URL}/patient/${patientId}/fiche`;
+          
+          console.log('📱 URL finale pour QR Code:', finalUrl);
+          
+          // Générer le QR Code
+          const qrUrl = finalUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(finalUrl)}` : '';
+          console.log('🔲 QR Code URL:', qrUrl);
+          
+          setQrCodeUrl(qrUrl);
+          setShareOpen(true);
+        } catch (e: any) {
+          console.error('❌ Erreur QR Code:', e);
+          Alert.alert('Erreur', e?.message || 'Impossible de générer le QR Code');
+        }
+      }}>
         <Ionicons name="qr-code-outline" size={20} color="#111827" />
         <Text style={styles.qrBtnText}>Générer QR Code</Text>
       </TouchableOpacity>
@@ -222,21 +256,22 @@ export default function PatientHealthRecordScreen() {
           const fallbackUrl = SECURE_FICHE_BASE ? `${SECURE_FICHE_BASE.replace(/\/$/, '')}/fiches/${encodeURIComponent(patientId)}` : '';
           const finalUrl = shareUrl || fallbackUrl;
           const qrImg = finalUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(finalUrl)}` : '';
-          const h = `<html><head><meta charset="utf-8" /><style>@page { margin: 24px; } body { font-family: Arial, sans-serif; padding: 0; } h1 { font-size: 20px; margin: 16px 0; } .label { color: #374151; font-weight: bold; margin-top: 8px; } ul { margin: 6px 0 0 18px; }</style></head><body><h1>Fiche de santé — ${fullName}</h1><div class="label">Groupe sanguin</div><div>${rec?.groupeSanguin || '—'}</div></body></html>`;
+          const h = `<html><head><meta charset="utf-8" /><style>@page { margin: 24px; } body { font-family: Arial, sans-serif; padding: 0; } h1 { font-size: 20px; margin: 16px 0; } .label { color: #374151; font-weight: bold; margin-top: 8px; } ul { margin: 6px 0 0 18px; }</style></head><body><h1>Fiche de santé — ${fullName}</h1><div class="label">Groupe sanguin</div><div>${rec?.groupeSanguin || '—'}</div><div class="label">Informations patient</div><div>Nom: ${fullName}</div><div>Âge: ${profile?.dateNaissance ? Math.floor((new Date().getTime() - new Date(profile.dateNaissance).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : '—'} ans</div><div>Téléphone: ${profile?.telephone || '—'}</div><div class="label">QR Code</div><img src="${qrImg}" style="width: 140px; height: 140px;" /></body></html>`;
           const { uri } = await Print.printToFileAsync({ html: h });
           const safeName = fullName.replace(/[^a-z0-9 _-]/gi, '_') || 'Patient';
           const fileName = `Fiche_${safeName}_${now.toISOString().replace(/[:.]/g, '-')}.pdf`;
-          const dest = `${FileSystem.cacheDirectory}${fileName}`;
-          try { await FileSystem.copyAsync({ from: uri, to: dest }); } catch {}
-          const shareUri = (await FileSystem.getInfoAsync(dest)).exists ? dest : uri;
+          
+          // Utiliser directement l'URI généré par Print
           if (Platform.OS === 'ios') {
-            await Share.share({ url: shareUri, title: fileName });
+            await Share.share({ url: uri, title: fileName });
           } else {
             const avail = await Sharing.isAvailableAsync();
-            if (avail) await Sharing.shareAsync(shareUri, { mimeType: 'application/pdf', dialogTitle: fileName });
-            else await Share.share({ message: shareUri, title: fileName });
+            if (avail) await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: fileName });
+            else await Share.share({ message: uri, title: fileName });
           }
+          Alert.alert('Succès', 'PDF généré et prêt à partager');
         } catch (e: any) {
+          console.error('❌ Erreur export:', e);
           Alert.alert('Erreur', e?.message || 'Export impossible');
         } finally {
           setExporting(false);
@@ -251,6 +286,82 @@ export default function PatientHealthRecordScreen() {
         <Ionicons name="share-social-outline" size={20} color="#fff" />
         <Text style={styles.shareText}>Partager</Text>
       </TouchableOpacity>
+
+      {/* Modal Partage */}
+      <Modal visible={shareOpen} transparent animationType="slide" onRequestClose={() => setShareOpen(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Partager ma fiche</Text>
+              <TouchableOpacity onPress={() => setShareOpen(false)}>
+                <Ionicons name="close" size={24} color="#111827" />
+              </TouchableOpacity>
+            </View>
+
+            {/* QR Code */}
+            <View style={styles.qrSection}>
+              <Text style={styles.qrTitle}>QR Code de votre fiche</Text>
+              <View style={styles.qrContainer}>
+                {qrCodeUrl ? (
+                  <View style={styles.qrBox}>
+                    <Image 
+                      source={{ uri: qrCodeUrl }} 
+                      style={{ width: 200, height: 200 }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.qrBox}>
+                    <ActivityIndicator size="large" color="#2ccdd2" />
+                  </View>
+                )}
+              </View>
+              <Text style={styles.qrSubtitle}>Scannez ce code avec un autre téléphone pour accéder à votre fiche de santé</Text>
+            </View>
+
+            {/* Partager avec médecin */}
+            <View style={styles.shareSection}>
+              <Text style={styles.shareTitle}>Partager avec un médecin</Text>
+              <ScrollView style={styles.doctorsList} nestedScrollEnabled>
+                {doctors.map((doc) => (
+                  <TouchableOpacity
+                    key={doc._id}
+                    style={styles.doctorItem}
+                    onPress={async () => {
+                      try {
+                        const tok = await createFicheShareToken();
+                        const shareUrl = `${SOCKET_URL.replace(/\/$/, '')}/public/fiche?token=${encodeURIComponent(tok.token)}`;
+                        await Share.share({
+                          message: `Consultez ma fiche de santé: ${shareUrl}`,
+                          title: 'Ma fiche de santé',
+                        });
+                        Alert.alert('Succès', `Fiche partagée avec ${doc.prenom} ${doc.nom}`);
+                      } catch (e: any) {
+                        Alert.alert('Erreur', e?.message || 'Partage impossible');
+                      }
+                    }}
+                  >
+                    <View style={styles.doctorAvatar}>
+                      <Text style={styles.doctorInitials}>
+                        {(doc.prenom || '')[0]}{(doc.nom || '')[0]}
+                      </Text>
+                    </View>
+                    <View style={styles.doctorInfo}>
+                      <Text style={styles.doctorName}>Dr. {doc.prenom} {doc.nom}</Text>
+                      <Text style={styles.doctorEmail}>{doc.email}</Text>
+                    </View>
+                    <Ionicons name="share-social" size={20} color="#2ccdd2" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setShareOpen(false)}>
+              <Text style={styles.closeBtnText}>Fermer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </PageContainer>
     
   );
@@ -296,4 +407,29 @@ const styles = StyleSheet.create({
   
   shareBtn: { backgroundColor: '#2ccdd2', borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   shareText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+
+  qrSection: { alignItems: 'center', marginBottom: 24, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  qrTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 },
+  qrContainer: { alignItems: 'center', marginBottom: 12 },
+  qrBox: { width: 140, height: 140, backgroundColor: '#F0FFFE', borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#2ccdd2' },
+  qrSubtitle: { fontSize: 12, color: '#6B7280', textAlign: 'center' },
+
+  shareSection: { marginBottom: 20 },
+  shareTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 },
+  doctorsList: { maxHeight: 200 },
+  doctorItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', gap: 12 },
+  doctorAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
+  doctorInitials: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  doctorInfo: { flex: 1 },
+  doctorName: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  doctorEmail: { fontSize: 12, color: '#6B7280' },
+
+  closeBtn: { backgroundColor: '#2ccdd2', borderRadius: 12, padding: 14, alignItems: 'center' },
+  closeBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });
