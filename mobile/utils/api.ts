@@ -357,6 +357,11 @@ export async function getMyHealthRecord(): Promise<HealthRecord | null> {
   return rec || null;
 }
 
+// Récupérer les ordonnances du patient
+export async function getOrdonnances() {
+  return authFetch('/ordonnances');
+}
+
 export async function updateHealthRecord(id: string, payload: Partial<HealthRecord>) {
   return authFetch(`/fiches/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) });
 }

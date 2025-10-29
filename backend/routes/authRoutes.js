@@ -137,6 +137,90 @@ const router = express.Router();
  *       400:
  *         description: Erreur de validation.
  */
+
+/**
+ * @swagger
+ * /auth/registerDoctor:
+ *   post:
+ *     summary: Inscription d'un nouveau médecin
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nom:
+ *                 type: string
+ *                 example: Diallo
+ *               prenom:
+ *                 type: string
+ *                 example: Ahmed
+ *               telephone:
+ *                 type: string
+ *                 example: "771234567"
+ *               email:
+ *                 type: string
+ *                 example: ahmed.diallo@hospital.com
+ *               adresse:
+ *                 type: string
+ *                 example: "123 Rue de la Santé, Dakar"
+ *               age:
+ *                 type: integer
+ *                 example: 45
+ *               password:
+ *                 type: string
+ *                 example: "SecurePassword123"
+ *               role:
+ *                 type: string
+ *                 enum: [medecin]
+ *                 example: medecin
+ *               specialite:
+ *                 type: string
+ *                 example: Cardiologie
+ *               hopital:
+ *                 type: string
+ *                 example: Hôpital Principal de Dakar
+ *             required: [telephone, password, nom]
+ *     responses:
+ *       201:
+ *         description: Médecin créé avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Inscription réussie"
+ *                 token:
+ *                   type: string
+ *                   description: JWT token pour l'authentification
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     nom:
+ *                       type: string
+ *                     prenom:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     telephone:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     specialite:
+ *                       type: string
+ *                     hopital:
+ *                       type: string
+ *       400:
+ *         description: Erreur de validation (champs manquants, format invalide, utilisateur existant)
+ *       500:
+ *         description: Erreur serveur
+ */
 router.post("/registerDoctor", registerDoctor);
 router.post("/login", login);
 router.get("/profile", authMiddleware, profile);
