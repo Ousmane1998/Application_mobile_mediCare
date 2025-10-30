@@ -216,8 +216,8 @@ export default function PatientAppointmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 16 },
-  title: { fontSize: 22, color: '#111827', marginBottom: 12 },
+  container: { paddingHorizontal: 16, paddingTop: 32 },
+  title: { fontSize: 22, color: '#111827', marginTop: 60 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12 },
   cardTitle: { fontSize: 16, color: '#111827', marginBottom: 12 },
   text: { color: '#374151', marginBottom: 4 },

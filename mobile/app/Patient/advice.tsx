@@ -289,6 +289,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#111827",
+    marginTop: 50,
   },
 
   // Tabs

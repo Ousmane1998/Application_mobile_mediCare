@@ -10,8 +10,6 @@ import { getNearbyStructures } from "../../utils/api";
 import {router} from "expo-router";
 import { useAppTheme } from "../../theme/ThemeContext";
 
-const { theme } = useAppTheme();
-
 type StructureType = "Hopital" | "Pharmacie" | "Clinique";
 
 interface Structure {
@@ -26,6 +24,7 @@ interface Structure {
 }
 
 export default function FindStructureScreen() {
+  const { theme } = useAppTheme();
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [structures, setStructures] = useState<Structure[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +110,7 @@ export default function FindStructureScreen() {
     <PageContainer style={styles.container}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, marginTop: 8, paddingHorizontal: 16 }}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={37}/>
           </TouchableOpacity>
           <Text style={styles.title}>Trouver une structure</Text>
         </View>
@@ -220,7 +219,7 @@ export default function FindStructureScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  title: { fontSize: 16, color: "#111827", marginBottom: 8 },
+  title: { fontSize: 16, color: "#111827", marginTop: 40 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   radiusSelector: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   radiusLabel: { fontSize: 14, color: "#111827", marginBottom: 8 },

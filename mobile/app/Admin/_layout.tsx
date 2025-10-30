@@ -27,7 +27,23 @@ export default function AdminTabsLayout() {
   }
 
   return (
-    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: '#10B981' }}>
+    <Tabs screenOptions={{ 
+      headerShown: false, 
+      tabBarActiveTintColor: '#10B981',
+      tabBarInactiveTintColor: '#9CA3AF',
+      tabBarStyle: {
+        backgroundColor: '#fff',
+        borderTopColor: '#E5E7EB',
+        borderTopWidth: 1,
+      }
+    }}>
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: 'Accueil',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+        }}
+      />
       <Tabs.Screen
         name="users"
         options={{
@@ -40,6 +56,38 @@ export default function AdminTabsLayout() {
         options={{
           title: 'Stats',
           tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+        }}
+      />
+      {/* Pages cachées - accessibles par navigation mais pas dans la barre */}
+      <Tabs.Screen
+        name="profile-edit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="user-edit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="doctors-activation"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="password-change"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

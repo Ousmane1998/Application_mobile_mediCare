@@ -207,7 +207,7 @@ export default function PatientDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 16 },
+  container: { paddingHorizontal: 16, paddingTop: 32 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   menu: { fontSize: 22, color: '#111827' },
   greeting: { marginTop: 16, fontSize: 24, color: '#111827' },

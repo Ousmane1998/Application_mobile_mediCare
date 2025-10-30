@@ -126,8 +126,21 @@ export default function NavDoctor() {
           href: null,
         }}
       />
+      
       <Tabs.Screen
         name="measure-detail"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="measures-patient[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="health-record-[patientId]"
         options={{
           href: null,
         }}

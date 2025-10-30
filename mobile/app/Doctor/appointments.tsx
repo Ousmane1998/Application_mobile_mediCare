@@ -127,7 +127,7 @@ export default function DoctorAppointmentsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  filters: { flexDirection: 'row', gap: 8, padding: 16, paddingBottom: 0 },
+  filters: { flexDirection: 'row', gap: 8, padding: 16, paddingBottom: 0, marginTop: 40 },
   filterChip: { backgroundColor: '#E5E7EB', borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12 },
   filterChipActive: { backgroundColor: '#111827' },
   filterText: { color: '#111827' },

@@ -90,7 +90,7 @@ export default function PatientHealthRecordScreen() {
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={37} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Fiche de patient</Text>
         </View>
@@ -370,7 +370,7 @@ export default function PatientHealthRecordScreen() {
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  headerTitle: { fontSize: 20, color: '#111827', fontWeight: '700' },
+  headerTitle: { fontSize: 20, color: '#111827', fontWeight: '700',marginTop:40 },
   avatarCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E0F7F6', alignItems: 'center', justifyContent: 'center' },
   
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },

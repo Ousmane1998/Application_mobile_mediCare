@@ -115,7 +115,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
             setError('Connexion Google invalide.');
             return;
           }
-          const res = await fetch(`${API_URL}/auth/google`, {
+          const res = await fetch(`${API_URL}/api/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ idToken }),
@@ -170,7 +170,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
     <PageContainer scroll>
       <View style={styles.container}> 
       <View style={styles.header}>        
-        <Image source={require('../assets/images/logoMedicare.png')} style={{width: 75, height: 75}} />
+        <Image source={require('../assets/images/logoMedicare.png')} style={{width: 75, height: 75,}} />
       </View>
 
       <View style={styles.avatarWrap}>

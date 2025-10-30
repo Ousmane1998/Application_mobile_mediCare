@@ -244,7 +244,7 @@ export default function DoctorDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 16 },
+  container: { paddingHorizontal: 16, paddingTop: 32 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { marginTop: 12, fontSize: 22, color: '#111827' },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },

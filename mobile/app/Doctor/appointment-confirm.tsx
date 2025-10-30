@@ -329,6 +329,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     color: '#111827',
+    marginTop:40
   },
 
   // Status

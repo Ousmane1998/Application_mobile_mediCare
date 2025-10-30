@@ -362,9 +362,9 @@ export default function DoctorNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 16 },
+  container: { paddingHorizontal: 16, paddingTop: 32 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  title: { fontSize: 20, color: '#111827' },
+  title: { fontSize: 20, color: '#111827' , marginTop: 40},
   filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   filterChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#E5E7EB' },
   filterChipActive: { backgroundColor: '#D1FAE5' },

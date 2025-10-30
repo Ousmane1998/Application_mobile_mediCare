@@ -71,7 +71,7 @@ export default function DoctorEmergencyDetailScreen() {
         {/* Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={40}/>
           </TouchableOpacity>
           <Text style={styles.title}>Détail Alerte SOS</Text>
           <View style={{ width: 24 }} />
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  title: { fontSize: 18, color: '#111827', fontWeight: 'bold' },
+  title: { fontSize: 18, color: '#111827', fontWeight: 'bold',marginTop:40 },
 
   emergencyBadge: {
     backgroundColor: '#DC2626',

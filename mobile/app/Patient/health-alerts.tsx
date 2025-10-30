@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getProfile, getMeasures, getAdvices } from "@/utils/api";
+import { getProfile, getMeasuresHistory, getAdvices } from "@/utils/api";
+import PageContainer from "../../components/PageContainer";
 
 type Measure = {
   _id: string;
@@ -89,9 +90,19 @@ const HealthAlertScreen = () => {
 
         // 2️⃣ Récupérer les mesures du patient
         console.log("📊 Récupération des mesures pour :", user._id);
-        const mesuresData = await getMeasures(user._id);
-        console.log("✅ Mesures reçues :", mesuresData);
-        setMeasures(Array.isArray(mesuresData) ? mesuresData : []);
+        const mesuresData = await getMeasuresHistory(user._id);
+        console.log("✅ Mesures reçues (type):", typeof mesuresData);
+        console.log("✅ Mesures reçues (valeur):", mesuresData);
+        console.log("✅ Est un array?:", Array.isArray(mesuresData));
+        if (mesuresData && mesuresData.measures) {
+          console.log("✅ Mesures trouvées dans .measures:", mesuresData.measures);
+          setMeasures(mesuresData.measures);
+        } else if (mesuresData && mesuresData.history) {
+          console.log("✅ Mesures trouvées dans .history:", mesuresData.history);
+          setMeasures(mesuresData.history);
+        } else {
+          setMeasures(Array.isArray(mesuresData) ? mesuresData : []);
+        }
 
         // 3️⃣ Récupérer les conseils associés
         console.log("💬 Récupération des conseils pour :", user._id);
@@ -129,8 +140,12 @@ const HealthAlertScreen = () => {
     return analysis.severity === "normal";
   });
 
+  console.log("📈 Total mesures:", measures.length);
+  console.log("🚨 Mesures alertes:", alertMeasures.length);
+  console.log("✅ Mesures normales:", normalMeasures.length);
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <PageContainer style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
@@ -246,7 +261,7 @@ const HealthAlertScreen = () => {
           <Text style={styles.noAlertSubtitle}>Continuez votre excellent travail !</Text>
         </View>
       )}
-    </ScrollView>
+    </PageContainer>
   );
 };
 
