@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { v2 as cloudinary } from "cloudinary";
 import { OAuth2Client } from "google-auth-library";
 
@@ -34,34 +34,17 @@ if (
   });
 }
 
-function getMailer() {
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USER,
-    SMTP_PASS,
-    SMTP_FROM,
-  } = process.env;
-
-  if (!SMTP_USER || !SMTP_PASS) {
-    console.log("⚠️ [getMailer] SMTP_USER ou SMTP_PASS manquant");
+function initResend() {
+  const { RESEND_API_KEY } = process.env;
+  
+  if (!RESEND_API_KEY) {
+    console.log("⚠️ [initResend] RESEND_API_KEY manquant");
     return null;
   }
 
-  console.log(`🔧 [getMailer] Configuration: host=${SMTP_HOST}, port=${SMTP_PORT}, user=${SMTP_USER}`);
-
-  const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    requireTLS: Number(SMTP_PORT) === 587,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-
-  const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
-  console.log(`📧 [getMailer] From: ${from}`);
-
-  return { transporter, from };
+  const resend = new Resend(RESEND_API_KEY);
+  console.log(`✅ [initResend] Resend configuré avec succès`);
+  return resend;
 }
 
 
@@ -510,25 +493,21 @@ export async function forgotPassword(req, res) {
     await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
     console.log(` [forgotPassword] Code stocké en BD pour: ${email}`);
 
-    const mailer = getMailer();
-    if (mailer) {
-      console.log(` [forgotPassword] Mailer configuré, envoi de l'email à: ${email}`);
-      
+    const resend = initResend();
+    if (resend) {
       try {
-        await mailer.transporter.sendMail({
-          from: mailer.from,
+        const result = await resend.emails.send({
+          from: "MediCare <onboarding@resend.dev>",
           to: email,
           subject: "Votre code de réinitialisation",
-          text: `Votre code est ${code}. Il expire dans 10 minutes.`,
-          html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
+          html: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
         });
-        console.log(` [forgotPassword] Email envoyé avec succès à: ${email}`);
+        console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`, result);
       } catch (emailErr) {
-        console.error(` [forgotPassword] Erreur envoi email: ${emailErr.message}`);
-        console.error(` [forgotPassword] Code erreur: ${emailErr.code}`);
+        console.error(`❌ [forgotPassword] Erreur envoi email: ${emailErr.message}`);
       }
     } else {
-      console.log(` [forgotPassword] Mailer non configuré - Code: ${code} pour ${email}`);
+      console.log(`⚠️ [forgotPassword] Resend non configuré - Code: ${code} pour ${email}`);
     }
 
     return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
