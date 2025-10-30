@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { v2 as cloudinary } from "cloudinary";
 import { OAuth2Client } from "google-auth-library";
 
@@ -34,32 +34,17 @@ if (
   });
 }
 
-function getMailer() {
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USER,
-    SMTP_PASS,
-    SMTP_FROM,
-  } = process.env;
+function initResend() {
+  const { RESEND_API_KEY } = process.env;
+  
+  if (!RESEND_API_KEY) {
+    console.log("⚠️ [initResend] RESEND_API_KEY manquant");
+    return null;
+  }
 
-  if (!SMTP_USER || !SMTP_PASS) return null;
-
-  const transporter = SMTP_HOST && SMTP_PORT
-    ? nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: Number(SMTP_PORT),
-        secure: Number(SMTP_PORT) === 465,
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
-      })
-    : nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
-      });
-
-  const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
-
-  return { transporter, from };
+  const resend = new Resend(RESEND_API_KEY);
+  console.log(`✅ [initResend] Resend configuré avec succès`);
+  return resend;
 }
 
 
@@ -491,33 +476,43 @@ export async function updatePhoto(req, res) {
 export async function forgotPassword(req, res) {
   try {
     const email = req.body?.identifier || req.body?.email;
+    console.log(`📧 [forgotPassword] Demande pour: ${email}`);
+    
     if (!email || !emailRegex.test(String(email))) {
+      console.log(`❌ [forgotPassword] Email invalide: ${email}`);
       return res.status(400).json({ message: "Email valide requis." });
     }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`🔐 [forgotPassword] Code généré: ${code}`);
+    
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
     await PasswordReset.deleteMany({ identifier: email.toLowerCase() });
     await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
+    console.log(` [forgotPassword] Code stocké en BD pour: ${email}`);
 
-    const mailer = getMailer();
-    if (mailer) {
-      await mailer.transporter.sendMail({
-        from: mailer.from,
-        to: email,
-        subject: "Votre code de réinitialisation",
-        text: `Votre code est ${code}. Il expire dans 10 minutes.`,
-        html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
-      });
+    const resend = initResend();
+    if (resend) {
+      try {
+        const result = await resend.emails.send({
+          from: "MediCare <onboarding@resend.dev>",
+          to: email,
+          subject: "Votre code de réinitialisation",
+          html: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
+        });
+        console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`, result);
+      } catch (emailErr) {
+        console.error(`❌ [forgotPassword] Erreur envoi email: ${emailErr.message}`);
+      }
     } else {
-      // eslint-disable-next-line no-console
-      console.log(`[PasswordReset] Code for ${email}: ${code} (expires 10min)`);
+      console.log(`⚠️ [forgotPassword] Resend non configuré - Code: ${code} pour ${email}`);
     }
 
     return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
   } catch (err) {
+    console.error(` [forgotPassword] Erreur: ${err.message}`, err);
     return res.status(500).json({ message: "Erreur lors de la demande de réinitialisation." });
   }
 }

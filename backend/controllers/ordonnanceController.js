@@ -10,6 +10,8 @@ import User from "../models/User.js";
 export const getAllOrdonnances = async (req, res) => {
   try {
     const user = req.user;
+    console.log('👤 [getAllOrdonnances] User:', user?._id, 'Role:', user?.role);
+    
     let query = {};
     if (user) {
       if (user.role === 'patient') {
@@ -21,11 +23,19 @@ export const getAllOrdonnances = async (req, res) => {
         query = { $or: [ { medecin: user._id }, { patient: { $in: ids } } ] };
       }
     }
+    
+    console.log('🔍 [getAllOrdonnances] Query:', JSON.stringify(query));
+    
     const ordonnances = await Ordonnance.find(query)
       .populate("patient", "nom prenom email medecinId")
       .populate("medecin", "nom prenom email");
+    
+    console.log('📋 [getAllOrdonnances] Ordonnances trouvées:', ordonnances.length);
+    console.log('📋 [getAllOrdonnances] Détails:', JSON.stringify(ordonnances, null, 2));
+    
     res.status(200).json(ordonnances);
   } catch (error) {
+    console.error('❌ [getAllOrdonnances] Erreur:', error);
     res.status(500).json({ message: "Erreur lors de la récupération des ordonnances", error });
   }
 };

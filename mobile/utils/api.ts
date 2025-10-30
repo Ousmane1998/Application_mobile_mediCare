@@ -15,6 +15,26 @@ function withApiSuffix(url: string) {
 }
 
 
+// Fiche de santé: créer une fiche vide si elle n'existe pas
+export async function ensureHealthRecordExists(patientId: string): Promise<any> {
+  try {
+    const fiches = await authFetch('/fiches');
+    const existing = (Array.isArray(fiches) ? fiches : []).find((f: any) => String((f.patient?._id)||f.patient) === String(patientId));
+    if (existing) return existing;
+    
+    // Créer une fiche vide
+    console.log('📝 Création d\'une fiche vide pour:', patientId);
+    const newFiche = await authFetch('/fiches', {
+      method: 'POST',
+      body: JSON.stringify({ patient: patientId })
+    });
+    return newFiche;
+  } catch (e: any) {
+    console.warn('⚠️ Erreur création fiche:', e?.message);
+    return null;
+  }
+}
+
 // Fiche de santé: génération de token de partage (valide 1 jour côté serveur)
 export async function createFicheShareToken(patientId?: string): Promise<{ token: string; expiresIn: number }> {
   const payload = patientId ? { patientId } : ({} as any);
@@ -170,13 +190,39 @@ export type MessageItem = {
   createdAt: string;
 };
 
-export async function sendMessage(payload: { senderId: string; receiverId: string; text: string }): Promise<MessageItem> {
+export async function sendMessage(payload: { 
+  senderId: string; 
+  receiverId: string; 
+  text?: string;
+  type?: 'text' | 'voice';
+  voiceUrl?: string;
+  voiceDuration?: number;
+  isViewOnce?: boolean;
+}): Promise<MessageItem> {
   const response = await authFetch('/messages', { method: 'POST', body: JSON.stringify(payload) });
   return response.data || response;
 }
 
 export async function getMessages(user1: string, user2: string): Promise<MessageItem[]> {
   return authFetch(`/messages?user1=${encodeURIComponent(user1)}&user2=${encodeURIComponent(user2)}`);
+}
+
+// Marquer un message comme lu
+export async function markMessageAsRead(messageId: string): Promise<any> {
+  return authFetch(`/messages/${messageId}/read`, { method: 'PUT' });
+}
+
+// Définir le statut "en train d'écrire"
+export async function setTypingStatus(receiverId: string, isTyping: boolean): Promise<any> {
+  return authFetch('/messages/typing', { 
+    method: 'POST', 
+    body: JSON.stringify({ receiverId, isTyping })
+  });
+}
+
+// Supprimer un message "vu unique"
+export async function deleteViewOnceMessage(messageId: string): Promise<any> {
+  return authFetch(`/messages/${messageId}/view-once`, { method: 'DELETE' });
 }
 
 // List medecins
@@ -292,6 +338,10 @@ export async function adminGetStats(): Promise<AdminStats> {
   return authFetch('/users/stats');
 }
 
+export async function adminUpdateUser(id: string, data: Partial<AppUser>) {
+  return authFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
 export async function adminUpdateUserRole(id: string, role: 'patient' | 'medecin' | 'admin') {
   return authFetch(`/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) });
 }
@@ -350,11 +400,43 @@ export async function listHealthRecords(): Promise<HealthRecord[]> {
 }
 
 export async function getMyHealthRecord(): Promise<HealthRecord | null> {
-  const prof = await getProfile();
-  const id = (prof.user as any)._id || (prof.user as any).id;
-  const fiches = await listHealthRecords();
-  const rec = (Array.isArray(fiches) ? fiches : []).find((f: any) => String((f.patient?._id)||f.patient) === String(id));
-  return rec || null;
+  try {
+    const prof = await getProfile();
+    const id = (prof.user as any)._id || (prof.user as any).id;
+    console.log('🔍 Recherche fiche pour patient:', id);
+    
+    const fiches = await listHealthRecords();
+    console.log('📋 Fiches reçues:', fiches);
+    
+    if (!Array.isArray(fiches)) {
+      console.warn('⚠️ Fiches n\'est pas un tableau:', fiches);
+      return null;
+    }
+    
+    // Chercher la fiche du patient
+    const rec = fiches.find((f: any) => {
+      const fichePatientId = String((f.patient?._id) || f.patient || '');
+      const userId = String(id);
+      console.log(`  Comparaison: ${fichePatientId} === ${userId} ? ${fichePatientId === userId}`);
+      return fichePatientId === userId;
+    });
+    
+    if (rec) {
+      console.log('✅ Fiche trouvée:', rec);
+    } else {
+      console.warn('⚠️ Aucune fiche trouvée pour ce patient');
+    }
+    
+    return rec || null;
+  } catch (e: any) {
+    console.error('❌ Erreur getMyHealthRecord:', e?.message);
+    return null;
+  }
+}
+
+// Récupérer les ordonnances du patient
+export async function getOrdonnances() {
+  return authFetch('/ordonnances');
 }
 
 export async function updateHealthRecord(id: string, payload: Partial<HealthRecord>) {

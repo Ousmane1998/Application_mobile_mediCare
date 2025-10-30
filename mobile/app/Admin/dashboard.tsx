@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
-import { adminGetStats, adminListUsers, adminSetUserActivation, type AdminStats, type AppUser } from '../../utils/api';
+import { adminGetStats, adminListUsers, adminSetUserActivation, adminDeleteUser, adminUpdateUserRole, type AdminStats, type AppUser } from '../../utils/api';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -16,10 +16,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     (async () => {
       try {
+        console.log('📊 Récupération des stats...');
         const s = await adminGetStats();
+        console.log('✅ Stats reçues:', s);
         setStats(s);
       } catch (e) {
-        // silent fail; keep placeholders
+        console.error('❌ Erreur stats:', e);
       }
     })();
   }, []);
@@ -27,15 +29,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     (async () => {
       try {
+        console.log('👥 Récupération des utilisateurs...');
         const list = await adminListUsers();
+        console.log('✅ Utilisateurs reçus:', list);
         setUsers(Array.isArray(list) ? list : []);
       } catch (e) {
-        // ignore
+        console.error('❌ Erreur utilisateurs:', e);
       }
     })();
   }, []);
 
   const pendingDoctors = users.filter(u => String(u.role) === 'medecin' && !((u as any)?.active === true || String((u as any)?.status || '').toLowerCase() === 'active'));
+  
   const onQuickActivate = async (u: AppUser) => {
     try {
       setChanging(u._id);
@@ -45,10 +50,44 @@ export default function AdminDashboard() {
       setStats(s);
       setUsers(Array.isArray(list) ? list : []);
     } catch (e) {
-      // ignore for now
+      console.error('❌ Erreur activation:', e);
+      Alert.alert('Erreur', 'Impossible d\'activer le médecin');
     } finally {
       setChanging(null);
     }
+  };
+
+  const onDeleteUser = async (u: AppUser) => {
+    Alert.alert(
+      'Supprimer l\'utilisateur',
+      `Êtes-vous sûr de vouloir supprimer ${u.prenom} ${u.nom} ?`,
+      [
+        { text: 'Annuler', onPress: () => {}, style: 'cancel' },
+        {
+          text: 'Supprimer',
+          onPress: async () => {
+            try {
+              setChanging(u._id);
+              await adminDeleteUser(u._id);
+              const [s, list] = await Promise.all([adminGetStats(), adminListUsers()]);
+              setStats(s);
+              setUsers(Array.isArray(list) ? list : []);
+              Alert.alert('Succès', 'Utilisateur supprimé');
+            } catch (e) {
+              console.error('❌ Erreur suppression:', e);
+              Alert.alert('Erreur', 'Impossible de supprimer l\'utilisateur');
+            } finally {
+              setChanging(null);
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
+  };
+
+  const onEditUser = (u: AppUser) => {
+    router.push(`/Admin/user-edit?userId=${u._id}` as any);
   };
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -118,16 +157,25 @@ export default function AdminDashboard() {
       </TouchableOpacity>
 
       <View style={styles.chipsRow}>
-        <View style={styles.chipActive}><Text style={styles.chipTextActive}>Tous</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>Médecins</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>Patients</Text></View>
+        <View style={styles.chipActive}><Text style={styles.chipTextActive}>Tous ({users.length})</Text></View>
+        <View style={styles.chip}><Text style={styles.chipText}>Médecins ({users.filter(u => u.role === 'medecin').length})</Text></View>
+        <View style={styles.chip}><Text style={styles.chipText}>Patients ({users.filter(u => u.role === 'patient').length})</Text></View>
       </View>
 
-      {/* Liste d’utilisateurs */}
-      <UserItem name="Dr. Jean Dupont" role="Médecin" />
-      <UserItem name="Marie Martin" role="Patient" />
-      <UserItem name="Pierre Dubois" role="Patient" />
-      <UserItem name="Dr. Sophie Leroy" role="Médecin" />
+      {/* Liste d'utilisateurs */}
+      {users.length === 0 ? (
+        <View style={styles.emptyBox}><Text style={styles.emptyText}>Aucun utilisateur</Text></View>
+      ) : (
+        users.map(u => (
+          <UserItem 
+            key={u._id} 
+            user={u}
+            onEdit={() => onEditUser(u)}
+            onDelete={() => onDeleteUser(u)}
+            isChanging={changing === u._id}
+          />
+        ))
+      )}
 
       {/* Section médecins en attente d'activation */}
       <Text style={[styles.sectionTitle, { marginTop: 16 }]}>En attente d'activation</Text>
@@ -156,27 +204,33 @@ export default function AdminDashboard() {
         </View>
       )}
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab}>
-        <Ionicons name="add" size={26} color="#fff" />
+      {/* FAB - Stats */}
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/Admin/stats' as any)}>
+        <Ionicons name="bar-chart" size={26} color="#fff" />
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-function UserItem({ name, role }: { name: string; role: string }) {
+function UserItem({ user, onEdit, onDelete, isChanging }: { user: AppUser; onEdit: () => void; onDelete: () => void; isChanging: boolean }) {
+  const initials = `${(user.prenom || '').charAt(0)}${(user.nom || '').charAt(0)}`.toUpperCase() || '??';
+  const fullName = `${user.prenom || ''} ${user.nom || ''}`.trim();
+  
   return (
     <View style={styles.userItem}>
-      <View style={styles.userAvatar}><Text style={{ color: '#065F46' }}>{name.split(' ')[0][0]}</Text></View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.userName}>{name}</Text>
-        <Text style={styles.userRole}>{role}</Text>
+      <View style={styles.userAvatar}>
+        <Text style={{ color: '#fff', fontWeight: '600' }}>{initials}</Text>
       </View>
-      <TouchableOpacity style={styles.iconBtn}>
-        <Ionicons name="create-outline" size={18} color="#6B7280" />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.userName}>{fullName}</Text>
+        <Text style={styles.userRole}>{user.role}</Text>
+        {user.email && <Text style={styles.userEmail}>{user.email}</Text>}
+      </View>
+      <TouchableOpacity style={styles.iconBtn} disabled={isChanging} onPress={onEdit}>
+        <Ionicons name="create-outline" size={18} color={isChanging ? '#D1D5DB' : '#6B7280'} />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.iconBtn}>
-        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+      <TouchableOpacity style={styles.iconBtn} disabled={isChanging} onPress={onDelete}>
+        <Ionicons name="trash-outline" size={18} color={isChanging ? '#D1D5DB' : '#EF4444'} />
       </TouchableOpacity>
     </View>
   );
@@ -204,9 +258,10 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#fff' },
 
   userItem: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8, borderWidth: 1, borderColor: '#F3F4F6' },
-  userAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' },
-  userName: { fontSize: 15, color: '#111827' },
-  userRole: { fontSize: 13, color: '#6B7280' },
+  userAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
+  userName: { fontSize: 15, color: '#111827', fontWeight: '600' },
+  userRole: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  userEmail: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
   iconBtn: { padding: 6 },
   activationCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#F3F4F6', marginTop: 10 },
   pendingBadge: { backgroundColor: '#FEE2E2', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, marginRight: 8 },

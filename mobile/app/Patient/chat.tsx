@@ -13,12 +13,17 @@ import {
   NativeSyntheticEvent,
   TextInputSubmitEditingEventData,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from "react-native";
 import { Ionicons, MaterialIcons, Entypo } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-import { getProfile, getMessages, sendMessage, getMedecinById } from "../../utils/api";
+import { getProfile, getMessages, sendMessage, getMedecinById, setTypingStatus, markMessageAsRead, deleteViewOnceMessage } from "../../utils/api";
 import { useAppTheme } from "../../theme/ThemeContext";
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { Audio } from 'expo-av';
 
 type RootStackParamList = {
   Home: undefined;
@@ -60,7 +65,15 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isViewOnce, setIsViewOnce] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [playingProgress, setPlayingProgress] = useState(0);
   const listRef = useRef<FlatList<Message> | null>(null);
+  const recordingIntervalRef = useRef<any>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   // Validation helpers for message input
   const sanitize = (s: string) => String(s || '').replace(/[\t\n\r]+/g, ' ').trim();
@@ -109,6 +122,16 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
             ...msg,
             sender: msg.senderId === user._id ? "user" : "doctor",
           }));
+
+          // Log pour déboguer les messages vocaux
+          const voiceMessages = mappedMessages.filter((m: any) => m.type === 'voice');
+          if (voiceMessages.length > 0) {
+            console.log('🎵 Messages vocaux reçus:', voiceMessages.length);
+            voiceMessages.forEach((m: any) => {
+              console.log(`  - ID: ${m._id}, voiceUrl: ${m.voiceUrl}, duration: ${m.voiceDuration}`);
+            });
+          }
+          
           setMessages(mappedMessages);
         }
       } catch (err: any) {
@@ -147,11 +170,15 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 
     setSending(true);
     try {
+      // Notifier que l'utilisateur a arrêté d'écrire
+      await setTypingStatus(patient.medecinId, false).catch(() => {});
+
       // Envoyer le message
       const newMsg = await sendMessage({
         senderId: patient._id,
         receiverId: patient.medecinId,
         text,
+        isViewOnce,
       });
 
       console.log("✅ Message envoyé :", newMsg._id);
@@ -164,14 +191,187 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         receiverId: newMsg.receiverId,
         sender: "user",
         createdAt: newMsg.createdAt,
+        ...(newMsg as any),
       };
 
       setMessages((prev) => [...prev, msgToAdd]);
       setMessageText("");
+      setIsViewOnce(false);
     } catch (err: any) {
       console.error("❌ Erreur envoi :", err.message);
     } finally {
       setSending(false);
+    }
+  };
+
+  // Envoyer un message vocal
+  const handleSendVoice = async (voiceUrl: string, duration: number) => {
+    if (!patient || !patient.medecinId) return;
+
+    setSending(true);
+    try {
+      // Convertir le fichier audio en base64 pour l'envoyer
+      let audioData = voiceUrl;
+      if (voiceUrl && voiceUrl.startsWith('file://')) {
+        try {
+          const base64 = await (FileSystem as any).readAsStringAsync(voiceUrl, {
+            encoding: (FileSystem as any).EncodingType.Base64,
+          });
+          audioData = `data:audio/m4a;base64,${base64}`;
+          console.log('✅ Fichier audio converti en base64');
+        } catch (err: any) {
+          console.error('⚠️ Erreur conversion base64:', err.message);
+          // Continuer avec l'URL originale si la conversion échoue
+        }
+      }
+
+      const newMsg = await sendMessage({
+        senderId: patient._id,
+        receiverId: patient.medecinId,
+        type: 'voice',
+        voiceUrl: audioData,
+        voiceDuration: duration,
+        isViewOnce,
+      });
+
+      console.log("✅ Message vocal envoyé :", newMsg._id);
+
+      const msgToAdd: Message = {
+        _id: newMsg._id,
+        text: '',
+        senderId: newMsg.senderId,
+        receiverId: newMsg.receiverId,
+        sender: "user",
+        createdAt: newMsg.createdAt,
+        ...(newMsg as any),
+      };
+
+      setMessages((prev) => [...prev, msgToAdd]);
+      setIsViewOnce(false);
+      setShowVoiceModal(false);
+    } catch (err: any) {
+      console.error("❌ Erreur envoi vocal :", err.message);
+      Alert.alert('Erreur', 'Impossible d\'envoyer le message vocal');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Démarrer l'enregistrement
+  const startRecording = () => {
+    setIsRecording(true);
+    setRecordingTime(0);
+    recordingIntervalRef.current = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
+  };
+
+  // Arrêter l'enregistrement
+  const stopRecording = () => {
+    setIsRecording(false);
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
+  // Jouer un message vocal
+  const playVoiceMessage = async (messageId: string, voiceUrl: string, message?: any) => {
+    try {
+      if (playingMessageId === messageId) {
+        // Arrêter la lecture
+        if (soundRef.current) {
+          await soundRef.current.stopAsync();
+          await soundRef.current.unloadAsync();
+          soundRef.current = null;
+        }
+        setPlayingMessageId(null);
+        setPlayingProgress(0);
+        return;
+      }
+
+      // Arrêter la lecture précédente
+      if (soundRef.current) {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+      }
+
+      // Marquer le message comme lu
+      if (message && !message.isRead) {
+        try {
+          await markMessageAsRead(messageId);
+          console.log('✅ Message marqué comme lu:', messageId);
+          
+          // Mettre à jour le message dans la liste
+          setMessages(prev => prev.map(m => 
+            m._id === messageId ? { ...m, isRead: true, readAt: new Date().toISOString() } : m
+          ));
+
+          // Si c'est un message "Vu Unique", le supprimer après lecture
+          if (message.isViewOnce) {
+            try {
+              await deleteViewOnceMessage(messageId);
+              console.log('🗑️ Message vu unique supprimé:', messageId);
+              setMessages(prev => prev.filter(m => m._id !== messageId));
+              Alert.alert('Message supprimé', 'Ce message n\'était visible qu\'une fois.');
+            } catch (err: any) {
+              console.error('⚠️ Erreur suppression vu unique:', err.message);
+            }
+          }
+        } catch (err: any) {
+          console.error('⚠️ Erreur marquage lecture:', err.message);
+        }
+      }
+
+      // Charger et jouer le nouveau message
+      if (!voiceUrl) {
+        throw new Error('URL du message vocal invalide');
+      }
+      console.log('🎵 Lecture du message vocal:', voiceUrl);
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: voiceUrl },
+        { shouldPlay: true }
+      );
+      soundRef.current = sound;
+      setPlayingMessageId(messageId);
+
+      // Mettre à jour la progression
+      sound.setOnPlaybackStatusUpdate((status: any) => {
+        if (status.isLoaded) {
+          const progress = status.position / status.durationMillis;
+          setPlayingProgress(progress);
+          
+          if (status.didJustFinish) {
+            setPlayingMessageId(null);
+            setPlayingProgress(0);
+          }
+        }
+      });
+
+      // Marquer le message comme lu (optionnel, ne pas bloquer la lecture)
+      if (message && !message.isRead) {
+        try {
+          await markMessageAsRead(messageId);
+          console.log('✅ Message marqué comme lu:', messageId);
+          setMessages(prev => prev.map(m => 
+            m._id === messageId ? { ...m, isRead: true, readAt: new Date().toISOString() } : m
+          ));
+          if (message.isViewOnce) {
+            try {
+              await deleteViewOnceMessage(messageId);
+              console.log('🗑️ Message vu unique supprimé:', messageId);
+              setMessages(prev => prev.filter(m => m._id !== messageId));
+              Alert.alert('Message supprimé', 'Ce message n\'était visible qu\'une fois.');
+            } catch (err: any) {
+              console.error('⚠️ Erreur suppression vu unique:', err.message);
+            }
+          }
+        } catch (err: any) {
+          console.error('⚠️ Erreur marquage lecture (non bloquant):', err.message);
+        }
+      }
+    } catch (err: any) {
+      console.error('❌ Erreur lecture vocal:', err);
+      Alert.alert('Erreur', 'Impossible de lire le message vocal');
     }
   };
 
@@ -182,15 +382,56 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderItem = ({ item }: { item: Message }) => {
     const isUser = item.sender === "user";
+    const isVoice = (item as any).type === 'voice';
+    const isViewOnce = (item as any).isViewOnce;
+    const isRead = (item as any).isRead;
+    const isPlaying = playingMessageId === item._id;
+    
     return (
       <View style={styles.messageRow}>
         <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.doctorBubble]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.doctorText]}>
-            {item.text}
-          </Text>
+          {isVoice ? (
+            <View style={styles.voiceMessageContainer}>
+              <TouchableOpacity 
+                style={styles.voicePlayButton}
+                onPress={() => playVoiceMessage(item._id, (item as any).voiceUrl, item)}
+              >
+                <Ionicons 
+                  name={isPlaying ? "pause-circle" : "play-circle"} 
+                  size={32} 
+                  color={isUser ? "#fff" : "#2ccdd2"} 
+                />
+              </TouchableOpacity>
+              <View style={styles.voiceProgressContainer}>
+                <View style={[styles.voiceProgressBar, { width: `${playingProgress * 100}%` }]} />
+              </View>
+              <Text style={[styles.messageText, isUser ? styles.userText : styles.doctorText]}>
+                {(item as any).voiceDuration || 0}s
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[styles.messageText, isUser ? styles.userText : styles.doctorText]}>
+                {item.text}
+              </Text>
+              {isViewOnce && (
+                <View style={styles.viewOnceBadge}>
+                  <Ionicons name="eye" size={12} color={isUser ? "#fff" : "#111827"} />
+                  <Text style={[styles.viewOnceText, isUser ? { color: "#fff" } : { color: "#111827" }]}>
+                    Vu unique
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
         </View>
         <View style={[styles.timeRow, isUser ? { alignSelf: "flex-end" } : { alignSelf: "flex-start" }]}>
-          <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
+          <View style={styles.statusContainer}>
+            {isUser && isRead && (
+              <Ionicons name="checkmark-done" size={12} color="#2ccdd2" />
+            )}
+            <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
+          </View>
         </View>
       </View>
     );
@@ -248,10 +489,27 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         />
       )}
 
+      {/* VU UNIQUE TOGGLE */}
+      <View style={styles.viewOnceContainer}>
+        <TouchableOpacity 
+          style={[styles.viewOnceToggle, isViewOnce && styles.viewOnceActive]}
+          onPress={() => setIsViewOnce(!isViewOnce)}
+        >
+          <Ionicons 
+            name={isViewOnce ? "eye" : "eye-off"} 
+            size={16} 
+            color={isViewOnce ? "#fff" : "#6B7280"} 
+          />
+          <Text style={[styles.viewOnceLabel, isViewOnce && styles.viewOnceLabelActive]}>
+            Vu unique
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* INPUT */}
       <View style={[styles.inputContainer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }] }>
-        <TouchableOpacity style={styles.iconAttach}>
-          <Entypo name="attachment" size={22} color="#4B5563" />
+        <TouchableOpacity style={styles.iconAttach} onPress={() => setShowVoiceModal(true)}>
+          <Ionicons name="mic" size={22} color="#2ccdd2" />
         </TouchableOpacity>
 
         <TextInput
@@ -286,6 +544,66 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
           {sanitize(messageText).length}/1000
         </Text>
       </View>
+
+      {/* VOICE RECORDING MODAL */}
+      <Modal visible={showVoiceModal} transparent animationType="fade">
+        <View style={styles.voiceModalOverlay}>
+          <View style={[styles.voiceModalContent, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.voiceModalTitle, { color: theme.colors.text }]}>
+              Enregistrement vocal
+            </Text>
+            
+            <View style={styles.recordingDisplay}>
+              <Ionicons 
+                name={isRecording ? "mic-circle" : "mic-circle-outline"} 
+                size={60} 
+                color={isRecording ? "#DC2626" : "#2ccdd2"} 
+              />
+              <Text style={[styles.recordingTime, { color: theme.colors.text }]}>
+                {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}
+              </Text>
+            </View>
+
+            <View style={styles.voiceButtonsContainer}>
+              <TouchableOpacity 
+                style={[styles.voiceButton, { backgroundColor: isRecording ? "#DC2626" : "#2ccdd2" }]}
+                onPress={isRecording ? stopRecording : startRecording}
+              >
+                <Ionicons 
+                  name={isRecording ? "stop" : "play"} 
+                  size={24} 
+                  color="#fff" 
+                />
+                <Text style={styles.voiceButtonText}>
+                  {isRecording ? "Arrêter" : "Enregistrer"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.voiceButton, { backgroundColor: "#10B981" }]}
+                onPress={() => handleSendVoice(`voice_${Date.now()}.m4a`, recordingTime)}
+                disabled={recordingTime === 0}
+              >
+                <Ionicons name="send" size={24} color="#fff" />
+                <Text style={styles.voiceButtonText}>Envoyer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.voiceButton, { backgroundColor: "#6B7280" }]}
+                onPress={() => {
+                  setShowVoiceModal(false);
+                  setIsRecording(false);
+                  setRecordingTime(0);
+                  if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+                }}
+              >
+                <Ionicons name="close" size={24} color="#fff" />
+                <Text style={styles.voiceButtonText}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -384,5 +702,124 @@ const styles = StyleSheet.create({
     padding: 10,
     marginLeft: 8,
     alignSelf: "flex-end",
+  },
+
+  /* VOICE & SPECIAL MESSAGES */
+  voiceMessageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+  },
+  voicePlayButton: {
+    padding: 4,
+  },
+  voiceProgressContainer: {
+    flex: 1,
+    height: 4,
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  voiceProgressBar: {
+    height: "100%",
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 2,
+  },
+  viewOnceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.3)",
+  },
+  viewOnceText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  /* VU UNIQUE */
+  viewOnceContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#F9FAFB",
+  },
+  viewOnceToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  viewOnceActive: {
+    backgroundColor: "#2ccdd2",
+    borderColor: "#2ccdd2",
+  },
+  viewOnceLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  viewOnceLabelActive: {
+    color: "#fff",
+  },
+
+  /* VOICE MODAL */
+  voiceModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  voiceModalContent: {
+    width: "85%",
+    borderRadius: 16,
+    padding: 24,
+    alignItems: "center",
+  },
+  voiceModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 24,
+  },
+  recordingDisplay: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  recordingTime: {
+    fontSize: 32,
+    fontWeight: "700",
+    marginTop: 12,
+    fontFamily: "monospace",
+  },
+  voiceButtonsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  voiceButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  voiceButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 12,
   },
 });

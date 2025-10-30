@@ -1,6 +1,6 @@
 // routes/messageRoutes.js
 import express from "express";
-import { sendMessage, getMessages } from "../controllers/messageController.js";
+import { sendMessage, getMessages, markMessageAsRead, setTypingStatus, deleteViewOnceMessage } from "../controllers/messageController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 /**
@@ -35,7 +35,13 @@ import authMiddleware from "../middlewares/authMiddleware.js";
  */
 const router = express.Router();
 
+// Routes principales
 router.post("/", authMiddleware, sendMessage);
 router.get("/", authMiddleware, getMessages);
+
+// Routes pour les statuts
+router.put("/:messageId/read", authMiddleware, markMessageAsRead);
+router.post("/typing", authMiddleware, setTypingStatus);
+router.delete("/:messageId/view-once", authMiddleware, deleteViewOnceMessage);
 
 export default router;
