@@ -1,12 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { listHealthRecords, updateHealthRecord, type HealthRecord } from '../../utils/api';
 
 export default function DoctorPatientHealthRecordScreen() {
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
+  const scrollIntoView = (key: string) => {
+    const input = inputRefs.current[key];
+    const sc: any = scrollRef.current as any;
+    if (!input || !sc) return;
+    requestAnimationFrame(() => {
+      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
+      if (!containerNode || !input.measureLayout) return;
+      input.measureLayout(containerNode, (_x: number, y: number) => sc.scrollTo({ y: Math.max(y - 24, 0), animated: true }), () => {});
+    });
+  };
   const { patientId } = useLocalSearchParams<{ patientId: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +86,8 @@ export default function DoctorPatientHealthRecordScreen() {
   if (error || !rec) return (<View style={styles.center}><Text style={{ color: '#DC2626' }}>{error || 'Fiche introuvable'}</Text></View>);
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -91,6 +104,8 @@ export default function DoctorPatientHealthRecordScreen() {
         <Text style={styles.label}>Groupe sanguin</Text>
         {editMode ? (
           <TextInput
+            ref={register('groupeSanguin')}
+            onFocus={() => scrollIntoView('groupeSanguin')}
             placeholder="Ex: O+, A-, ..."
             value={form.groupeSanguin}
             onChangeText={(t) => setForm((f) => ({ ...f, groupeSanguin: t }))}
@@ -107,7 +122,7 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Allergies</Text>
         {editMode ? (
-          <TextInput placeholder="Séparées par des virgules" value={form.allergies} onChangeText={(t) => setForm((f) => ({ ...f, allergies: t }))} style={styles.input} multiline />
+          <TextInput ref={register('allergies')} onFocus={() => scrollIntoView('allergies')} placeholder="Séparées par des virgules" value={form.allergies} onChangeText={(t) => setForm((f) => ({ ...f, allergies: t }))} style={styles.input} multiline />
         ) : (
           (rec.allergies && rec.allergies.length > 0) ? rec.allergies.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -118,7 +133,7 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Maladies</Text>
         {editMode ? (
-          <TextInput placeholder="Séparées par des virgules" value={form.maladies} onChangeText={(t) => setForm((f) => ({ ...f, maladies: t }))} style={styles.input} multiline />
+          <TextInput ref={register('maladies')} onFocus={() => scrollIntoView('maladies')} placeholder="Séparées par des virgules" value={form.maladies} onChangeText={(t) => setForm((f) => ({ ...f, maladies: t }))} style={styles.input} multiline />
         ) : (
           (rec.maladies && rec.maladies.length > 0) ? rec.maladies.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -129,7 +144,7 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Traitements</Text>
         {editMode ? (
-          <TextInput placeholder="Séparés par des virgules" value={form.traitements} onChangeText={(t) => setForm((f) => ({ ...f, traitements: t }))} style={styles.input} multiline />
+          <TextInput ref={register('traitements')} onFocus={() => scrollIntoView('traitements')} placeholder="Séparés par des virgules" value={form.traitements} onChangeText={(t) => setForm((f) => ({ ...f, traitements: t }))} style={styles.input} multiline />
         ) : (
           (rec.traitements && rec.traitements.length > 0) ? rec.traitements.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -140,7 +155,7 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Antécédents</Text>
         {editMode ? (
-          <TextInput placeholder="Séparés par des virgules" value={form.antecedents} onChangeText={(t) => setForm((f) => ({ ...f, antecedents: t }))} style={styles.input} multiline />
+          <TextInput ref={register('antecedents')} onFocus={() => scrollIntoView('antecedents')} placeholder="Séparés par des virgules" value={form.antecedents} onChangeText={(t) => setForm((f) => ({ ...f, antecedents: t }))} style={styles.input} multiline />
         ) : (
           (rec.antecedents && rec.antecedents.length > 0) ? rec.antecedents.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -153,7 +168,8 @@ export default function DoctorPatientHealthRecordScreen() {
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Enregistrer</Text>}
         </TouchableOpacity>
       ) : null}
-    </PageContainer>
+    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import PageContainer from '../components/PageContainer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +15,7 @@ export default function Welcome2Screen() {
   };
 
   return (
-    <PageContainer style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.illustration}>
         <Image source={require('../assets/images/medicare chat.png')} style={{width: 250, height: 250}} />
       </View>
@@ -44,15 +43,16 @@ export default function Welcome2Screen() {
         </View>
       </View>
 
+      <View style={styles.footer}>
         <View style={styles.dots}>
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
         </View>
-
         <TouchableOpacity style={styles.primaryBtn} onPress={finishOnboarding}>
-          <Text style={styles.primaryBtnText}>Commencer</Text>
+          <Text style={styles.primaryBtnText}>Suivant</Text>
         </TouchableOpacity>
-    </PageContainer>
+      </View>
+    </View>
   );
 }
 
@@ -112,6 +112,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
+  },
+  footer: {
+    width: '100%',
+    gap: 12,
   },
   dots: {
     width: '100%',

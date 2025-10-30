@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+ 
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
@@ -51,7 +51,7 @@ export default function AdminDashboard() {
     }
   };
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* Top bar */}
       <Header />
 
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
       <TouchableOpacity style={styles.fab}>
         <Ionicons name="add" size={26} color="#fff" />
       </TouchableOpacity>
-    </PageContainer>
+    </ScrollView>
   );
 }
 

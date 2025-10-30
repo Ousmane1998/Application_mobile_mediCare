@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -256,7 +255,20 @@ export default function PatientAppointmentNewScreen() {
     );
   }
 
-  if (!medecin) {
+  if (!doctor && hasAttachedDoctor) {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="alert-circle" size={50} color="#EF4444" />
+        <Text style={{ marginTop: 12, fontSize: 16, color: '#111827', fontWeight: '600' }}>Erreur de chargement</Text>
+        <Text style={{ marginTop: 8, color: '#6B7280', textAlign: 'center' }}>Impossible de charger les informations du médecin</Text>
+        <TouchableOpacity style={[styles.primaryBtn, { marginTop: 20 }]} onPress={() => router.back()}>
+          <Text style={styles.primaryBtnText}>Retour</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!hasAttachedDoctor) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="alert-circle" size={50} color="#EF4444" />
@@ -270,7 +282,7 @@ export default function PatientAppointmentNewScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <Text style={[styles.title, { color: theme.colors.text }]}>Prendre rendez-vous</Text>
       {doctor && (
         <Text style={{ color: theme.colors.muted, marginBottom: 8 }}>Avec Dr {doctor?.nom} {doctor?.prenom}</Text>
@@ -402,7 +414,7 @@ export default function PatientAppointmentNewScreen() {
         type={snack.type}
         onHide={() => setSnack((s) => ({ ...s, visible: false }))}
       />
-    </PageContainer>
+    </ScrollView>
   );
 }
 

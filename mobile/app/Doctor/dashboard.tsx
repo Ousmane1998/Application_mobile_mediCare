@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import NavDoctor from '@/components/navDoctor';
@@ -131,7 +130,7 @@ export default function DoctorDashboardScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Header />
-      <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {doctorName || 'Docteur'}!</Text>
 
         {loading ? (
@@ -237,7 +236,7 @@ export default function DoctorDashboardScreen() {
             {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
           </>
         )}
-      </PageContainer>
+      </ScrollView>
       {/* <NavDoctor /> */}
     </View>
   );

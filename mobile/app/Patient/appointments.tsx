@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Modal } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { useRouter } from 'expo-router';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { getProfile, getAppointments, updateAppointment, type AppointmentItem } from '../../utils/api';
@@ -99,7 +98,7 @@ export default function PatientAppointmentsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <PageContainer scroll style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}> 
       <Text style={[styles.title, { color: theme.colors.text }]}>Rendez-vous</Text>
 
       {(items.length === 0) && (
@@ -150,7 +149,7 @@ export default function PatientAppointmentsScreen() {
           </View>
         ))}
       </View>
-    </PageContainer>
+    </ScrollView>
     <Modal visible={resModal.open} transparent animationType="fade" onRequestClose={() => setResModal({ open: false, appt: null })}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>

@@ -29,11 +29,6 @@ export default function Header() {
         const data = await getProfile();
         const u = data.user as UserProfile;
         setProfile(u);
-        
-        // Charger les notifications
-        const userId = (u as any)._id || (u as any).id;
-        await loadNotifications(userId);
-        
         setSnack({ visible: true, message: 'Profil chargé avec succès', type: 'success' });
       } catch (e: any) {
         setSnack({ visible: true, message: e?.message || 'Erreur de chargement', type: 'error' });
@@ -45,18 +40,20 @@ export default function Header() {
 
   return (
     <View style={[styles.topBar, { backgroundColor: theme.colors.card }]}>
-      {/* Gauche: bouton retour si possible, sinon logo */}
-      {canGoBack ? (
-        <TouchableOpacity onPress={() => (navigation as any).goBack?.()} accessibilityLabel="Retour">
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-      ) : (
-        <Image
-          source={require('../assets/images/logoMedicare.png')}
-          style={{ width: 80, height: 80 }}
-          resizeMode="contain"
-        />
-      )}
+      {/* Gauche: bouton retour si possible, sinon logo - largeur fixe pour éviter le débordement */}
+      <View style={{ width: 40, height: 40, justifyContent: 'center' }}>
+        {canGoBack ? (
+          <TouchableOpacity onPress={() => (navigation as any).goBack?.()} accessibilityLabel="Retour">
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+        ) : (
+          <Image
+            source={require('../assets/images/logoMedicare.png')}
+            style={{ width: 40, height: 40 }}
+            resizeMode="contain"
+          />
+        )}
+      </View>
 
       {/* Icônes à droite */}
       <View style={styles.iconContainer}>
@@ -124,9 +121,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 40,
+    minHeight: 56,
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {

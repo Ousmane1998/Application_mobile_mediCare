@@ -9,7 +9,6 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import PageContainer from "../../components/PageContainer";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getProfile, listMyPatients, Patient } from "../../utils/api";
 
@@ -78,7 +77,7 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
 
   if (loading) {
     return (
-      <PageContainer style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Messages</Text>
         </View>
@@ -86,12 +85,12 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
           <ActivityIndicator size="large" color="#2ccdd2" />
           <Text style={{ marginTop: 12, color: "#6B7280" }}>Chargement...</Text>
         </View>
-      </PageContainer>
+      </View>
     );
   }
 
   return (
-    <PageContainer style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
         <Text style={styles.subtitle}>Vos patients</Text>
@@ -111,7 +110,7 @@ const MessagesScreen: React.FC<Props> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         />
       )}
-    </PageContainer>
+    </View>
   );
 };
 

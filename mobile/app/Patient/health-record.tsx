@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getMyHealthRecord, getMedecins, type HealthRecord, type AppUser, createNotification, getProfile, ORG_NAME, ORG_LOGO, SECURE_FICHE_BASE, createFicheShareToken, SOCKET_URL } from '../../utils/api';
@@ -16,6 +15,7 @@ export default function PatientHealthRecordScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rec, setRec] = useState<HealthRecord | null>(null);
+  const [profile, setProfile] = useState<AppUser | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [doctors, setDoctors] = useState<AppUser[]>([]);
   const [exporting, setExporting] = useState(false);
@@ -26,6 +26,10 @@ export default function PatientHealthRecordScreen() {
         setError(null);
         const r = await getMyHealthRecord();
         setRec(r);
+        try {
+          const p = await getProfile();
+          setProfile(p?.user || null);
+        } catch {}
       } catch (e: any) {
         setError(e?.message || 'Erreur de chargement');
       } finally {
@@ -53,12 +57,82 @@ export default function PatientHealthRecordScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Ma fiche de santé</Text>
+      </View>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}> 
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.iconWrap, { backgroundColor: '#E0F2FE' }]}> 
+              <Ionicons name="person-outline" size={18} color="#0284C7" />
+            </View>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Informations médicales</Text>
+          </View>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="male-female-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Sexe</Text> : {profile?.sexe || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Date de naissance</Text> : {profile?.dateNaissance ? new Date(profile.dateNaissance as any).toLocaleDateString() : '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="fitness-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Poids</Text> : {profile?.poids ? `${profile.poids} kg` : '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="body-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Taille</Text> : {profile?.taille ? `${profile.taille} cm` : '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="analytics-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>IMC</Text> : {(() => {
+              const p = Number(profile?.poids);
+              const t = Number(profile?.taille);
+              if (!p || !t) return '—';
+              const imc = p / Math.pow(t/100, 2);
+              return `${imc.toFixed(1)}`;
+            })()}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="medkit-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Pathologie principale</Text> : {profile?.pathologie || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="call-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Téléphone</Text> : {profile?.telephone || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="mail-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Email</Text> : {profile?.email || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="home-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Adresse</Text> : {profile?.adresse || '—'}
+          </Text>
+        </View>
       </View>
       <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
         <View style={styles.cardHeader}>
@@ -283,7 +357,7 @@ export default function PatientHealthRecordScreen() {
         <Ionicons name="document-outline" size={20} color="#fff" />
         <Text style={[styles.exportText, { color: theme.colors.primaryText }]}>{exporting ? 'Génération…' : 'Exporter en PDF'}</Text>
       </TouchableOpacity>
-    </PageContainer>
+    </ScrollView>
     
   );
 }

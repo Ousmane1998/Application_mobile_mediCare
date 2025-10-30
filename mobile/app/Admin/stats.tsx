@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { adminGetStats, type AdminStats } from '../../utils/api';
@@ -41,7 +40,7 @@ export default function AdminStatsScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#111827" />
@@ -59,7 +58,7 @@ export default function AdminStatsScreen() {
       </View>
 
       {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

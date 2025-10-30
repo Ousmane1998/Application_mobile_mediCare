@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileCard, { ProfileRow } from '../../components/ProfileCard';
 import { getProfile, logout, type UserProfile } from '../../utils/api';
@@ -64,7 +63,7 @@ export default function DoctorProfileScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Text style={styles.title}>Mon Profil</Text>
 
       <View style={styles.avatarWrap}>
@@ -106,7 +105,7 @@ export default function DoctorProfileScreen() {
       </TouchableOpacity>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

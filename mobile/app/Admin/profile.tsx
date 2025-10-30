@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileCard, { ProfileRow } from '../../components/ProfileCard';
 import { getProfile, logout, type UserProfile } from '../../utils/api';
@@ -64,7 +63,7 @@ export default function AdminProfileScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#111827" />
@@ -94,7 +93,7 @@ export default function AdminProfileScreen() {
       </TouchableOpacity>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

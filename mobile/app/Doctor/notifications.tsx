@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getNotifications, markNotificationRead, deleteNotification, type NotificationItem, getProfile, type UserProfile, SOCKET_URL } from '../../utils/api';
 import io from 'socket.io-client';
@@ -202,7 +201,7 @@ export default function DoctorNotificationsScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Notifications</Text>
         <Ionicons name="funnel-outline" size={22} color="#111827" />
@@ -242,6 +241,7 @@ export default function DoctorNotificationsScreen() {
         const canOpenFiche = ((n as any)?.type === 'share_fiche' || (n as any)?.type === 'fiche') && (n as any)?.data?.patientId;
         const isRdvPending = ((n as any)?.type === 'rdv' || (n as any)?.type === 'appointment') && (n as any)?.data?.status === 'pending';
         const isAlerte = ['alerte', 'alert'].includes((n as any)?.type?.toLowerCase());
+        const isEmergency = (n as any)?.type === 'emergency';
         const senderInitials = extractSenderInitials(n);
         
         const onOpen = () => {
@@ -260,11 +260,22 @@ export default function DoctorNotificationsScreen() {
               pathname: '/Doctor/appointment-confirm',
               params: { appointmentId: (n as any).data.appointmentId }
             });
+          } else if (isEmergency) {
+            router.push({
+              pathname: '/Doctor/emergency-detail',
+              params: { 
+                emergencyId: (n as any)._id,
+                patientId: (n as any).data?.patientId,
+                patientInfo: JSON.stringify((n as any).data?.patientInfo || {}),
+                location: JSON.stringify((n as any).data?.location || {}),
+                lastMeasure: JSON.stringify((n as any).data?.lastMeasure || {})
+              }
+            });
           }
         };
         
         return (
-          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche || isRdvPending) ? 0.7 : 1} onPress={onOpen}>
+          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche || isRdvPending || isEmergency) ? 0.7 : 1} onPress={onOpen}>
             <View style={styles.cardHead}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {senderInitials ? (
@@ -345,7 +356,7 @@ export default function DoctorNotificationsScreen() {
       })}
 
       {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

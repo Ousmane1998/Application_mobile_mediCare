@@ -2,11 +2,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+ 
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
-import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, type AppointmentItem } from '../../utils/api';
+import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, getMedecinById, type AppointmentItem } from '../../utils/api';
 import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function PatientDashboardScreen() {
@@ -116,7 +116,7 @@ export default function PatientDashboardScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Header />
-      <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {meName || 'Patient'}!</Text>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vos dernières mesures</Text>
 
@@ -191,7 +191,16 @@ export default function PatientDashboardScreen() {
         </TouchableOpacity>
 
         <View style={{ height: 16 }} />
-      </PageContainer>
+      </ScrollView>
+      
+      {/* Bouton Alerte SOS flottant */}
+      <TouchableOpacity 
+        style={[styles.floatingEmergencyBtn, { backgroundColor: '#EF4444' }]} 
+        onPress={() => router.push('/Patient/emergency-alert')}
+      >
+        <Ionicons name="call-outline" size={32} color="#fff" />
+      </TouchableOpacity>
+      
       {/* <NavPatient /> */}
     </View>
   );

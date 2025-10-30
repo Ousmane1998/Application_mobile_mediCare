@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, TouchableOpacity, RefreshControl } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+ 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Header from '../../components/header';
@@ -77,7 +77,7 @@ export default function DoctorsActivationScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Header />
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -110,7 +110,7 @@ export default function DoctorsActivationScreen() {
       ))}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfile, updateProfile, updatePhoto, type UserProfile } from '../../utils/api';
@@ -10,6 +9,19 @@ import * as ImageManipulator from 'expo-image-manipulator';
 
 export default function PatientProfileEditScreen() {
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
+  const scrollIntoView = (key: string) => {
+    const input = inputRefs.current[key];
+    const sc: any = scrollRef.current as any;
+    if (!input || !sc) return;
+    requestAnimationFrame(() => {
+      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
+      if (!containerNode || !input.measureLayout) return;
+      input.measureLayout(containerNode, (_x: number, y: number) => sc.scrollTo({ y: Math.max(y - 24, 0), animated: true }), () => {});
+    });
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,7 +149,8 @@ export default function PatientProfileEditScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+    <ScrollView ref={scrollRef} style={styles.container} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#111827" />
@@ -156,12 +169,12 @@ export default function PatientProfileEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} maxLength={50} /></View>
-      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} maxLength={50} /></View>
-      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput style={styles.input} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" maxLength={100} /></View>
-      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} maxLength={120} /></View>
-      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" maxLength={3} /></View>
-      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" maxLength={16} /></View>
+      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput ref={register('nom')} onFocus={() => scrollIntoView('nom')} style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} maxLength={50} /></View>
+      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput ref={register('prenom')} onFocus={() => scrollIntoView('prenom')} style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} maxLength={50} /></View>
+      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput ref={register('email')} onFocus={() => scrollIntoView('email')} style={styles.input} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" maxLength={100} /></View>
+      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput ref={register('adresse')} onFocus={() => scrollIntoView('adresse')} style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} maxLength={120} /></View>
+      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput ref={register('age')} onFocus={() => scrollIntoView('age')} style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" maxLength={3} /></View>
+      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput ref={register('telephone')} onFocus={() => scrollIntoView('telephone')} style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" maxLength={16} /></View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -169,7 +182,8 @@ export default function PatientProfileEditScreen() {
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
       </TouchableOpacity>
       <Snackbar visible={snack.visible} message={snack.message} type={snack.type} onHide={() => setSnack((s) => ({ ...s, visible: false }))} />
-    </PageContainer>
+    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getMeasureById } from '../../utils/api';
@@ -46,7 +45,7 @@ export default function DoctorMeasureDetailScreen() {
 
   const when = measure.date || measure.createdAt;
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#111827" />
@@ -72,7 +71,7 @@ export default function DoctorMeasureDetailScreen() {
           <Text style={styles.sub}>{String(measure.patientId?._id || measure.patientId)}</Text>
         </View>
       ) : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

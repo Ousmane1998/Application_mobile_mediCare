@@ -11,7 +11,7 @@ const UserSchema = new mongoose.Schema({
   age: { type: Number, min: 0, max: 99 },
   hopital: { type: String, default: "", trim: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ["patient", "medecin", "admin"], default: "patient", required: true, index: true },
+  role: { type: String, enum: ["patient", "medecin", "admin"], required: true, index: true },
   specialite: { type: String, default: "" },
   medecinId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   pathologie: { type: String, default: "" },
