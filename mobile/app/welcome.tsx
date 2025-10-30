@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import PageContainer from '../components/PageContainer';
 import { Link, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -12,7 +11,7 @@ export default function WelcomeScreen() {
     router.replace(target as any);
   };
   return (
-    <PageContainer style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Image source={require('../assets/images/logoMedicare.png')} style={{width: 300, height: 300, marginTop: 20}} />
       </View>
@@ -35,7 +34,7 @@ export default function WelcomeScreen() {
         >
           <Text style={styles.primaryBtnText}>Suivant</Text>
       </TouchableOpacity>
-    </PageContainer>
+    </View>
   );
 }
 

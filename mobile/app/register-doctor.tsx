@@ -1,7 +1,6 @@
 // @ts-nocheck
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import PageContainer from '../components/PageContainer';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import {FileSystemUploadType} from 'expo-file-system/build/legacy/FileSystem.types';
 
@@ -63,8 +62,27 @@ export default function RegisterDoctorScreen() {
     router.replace('/login');
   };
 
+  // Keep focused field visible when keyboard appears
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
+  const scrollIntoView = (key: string) => {
+    const input = inputRefs.current[key];
+    const sc = scrollRef.current as any;
+    if (!input || !sc) return;
+    requestAnimationFrame(() => {
+      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
+      if (!containerNode || !input.measureLayout) return;
+      input.measureLayout(containerNode, (_x: number, y: number) => {
+        sc.scrollTo({ y: Math.max(y - 24, 0), animated: true });
+      }, () => {});
+    });
+  };
+
   return (
-    <PageContainer scroll style={styles.container} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <View style={styles.container}>
       <View style={styles.headerBar}>
         <Text style={styles.back} onPress={() => router.back()}>←</Text>
         <Text style={styles.headerTitle}>Inscription Médecin</Text>
@@ -77,27 +95,32 @@ export default function RegisterDoctorScreen() {
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Nom</Text>
         <TextInput
+          ref={register('lastName')}
           style={styles.input}
           placeholder="Entrez votre nom"
           value={lastName}
           onChangeText={setLastName}
           maxLength={50}
+          onFocus={() => scrollIntoView('lastName')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Prénom</Text>
         <TextInput
+          ref={register('firstName')}
           style={styles.input}
           placeholder="Entrez votre prénom"
           value={firstName}
           onChangeText={setFirstName}
+          onFocus={() => scrollIntoView('firstName')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Adresse e-mail</Text>
         <TextInput
+          ref={register('email')}
           style={styles.input}
           placeholder="nom@exemple.com"
           keyboardType="email-address"
@@ -105,30 +128,35 @@ export default function RegisterDoctorScreen() {
           value={email}
           onChangeText={setEmail}
           maxLength={100}
+          onFocus={() => scrollIntoView('email')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Numéro de téléphone</Text>
         <TextInput
+          ref={register('phone')}
           style={styles.input}
           placeholder="77 123 45 67"
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
           maxLength={16}
+          onFocus={() => scrollIntoView('phone')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text>Mot de passe</Text>
         <TextInput
+          ref={register('password')}
           style={styles.input}
           placeholder="Entrez votre mot de passe"
           value={password}
           onChangeText={setPassword}
           maxLength={64}
           secureTextEntry
+          onFocus={() => scrollIntoView('password')}
         />
       </View>
 
@@ -138,44 +166,52 @@ export default function RegisterDoctorScreen() {
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Spécialité</Text>
         <TextInput
+          ref={register('specialty')}
           style={styles.input}
           placeholder="Cardiologue, generaliste,..."
           value={specialty}
           onChangeText={setSpecialty}
           maxLength={60}
+          onFocus={() => scrollIntoView('specialty')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Numéro d&apos;ordre</Text>
         <TextInput
+          ref={register('license')}
           style={styles.input}
           placeholder="Entrez votre numéro d'ordre"
           value={licenseNumber}
           onChangeText={setLicenseNumber}
           maxLength={50}
+          onFocus={() => scrollIntoView('license')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Structure de rattachement</Text>
         <TextInput
+          ref={register('hopital')}
           style={styles.input}
           placeholder="Entrez le nom du structure ou vous etes rattaché"
           value={hopital}
           onChangeText={setHopital}
           maxLength={80}
+          onFocus={() => scrollIntoView('hopital')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Adresse de la structure</Text>
         <TextInput
+          ref={register('clinicAddress')}
           style={styles.input}
           placeholder="Entrez l'adresse de la structure"
           value={clinicAddress}
           onChangeText={setClinicAddress}
           maxLength={120}
+          onFocus={() => scrollIntoView('clinicAddress')}
         />
       </View>
 
@@ -199,7 +235,9 @@ export default function RegisterDoctorScreen() {
       <Text style={styles.terms}>
         En vous inscrivant, vous acceptez notre Politique de confidentialité et nos Conditions d&apos;utilisation.
       </Text>
-    </PageContainer>
+      </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import PageContainer from '../components/PageContainer';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { requestPasswordReset } from '../utils/api';
 
@@ -40,14 +39,30 @@ export default function ForgotPasswordScreen() {
     }
   };
 
+  // Keep focused field visible when keyboard appears
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInput | null>(null);
+  const onFocusScroll = () => {
+    const sc = scrollRef.current as any;
+    const input = inputRef.current as any;
+    if (!sc || !input) return;
+    requestAnimationFrame(() => {
+      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
+      if (!containerNode || !input.measureLayout) return;
+      input.measureLayout(containerNode, (_x: number, y: number) => sc.scrollTo({ y: Math.max(y - 24, 0), animated: true }), () => {});
+    });
+  };
+
   return (
-    <PageContainer scroll style={styles.container}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <View style={styles.container}>
       <Text style={styles.title}>Mot de passe oublié</Text>
       <Text style={styles.subtitle}>Entrez votre email pour recevoir un code de réinitialisation.</Text>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} value={identifier} onChangeText={setIdentifier} placeholder="ex: example@example.com" autoCapitalize="none" maxLength={100} />
+        <TextInput ref={inputRef} style={styles.input} value={identifier} onChangeText={setIdentifier} placeholder="ex: example@example.com" autoCapitalize="none" maxLength={100} onFocus={onFocusScroll} />
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -60,7 +75,9 @@ export default function ForgotPasswordScreen() {
       <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
         <Text style={styles.link}>Retour</Text>
       </TouchableOpacity>
-    </PageContainer>
+      </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

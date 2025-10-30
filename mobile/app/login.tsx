@@ -1,8 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
-import PageContainer from '../components/PageContainer';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -166,8 +165,26 @@ const [request, response, promptAsync] = Google.useAuthRequest({
     await promptAsync();
   };
 
+  // Keep focused field visible when keyboard appears
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
+  const scrollIntoView = (key: string) => {
+    const input = inputRefs.current[key];
+    const sc = scrollRef.current as any;
+    if (!input || !sc) return;
+    requestAnimationFrame(() => {
+      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
+      if (!containerNode || !input.measureLayout) return;
+      input.measureLayout(containerNode, (_x: number, y: number) => {
+        sc.scrollTo({ y: Math.max(y - 24, 0), animated: true });
+      }, () => {});
+    });
+  };
+
   return (
-    <PageContainer scroll>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <View style={styles.container}> 
       <View style={styles.header}>        
         <Image source={require('../assets/images/logoMedicare.png')} style={{width: 75, height: 75,}} />
@@ -183,6 +200,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: theme.colors.text }]}>Email ou Téléphone</Text>
         <TextInput
+          ref={register('ident')}
           style={[styles.input, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text }]}
           placeholder="Entrez votre email ou téléphone"
           value={emailOrPhone}
@@ -192,6 +210,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
           maxLength={100}
           placeholderTextColor={theme.colors.muted}
           selectionColor={theme.colors.primary}
+          onFocus={() => scrollIntoView('ident')}
 
         />
       </View>
@@ -200,6 +219,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         <Text style={[styles.label, { color: theme.colors.text }]}>Mot de passe</Text>
         <View style={styles.passwordRow}>
           <TextInput
+            ref={register('password')}
             style={[styles.input, { flex: 1, backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text }]}
             placeholder="Entrez votre mot de passe"
             value={password}
@@ -208,6 +228,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
             maxLength={64}
             placeholderTextColor={theme.colors.muted}
             selectionColor={theme.colors.primary}
+            onFocus={() => scrollIntoView('password')}
           />
           <TouchableOpacity style={styles.eye} onPress={() => setShowPassword(!showPassword)}>
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} />
@@ -242,7 +263,8 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         <Text style={[styles.signup, { color: theme.colors.primary }]} onPress={() => router.push('/register-doctor')}>S&apos;inscrire</Text>
       </View>
     </View>
-    </PageContainer>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

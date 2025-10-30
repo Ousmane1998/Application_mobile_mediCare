@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform, Image } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getMyHealthRecord, getMedecins, type HealthRecord, type AppUser, createNotification, getProfile, ORG_NAME, ORG_LOGO, SECURE_FICHE_BASE, createFicheShareToken, SOCKET_URL, getMeasuresHistory, getOrdonnances } from '../../utils/api';
@@ -16,9 +15,7 @@ export default function PatientHealthRecordScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rec, setRec] = useState<HealthRecord | null>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [measures, setMeasures] = useState<any[]>([]);
-  const [ordonnances, setOrdonnances] = useState<any[]>([]);
+  const [profile, setProfile] = useState<AppUser | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [doctors, setDoctors] = useState<AppUser[]>([]);
   const [exporting, setExporting] = useState(false);
@@ -35,29 +32,10 @@ export default function PatientHealthRecordScreen() {
         // Charger la fiche de santé
         const r = await getMyHealthRecord();
         setRec(r);
-        
-        // Charger les dernières mesures
-        if (prof.user._id) {
-          try {
-            const hist = await getMeasuresHistory(prof.user._id);
-            setMeasures(Array.isArray(hist) ? hist.slice(0, 4) : []);
-          } catch {}
-        }
-        
-        // Charger les ordonnances
         try {
-          const ord = await getOrdonnances();
-          console.log('📋 [health-record] Ordonnances reçues:', ord);
-          setOrdonnances(Array.isArray(ord) ? ord : []);
-        } catch (e: any) {
-          console.error('❌ [health-record] Erreur ordonnances:', e?.message);
-          // Si l'endpoint n'existe pas, on affiche un message mais on continue
-          if (e?.status === 404) {
-            console.log('ℹ️ Endpoint ordonnances non disponible');
-          }
-          setOrdonnances([]);
-        }
-
+          const p = await getProfile();
+          setProfile(p?.user || null);
+        } catch {}
       } catch (e: any) {
         setError(e?.message || 'Erreur de chargement');
       } finally {
@@ -85,14 +63,91 @@ export default function PatientHealthRecordScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={37} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Fiche de patient</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Ma fiche de santé</Text>
+      </View>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}> 
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.iconWrap, { backgroundColor: '#E0F2FE' }]}> 
+              <Ionicons name="person-outline" size={18} color="#0284C7" />
+            </View>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Informations médicales</Text>
+          </View>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="male-female-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Sexe</Text> : {profile?.sexe || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Date de naissance</Text> : {profile?.dateNaissance ? new Date(profile.dateNaissance as any).toLocaleDateString() : '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="fitness-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Poids</Text> : {profile?.poids ? `${profile.poids} kg` : '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="body-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Taille</Text> : {profile?.taille ? `${profile.taille} cm` : '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="analytics-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>IMC</Text> : {(() => {
+              const p = Number(profile?.poids);
+              const t = Number(profile?.taille);
+              if (!p || !t) return '—';
+              const imc = p / Math.pow(t/100, 2);
+              return `${imc.toFixed(1)}`;
+            })()}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="medkit-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Pathologie principale</Text> : {profile?.pathologie || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="call-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Téléphone</Text> : {profile?.telephone || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="mail-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Email</Text> : {profile?.email || '—'}
+          </Text>
+        </View>
+        <View style={styles.itemRow}>
+          <Ionicons name="home-outline" size={16} color="#6B7280" />
+          <Text style={[styles.itemText, { color: theme.colors.text }]}>
+            <Text style={[styles.itemLabel, { color: theme.colors.text }]}>Adresse</Text> : {profile?.adresse || '—'}
+          </Text>
+        </View>
+      </View>
+      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.iconWrap, { backgroundColor: '#FEF9C3' }]}>
+              <Ionicons name="water-outline" size={18} color="#CA8A04" />
+            </View>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Profil sanguin</Text>
+          </View>
         </View>
         <View style={styles.avatarCircle}>
           <Ionicons name="person-circle-outline" size={32} color="#2ccdd2" />
@@ -286,83 +341,7 @@ export default function PatientHealthRecordScreen() {
         <Ionicons name="share-social-outline" size={20} color="#fff" />
         <Text style={styles.shareText}>Partager</Text>
       </TouchableOpacity>
-
-      {/* Modal Partage */}
-      <Modal visible={shareOpen} transparent animationType="slide" onRequestClose={() => setShareOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Partager ma fiche</Text>
-              <TouchableOpacity onPress={() => setShareOpen(false)}>
-                <Ionicons name="close" size={24} color="#111827" />
-              </TouchableOpacity>
-            </View>
-
-            {/* QR Code */}
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>QR Code de votre fiche</Text>
-              <View style={styles.qrContainer}>
-                {qrCodeUrl ? (
-                  <View style={styles.qrBox}>
-                    <Image 
-                      source={{ uri: qrCodeUrl }} 
-                      style={{ width: 200, height: 200 }}
-                      resizeMode="contain"
-                    />
-                  </View>
-                ) : (
-                  <View style={styles.qrBox}>
-                    <ActivityIndicator size="large" color="#2ccdd2" />
-                  </View>
-                )}
-              </View>
-              <Text style={styles.qrSubtitle}>Scannez ce code avec un autre téléphone pour accéder à votre fiche de santé</Text>
-            </View>
-
-            {/* Partager avec médecin */}
-            <View style={styles.shareSection}>
-              <Text style={styles.shareTitle}>Partager avec un médecin</Text>
-              <ScrollView style={styles.doctorsList} nestedScrollEnabled>
-                {doctors.map((doc) => (
-                  <TouchableOpacity
-                    key={doc._id}
-                    style={styles.doctorItem}
-                    onPress={async () => {
-                      try {
-                        const tok = await createFicheShareToken();
-                        const shareUrl = `${SOCKET_URL.replace(/\/$/, '')}/public/fiche?token=${encodeURIComponent(tok.token)}`;
-                        await Share.share({
-                          message: `Consultez ma fiche de santé: ${shareUrl}`,
-                          title: 'Ma fiche de santé',
-                        });
-                        Alert.alert('Succès', `Fiche partagée avec ${doc.prenom} ${doc.nom}`);
-                      } catch (e: any) {
-                        Alert.alert('Erreur', e?.message || 'Partage impossible');
-                      }
-                    }}
-                  >
-                    <View style={styles.doctorAvatar}>
-                      <Text style={styles.doctorInitials}>
-                        {(doc.prenom || '')[0]}{(doc.nom || '')[0]}
-                      </Text>
-                    </View>
-                    <View style={styles.doctorInfo}>
-                      <Text style={styles.doctorName}>Dr. {doc.prenom} {doc.nom}</Text>
-                      <Text style={styles.doctorEmail}>{doc.email}</Text>
-                    </View>
-                    <Ionicons name="share-social" size={20} color="#2ccdd2" />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setShareOpen(false)}>
-              <Text style={styles.closeBtnText}>Fermer</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </PageContainer>
+    </ScrollView>
     
   );
 }

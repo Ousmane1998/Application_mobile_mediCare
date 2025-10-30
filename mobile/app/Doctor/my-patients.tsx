@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, TextInput } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { authFetch } from '../../utils/api';
@@ -80,7 +79,7 @@ export default function MyPatientsScreen() {
   }, [items, q, selectedPatho]);
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Header />
       <Text style={styles.title}>Mes Patients</Text>
 
@@ -120,7 +119,7 @@ export default function MyPatientsScreen() {
       ))}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

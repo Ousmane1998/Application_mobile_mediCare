@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+ 
 import { Ionicons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 import { adminListUsers, adminArchiveUser, adminDeleteUser, adminUpdateUserRole, adminSetUserActivation, type AppUser } from '../../utils/api';
@@ -97,7 +97,7 @@ export default function AdminUsersScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Text style={styles.title}>Utilisateurs</Text>
 
       <View style={styles.searchWrap}>
@@ -162,7 +162,7 @@ export default function AdminUsersScreen() {
       ))}
 
       {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,12 +7,12 @@ import {
   TextInput,
   TouchableOpacity,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Snackbar from "../../components/Snackbar";
-import PageContainer from "../../components/PageContainer";
 import { addMeasure, getProfile, type UserProfile, type MeasureType } from "../../utils/api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -232,8 +232,25 @@ useEffect(() => {
     }
   };
 
+  // Keep focused field visible when keyboard appears
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
+  const scrollIntoView = (key: string) => {
+    const input = inputRefs.current[key];
+    const sc = scrollRef.current as any;
+    if (!input || !sc) return;
+    requestAnimationFrame(() => {
+      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
+      if (!containerNode || !input.measureLayout) return;
+      input.measureLayout(containerNode, (_x: number, y: number) => sc.scrollTo({ y: Math.max(y - 24, 0), animated: true }), () => {});
+    });
+  };
+
   return (
-    <PageContainer scroll style={styles.container}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <View style={styles.container}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#111827" />
@@ -291,9 +308,11 @@ useEffect(() => {
         <Text style={styles.label}>Valeur </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TextInput
+            ref={register('value')}
             style={[styles.input, { flex: 1 }, !!valueError && value ? { borderColor: '#DC2626' } : null]} value={value} onChangeText={onChangeValue}
             placeholder={type === 'tension' ? 'Ex: 120/80 mmHg' : type === 'glycemie' ? 'Ex: 90 mg/dL' : type === 'poids' ? 'Ex: 75.5 kg' : type === 'pouls' ? 'Ex: 72 bpm' : 'Ex: 37.2 °C'}
             keyboardType={getKeyboard() as any}
+            onFocus={() => scrollIntoView('value')}
           />
           <Text style={styles.unit}>
             {type === 'tension' ? 'mmHg' : type === 'glycemie' ? 'mg/dL' : type === 'poids' ? 'kg' : type === 'pouls' ? 'bpm' : '°C'}
@@ -310,7 +329,7 @@ useEffect(() => {
 
       <View style={styles.group}>
         <Text style={styles.label}>Notes (facultatif)</Text>
-        <TextInput style={[styles.input, { minHeight: 90, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes} multiline placeholder="Ajouter une note..." />
+        <TextInput ref={register('notes')} style={[styles.input, { minHeight: 90, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes} multiline placeholder="Ajouter une note..." onFocus={() => scrollIntoView('notes')} />
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -325,7 +344,9 @@ useEffect(() => {
         type={snack.type}
         onHide={() => setSnack((s) => ({ ...s, visible: false }))}
       />
-    </PageContainer>
+      </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

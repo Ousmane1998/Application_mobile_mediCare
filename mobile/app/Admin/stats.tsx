@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { adminGetStats, type AdminStats } from '../../utils/api';
@@ -130,8 +129,8 @@ export default function AdminStatsScreen() {
   const barWidth = width - 32 - 40; // width - padding - label
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 32 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#111827" marginTop={40} />
         </TouchableOpacity>
@@ -260,23 +259,8 @@ export default function AdminStatsScreen() {
         <Text style={styles.pendingSubtitle}>Nécessite une activation</Text>
       </View>
 
-      {/* Résumé */}
-      <View style={styles.summaryBox}>
-        <Text style={styles.summaryTitle}>Résumé</Text>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Taux de patients:</Text>
-          <Text style={styles.summaryValue}>{patientPercent.toFixed(1)}%</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Taux de médecins:</Text>
-          <Text style={styles.summaryValue}>{medecinPercent.toFixed(1)}%</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Ratio patient/médecin:</Text>
-          <Text style={styles.summaryValue}>{medecins > 0 ? (patients / medecins).toFixed(1) : 'N/A'}</Text>
-        </View>
-      </View>
-    </PageContainer>
+      {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
+    </ScrollView>
   );
 }
 

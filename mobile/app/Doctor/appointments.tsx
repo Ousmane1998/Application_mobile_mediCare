@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getAppointments, updateAppointment, type AppointmentItem, getProfile } from '../../utils/api';
 
@@ -100,7 +99,7 @@ export default function DoctorAppointmentsScreen() {
   }
 
   return (
-    <PageContainer style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.filters}>
         {['en_attente','confirme','annule','all'].map(f => (
           <TouchableOpacity key={f} onPress={() => setFilter(f as any)} style={[styles.filterChip, filter===f && styles.filterChipActive]}>
@@ -121,7 +120,7 @@ export default function DoctorAppointmentsScreen() {
           </View>
         )}
       />
-    </PageContainer>
+    </View>
   );
 }
 

@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfile, getMeasuresHistory, type MeasureType } from '../../utils/api';
 import { useRouter } from 'expo-router';
@@ -170,7 +169,7 @@ export default function PatientMeasuresHistoryScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, marginTop: 24, paddingHorizontal: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -350,7 +349,7 @@ export default function PatientMeasuresHistoryScreen() {
       )}
 
       {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

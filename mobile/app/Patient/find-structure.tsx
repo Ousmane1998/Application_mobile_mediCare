@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from "react-native";
-import PageContainer from "../../components/PageContainer";
 import MapView, { Marker, Region } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
@@ -107,7 +106,7 @@ export default function FindStructureScreen() {
   }
 
   return (
-    <PageContainer style={styles.container}>
+    <View style={styles.container}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, marginTop: 8, paddingHorizontal: 16 }}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#111827" marginTop={37}/>
@@ -213,7 +212,7 @@ export default function FindStructureScreen() {
           Impossible de récupérer votre position.
         </Text>
       )}
-    </PageContainer>
+    </View>
   );
 }
 

@@ -2,7 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+ 
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
@@ -116,7 +116,7 @@ export default function PatientDashboardScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Header />
-      <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {meName || 'Patient'}!</Text>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vos dernières mesures</Text>
 
@@ -191,7 +191,7 @@ export default function PatientDashboardScreen() {
         </TouchableOpacity>
 
         <View style={{ height: 16 }} />
-      </PageContainer>
+      </ScrollView>
       
       {/* Bouton Alerte SOS flottant */}
       <TouchableOpacity 

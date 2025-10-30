@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 
 export default function PatientMedicationsScreen() {
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <Text style={styles.title}>Médicaments</Text>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Traitements en cours</Text>
@@ -12,7 +11,7 @@ export default function PatientMedicationsScreen() {
         <Text style={styles.text}>Lisinopril — Matin 9h00</Text>
         <TouchableOpacity style={styles.btn}><Text style={styles.btnText}>Ajouter un médicament</Text></TouchableOpacity>
       </View>
-    </PageContainer>
+    </ScrollView>
   );
 }
 

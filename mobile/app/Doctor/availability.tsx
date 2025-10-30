@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfile, getAvailabilityByMedecin, setAvailability, updateAvailability, deleteAvailabilityApi, type UserProfile } from '../../utils/api';
 import RNPickerSelect from 'react-native-picker-select';
@@ -77,7 +76,7 @@ export default function DoctorAvailabilityScreen() {
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Text style={styles.title}>Mes disponibilités</Text>
 
       {/* Form Card */}
@@ -192,7 +191,7 @@ export default function DoctorAvailabilityScreen() {
       ))}
 
       {error ? <Text style={{ color: '#DC2626', marginTop: 8 }}>{error}</Text> : null}
-    </PageContainer>
+    </ScrollView>
   );
 }
 

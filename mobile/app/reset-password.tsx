@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import PageContainer from '../components/PageContainer';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { resetPasswordWithCode } from '../utils/api';
 
@@ -53,24 +52,41 @@ export default function ResetPasswordScreen() {
     }
   };
 
+  // Keep focused field visible when keyboard appears
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
+  const scrollIntoView = (key: string) => {
+    const input = inputRefs.current[key];
+    const sc = scrollRef.current as any;
+    if (!input || !sc) return;
+    requestAnimationFrame(() => {
+      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
+      if (!containerNode || !input.measureLayout) return;
+      input.measureLayout(containerNode, (_x: number, y: number) => sc.scrollTo({ y: Math.max(y - 24, 0), animated: true }), () => {});
+    });
+  };
+
   return (
-    <PageContainer scroll style={styles.container}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <View style={styles.container}>
       <Text style={styles.title}>Réinitialiser le mot de passe</Text>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Email ou Téléphone</Text>
-        <TextInput style={styles.input} value={identifier} onChangeText={setIdentifier} autoCapitalize="none" maxLength={100} />
+        <TextInput ref={register('identifier')} style={styles.input} value={identifier} onChangeText={setIdentifier} autoCapitalize="none" maxLength={100} onFocus={() => scrollIntoView('identifier')} />
       </View>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Code de vérification</Text>
-        <TextInput style={styles.input} value={code} onChangeText={(t) => setCode(t.replace(/\s+/g, ''))} autoCapitalize="characters" maxLength={8} />
+        <TextInput ref={register('code')} style={styles.input} value={code} onChangeText={(t) => setCode(t.replace(/\s+/g, ''))} autoCapitalize="characters" maxLength={8} onFocus={() => scrollIntoView('code')} />
       </View>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Nouveau mot de passe</Text>
-        <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} maxLength={64} />
+        <TextInput ref={register('password')} style={styles.input} secureTextEntry value={password} onChangeText={setPassword} maxLength={64} onFocus={() => scrollIntoView('password')} />
       </View>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Confirmer le mot de passe</Text>
-        <TextInput style={styles.input} secureTextEntry value={confirm} onChangeText={setConfirm} maxLength={64} />
+        <TextInput ref={register('confirm')} style={styles.input} secureTextEntry value={confirm} onChangeText={setConfirm} maxLength={64} onFocus={() => scrollIntoView('confirm')} />
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -83,7 +99,9 @@ export default function ResetPasswordScreen() {
       <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
         <Text style={{ color: '#2ccdd2' }}>Retour</Text>
       </TouchableOpacity>
-    </PageContainer>
+      </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

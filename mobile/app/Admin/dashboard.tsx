@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
-import PageContainer from '../../components/PageContainer';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+ 
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
     router.push(`/Admin/user-edit?userId=${u._id}` as any);
   };
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* Top bar */}
       <Header />
 
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/Admin/stats' as any)}>
         <Ionicons name="bar-chart" size={26} color="#fff" />
       </TouchableOpacity>
-    </PageContainer>
+    </ScrollView>
   );
 }
 
