@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
-import sgMail from "@sendgrid/mail";
+import nodemailer from "nodemailer";
 import { v2 as cloudinary } from "cloudinary";
 import { OAuth2Client } from "google-auth-library";
 
@@ -34,17 +34,34 @@ if (
   });
 }
 
-function initSendGrid() {
-  const { SENDGRID_API_KEY } = process.env;
-  
-  if (!SENDGRID_API_KEY) {
-    console.log("⚠️ [initSendGrid] SENDGRID_API_KEY manquant");
+function getMailer() {
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    SMTP_FROM,
+  } = process.env;
+
+  if (!SMTP_USER || !SMTP_PASS) {
+    console.log("⚠️ [getMailer] SMTP_USER ou SMTP_PASS manquant");
     return null;
   }
 
-  sgMail.setApiKey(SENDGRID_API_KEY);
-  console.log(`✅ [initSendGrid] SendGrid configuré avec succès`);
-  return sgMail;
+  console.log(`🔧 [getMailer] Configuration: host=${SMTP_HOST}, port=${SMTP_PORT}, user=${SMTP_USER}`);
+
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: Number(SMTP_PORT) === 465,
+    requireTLS: Number(SMTP_PORT) === 587,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+
+  const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
+  console.log(`📧 [getMailer] From: ${from}`);
+
+  return { transporter, from };
 }
 
 
@@ -493,26 +510,25 @@ export async function forgotPassword(req, res) {
     await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
     console.log(` [forgotPassword] Code stocké en BD pour: ${email}`);
 
-    const sgMailClient = initSendGrid();
-    if (sgMailClient) {
+    const mailer = getMailer();
+    if (mailer) {
+      console.log(` [forgotPassword] Mailer configuré, envoi de l'email à: ${email}`);
+      
       try {
-        const msg = {
+        await mailer.transporter.sendMail({
+          from: mailer.from,
           to: email,
-          from: `${process.env.SENDGRID_FROM_NAME} <${process.env.SENDGRID_FROM_EMAIL}>`,
           subject: "Votre code de réinitialisation",
           text: `Votre code est ${code}. Il expire dans 10 minutes.`,
           html: `<p>Votre code est <b>${code}</b>. Il expire dans 10 minutes.</p>`,
-        };
-        
-        console.log(` [forgotPassword] Envoi de l'email via SendGrid à: ${email}`);
-        await sgMailClient.send(msg);
+        });
         console.log(` [forgotPassword] Email envoyé avec succès à: ${email}`);
       } catch (emailErr) {
         console.error(` [forgotPassword] Erreur envoi email: ${emailErr.message}`);
-        console.error(` [forgotPassword] Détails:`, emailErr.response?.body || emailErr);
+        console.error(` [forgotPassword] Code erreur: ${emailErr.code}`);
       }
     } else {
-      console.log(` [forgotPassword] SendGrid non configuré - Code: ${code} pour ${email}`);
+      console.log(` [forgotPassword] Mailer non configuré - Code: ${code} pour ${email}`);
     }
 
     return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
