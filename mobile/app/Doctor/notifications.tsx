@@ -276,7 +276,8 @@ export default function DoctorNotificationsScreen() {
   };
 
   const onOpenMessage = (n: any) => {
-    const patientId = n?.data?.patientId || n?.userId;
+    // Pour les anciennes notifications, senderId = patientId
+    const patientId = n?.data?.patientId || n?.data?.senderId || n?.userId;
     
     // Essayer plusieurs sources pour le nom
     let patientName = n?.data?.patientName;

@@ -42,6 +42,7 @@ export default function ChatDetailScreen() {
   const [isViewOnce, setIsViewOnce] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [playingProgress, setPlayingProgress] = useState(0);
+  const [displayPatientName, setDisplayPatientName] = useState(patientName);
   const listRef = useRef<FlatList<Message> | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
 
@@ -70,7 +71,23 @@ export default function ChatDetailScreen() {
         setDoctor(user);
         console.log("👨‍⚕️ Médecin :", user._id);
         console.log("👤 Patient ID :", patientId);
-        console.log("👤 Patient Name :", patientName);
+        console.log("👤 Patient Name (initial) :", patientName);
+
+        // Si le nom du patient n'est pas passé, le récupérer depuis l'API
+        let finalPatientName = patientName;
+        if (!patientName || patientName === 'Patient') {
+          try {
+            const patientProfile = await authFetch(`/users/${patientId}`);
+            const patient = patientProfile.user || patientProfile;
+            finalPatientName = `${patient.prenom || ''} ${patient.nom || ''}`.trim() || 'Patient';
+            console.log("👤 Patient Name (from API) :", finalPatientName);
+            setDisplayPatientName(finalPatientName);
+          } catch (err) {
+            console.warn("⚠️ Impossible de récupérer le nom du patient:", err.message);
+          }
+        } else {
+          setDisplayPatientName(patientName);
+        }
 
         // Charger les messages avec le patient
         const msgs = await authFetch(`/messages?user1=${user._id}&user2=${patientId}`);
@@ -298,7 +315,7 @@ export default function ChatDetailScreen() {
             <Ionicons name="person" size={20} color="#fff" />
           </View>
           <View style={{ justifyContent: "center" }}>
-            <Text style={styles.patientName}>{patientName}</Text>
+            <Text style={styles.patientName}>{displayPatientName}</Text>
             <Text style={styles.onlineStatus}>En ligne</Text>
           </View>
         </View>
