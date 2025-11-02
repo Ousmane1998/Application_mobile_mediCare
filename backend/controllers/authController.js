@@ -107,28 +107,30 @@ export async function registerPatient(req, res) {
     
     console.log("✅ [registerPatient] Patient créé avec succès :", user._id);
 
-    // Send email with credentials
+    // Send email with credentials using Resend (same as forgotPassword)
     let emailSent = false;
-    const mailer = getMailer();
-    if (mailer) {
+    const resend = initResend();
+    if (resend) {
       try {
-        await mailer.transporter.sendMail({
-          from: mailer.from,
+        await resend.emails.send({
+          from: "MediCare <onboarding@resend.dev>",
           to: user.email,
-          subject: 'Votre compte MediCare',
-          text: `Bonjour ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé.\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nNous vous recommandons de changer votre mot de passe après connexion.`,
-          html: `<p>Bonjour ${user.prenom || ''} ${user.nom || ''},</p>
-                 <p>Votre compte <b>MediCare</b> a été créé.</p>
+          subject: 'Votre compte MediCare - Identifiants de connexion',
+          html: `<p>Bonjour <b>${user.prenom || ''} ${user.nom || ''}</b>,</p>
+                 <p>Votre compte <b>MediCare</b> a été créé avec succès.</p>
                  <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
-                 <b>Mot de passe</b>: ${defaultPassword}</p>
-                 <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>`,
+                 <b>Mot de passe</b>: <code>${defaultPassword}</code></p>
+                 <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>
+                 <p>Cordialement,<br/>L'équipe MediCare</p>`,
         });
         emailSent = true;
-        console.log("📧 [registerPatient] Email envoyé avec succès");
+        console.log("📧 [registerPatient] Email envoyé avec succès à:", user.email);
       } catch (e) {
         emailSent = false;
-        console.log("⚠️ [registerPatient] Email non envoyé :", e.message);
+        console.error("⚠️ [registerPatient] Email non envoyé :", e.message);
       }
+    } else {
+      console.log("⚠️ [registerPatient] Resend non configuré - Mot de passe par défaut:", defaultPassword);
     }
 
     return res.status(201).json({
