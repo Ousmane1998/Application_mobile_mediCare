@@ -70,6 +70,7 @@ export default function ChatDetailScreen() {
         setDoctor(user);
         console.log("👨‍⚕️ Médecin :", user._id);
         console.log("👤 Patient ID :", patientId);
+        console.log("👤 Patient Name :", patientName);
 
         // Charger les messages avec le patient
         const msgs = await authFetch(`/messages?user1=${user._id}&user2=${patientId}`);

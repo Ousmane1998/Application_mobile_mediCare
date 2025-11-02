@@ -277,9 +277,19 @@ export default function DoctorNotificationsScreen() {
 
   const onOpenMessage = (n: any) => {
     const patientId = n?.data?.patientId || n?.userId;
-    const patientName = n?.data?.patientName || [n?.data?.prenom, n?.data?.nom].filter(Boolean).join(' ').trim() || 'Patient';
     
-    console.log('💬 [Message] Ouverture chat:', { patientId, patientName, data: n?.data });
+    // Essayer plusieurs sources pour le nom
+    let patientName = n?.data?.patientName;
+    if (!patientName || patientName === 'Patient') {
+      const prenom = n?.data?.prenom || '';
+      const nom = n?.data?.nom || '';
+      patientName = `${prenom} ${nom}`.trim();
+    }
+    if (!patientName) {
+      patientName = 'Patient';
+    }
+    
+    console.log('💬 [Message] Ouverture chat:', { patientId, patientName, fullData: n?.data });
     
     if (patientId) {
       onMarkRead(String(n._id));

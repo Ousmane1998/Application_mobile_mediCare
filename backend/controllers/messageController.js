@@ -50,7 +50,11 @@ export const sendMessage = async (req, res) => {
       
       // Récupérer les infos du sender pour la notification
       const User = (await import("../models/User.js")).default;
-      const sender = await User.findById(senderId);
+      const sender = await User.findById(senderId).select('prenom nom email');
+      
+      const senderName = sender ? `${sender.prenom || ''} ${sender.nom || ''}`.trim() : 'Patient';
+      
+      console.log("📨 [sendMessage] Sender trouvé:", { senderId, senderName, sender: sender ? { prenom: sender.prenom, nom: sender.nom } : null });
       
       await Notification.create({
         userId: receiverId,
@@ -58,15 +62,15 @@ export const sendMessage = async (req, res) => {
         message: notifMsg,
         data: { 
           messageId: message._id, 
-          senderId,
-          patientId: senderId,
-          patientName: sender ? `${sender.prenom} ${sender.nom}` : 'Patient',
-          prenom: sender?.prenom,
-          nom: sender?.nom
+          senderId: String(senderId),
+          patientId: String(senderId),
+          patientName: senderName,
+          prenom: sender?.prenom || '',
+          nom: sender?.nom || ''
         },
         isRead: false,
       });
-      console.log("✅ [sendMessage] Notification créée pour :", receiverId);
+      console.log("✅ [sendMessage] Notification créée pour :", receiverId, "avec patientName:", senderName);
     } catch (notifErr) {
       console.error("⚠️ [sendMessage] Erreur création notification :", notifErr.message);
     }

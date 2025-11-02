@@ -37,14 +37,33 @@ const AppointmentConfirmScreen = () => {
   const fetchAppointment = async () => {
     try {
       setLoading(true);
-      if (appointmentId) {
-        const data = await authFetch(`/appointments/${appointmentId}`);
-        console.log('📅 Rendez-vous reçu :', data);
-        setAppointment(data.appointment || data);
+      console.log('📅 [fetchAppointment] appointmentId reçu:', appointmentId);
+      
+      if (!appointmentId) {
+        console.error('❌ [fetchAppointment] appointmentId manquant');
+        Alert.alert('Erreur', 'ID du rendez-vous manquant');
+        return;
+      }
+      
+      const url = `/appointments/${appointmentId}`;
+      console.log('📅 [fetchAppointment] Appel API:', url);
+      
+      const data = await authFetch(url);
+      console.log('📅 [fetchAppointment] Réponse reçue:', data);
+      
+      if (data.appointment) {
+        setAppointment(data.appointment);
+      } else if (data._id) {
+        setAppointment(data);
+      } else {
+        console.error('❌ [fetchAppointment] Format de réponse invalide:', data);
+        Alert.alert('Erreur', 'Format de réponse invalide');
       }
     } catch (err: any) {
-      console.error('❌ Erreur :', err);
-      Alert.alert('Erreur', 'Impossible de charger le rendez-vous');
+      console.error('❌ [fetchAppointment] Erreur complète:', err);
+      console.error('❌ [fetchAppointment] Message:', err?.message);
+      console.error('❌ [fetchAppointment] Status:', err?.status);
+      Alert.alert('Erreur', err?.message || 'Impossible de charger le rendez-vous');
     } finally {
       setLoading(false);
     }
