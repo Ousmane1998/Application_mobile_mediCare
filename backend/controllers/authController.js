@@ -7,6 +7,7 @@ import PasswordReset from "../models/PasswordReset.js";
 import { Resend } from "resend";
 import { v2 as cloudinary } from "cloudinary";
 import { OAuth2Client } from "google-auth-library";
+import nodemailer from "nodemailer";
 
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
@@ -45,6 +46,60 @@ function initResend() {
   const resend = new Resend(RESEND_API_KEY);
   console.log(`✅ [initResend] Resend configuré avec succès`);
   return resend;
+}
+
+// Fonction pour envoyer des emails avec fallback vers SMTP
+async function sendEmail({ to, subject, html, text }) {
+  const { RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  
+  // Essayer d'abord avec Resend
+  if (RESEND_API_KEY && RESEND_FROM_EMAIL) {
+    try {
+      const resend = new Resend(RESEND_API_KEY);
+      const result = await resend.emails.send({
+        from: RESEND_FROM_EMAIL,
+        to,
+        subject,
+        html,
+      });
+      console.log(`✅ [sendEmail] Email envoyé via Resend à: ${to}`, result.id);
+      return { success: true, method: 'resend', id: result.id };
+    } catch (e) {
+      console.error(`⚠️ [sendEmail] Erreur Resend: ${e.message}`);
+    }
+  }
+  
+  // Fallback vers SMTP (nodemailer)
+  if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: Number(SMTP_PORT),
+        secure: Number(SMTP_PORT) === 465,
+        auth: {
+          user: SMTP_USER,
+          pass: SMTP_PASS,
+        },
+      });
+      
+      const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
+      const result = await transporter.sendMail({
+        from,
+        to,
+        subject,
+        html,
+        text,
+      });
+      
+      console.log(`✅ [sendEmail] Email envoyé via SMTP à: ${to}`, result.messageId);
+      return { success: true, method: 'smtp', id: result.messageId };
+    } catch (e) {
+      console.error(`⚠️ [sendEmail] Erreur SMTP: ${e.message}`);
+    }
+  }
+  
+  console.error(`❌ [sendEmail] Aucune méthode d'envoi d'email configurée`);
+  return { success: false, method: 'none' };
 }
 
 
@@ -107,31 +162,21 @@ export async function registerPatient(req, res) {
     
     console.log("✅ [registerPatient] Patient créé avec succès :", user._id);
 
-    // Send email with credentials using Resend (same as forgotPassword)
-    let emailSent = false;
-    const resend = initResend();
-    if (resend) {
-      try {
-        await resend.emails.send({
-          from: "MediCare <onboarding@resend.dev>",
-          to: user.email,
-          subject: 'Votre compte MediCare - Identifiants de connexion',
-          html: `<p>Bonjour <b>${user.prenom || ''} ${user.nom || ''}</b>,</p>
-                 <p>Votre compte <b>MediCare</b> a été créé avec succès.</p>
-                 <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
-                 <b>Mot de passe</b>: <code>${defaultPassword}</code></p>
-                 <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>
-                 <p>Cordialement,<br/>L'équipe MediCare</p>`,
-        });
-        emailSent = true;
-        console.log("📧 [registerPatient] Email envoyé avec succès à:", user.email);
-      } catch (e) {
-        emailSent = false;
-        console.error("⚠️ [registerPatient] Email non envoyé :", e.message);
-      }
-    } else {
-      console.log("⚠️ [registerPatient] Resend non configuré - Mot de passe par défaut:", defaultPassword);
-    }
+    // Send email with credentials (Resend or SMTP)
+    const emailResult = await sendEmail({
+      to: user.email,
+      subject: 'Votre compte MediCare - Identifiants de connexion',
+      text: `Bonjour ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé avec succès.\n\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nPar mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.\n\nCordialement,\nL'équipe MediCare`,
+      html: `<p>Bonjour <b>${user.prenom || ''} ${user.nom || ''}</b>,</p>
+             <p>Votre compte <b>MediCare</b> a été créé avec succès.</p>
+             <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
+             <b>Mot de passe</b>: <code>${defaultPassword}</code></p>
+             <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>
+             <p>Cordialement,<br/>L'équipe MediCare</p>`,
+    });
+    
+    const emailSent = emailResult.success;
+    console.log(`📧 [registerPatient] Résultat envoi email (${emailResult.method}):`, emailResult);
 
     return res.status(201).json({
       message: emailSent ? 'Patient créé avec succès. Un email a été envoyé avec les identifiants. Pensez à changer le mot de passe.' : "Patient créé avec succès. L'email n'a pas pu être envoyé, communiquez-lui ses identifiants et demandez-lui de changer le mot de passe dès la première connexion.",
