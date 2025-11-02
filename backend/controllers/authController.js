@@ -49,35 +49,30 @@ function initResend() {
   return resend;
 }
 
-// Fonction pour envoyer des emails avec Brevo, SMTP, ou Resend
+// Fonction pour envoyer des emails avec Resend, SMTP, ou Brevo
 async function sendEmail({ to, subject, html, text }) {
   const { RESEND_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
   
   console.log(`📧 [sendEmail] Tentative d'envoi à: ${to}`);
-  console.log(`📧 [sendEmail] Brevo configuré: ${!!RESEND_API_KEY}`);
+  console.log(`📧 [sendEmail] Resend configuré: ${!!RESEND_API_KEY}`);
   console.log(`📧 [sendEmail] SMTP configuré: ${!!SMTP_HOST && !!SMTP_USER}`);
   
-  // Essayer d'abord avec Brevo (utilise RESEND_API_KEY comme clé Brevo)
-  if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here') {
+  // Essayer d'abord avec Resend (prioritaire)
+  if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here' && RESEND_API_KEY.startsWith('re_')) {
     try {
-      console.log(`🔄 [sendEmail] Tentative Brevo...`);
-      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
-        to: [{ email: to }],
-        sender: { email: 'noreply@medicare.com', name: 'MediCare' },
+      console.log(`🔄 [sendEmail] Tentative Resend...`);
+      const resend = new Resend(RESEND_API_KEY);
+      const result = await resend.emails.send({
+        from: 'MediCare <onboarding@resend.dev>',
+        to,
         subject,
-        htmlContent: html,
-        textContent: text,
-      }, {
-        headers: {
-          'api-key': RESEND_API_KEY,
-          'Content-Type': 'application/json',
-        },
+        html,
       });
       
-      console.log(`✅ [sendEmail] Email envoyé via Brevo à: ${to}`, response.data.messageId);
-      return { success: true, method: 'brevo', id: response.data.messageId };
+      console.log(`✅ [sendEmail] Email envoyé via Resend à: ${to}`, result.id);
+      return { success: true, method: 'resend', id: result.id };
     } catch (e) {
-      console.error(`⚠️ [sendEmail] Erreur Brevo: ${e.message}`);
+      console.error(`⚠️ [sendEmail] Erreur Resend: ${e.message}`);
     }
   }
   
@@ -108,6 +103,30 @@ async function sendEmail({ to, subject, html, text }) {
       return { success: true, method: 'smtp', id: result.messageId };
     } catch (e) {
       console.error(`⚠️ [sendEmail] Erreur SMTP: ${e.message}`);
+    }
+  }
+  
+  // Fallback vers Brevo (si clé commence par SG.)
+  if (RESEND_API_KEY && RESEND_API_KEY.startsWith('SG.')) {
+    try {
+      console.log(`🔄 [sendEmail] Tentative Brevo (fallback)...`);
+      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+        to: [{ email: to }],
+        sender: { email: 'noreply@medicare.com', name: 'MediCare' },
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }, {
+        headers: {
+          'api-key': RESEND_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log(`✅ [sendEmail] Email envoyé via Brevo à: ${to}`, response.data.messageId);
+      return { success: true, method: 'brevo', id: response.data.messageId };
+    } catch (e) {
+      console.error(`⚠️ [sendEmail] Erreur Brevo: ${e.message}`);
     }
   }
   
@@ -554,29 +573,18 @@ export async function forgotPassword(req, res) {
     await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
     console.log(` [forgotPassword] Code stocké en BD pour: ${email}`);
 
-    // Utiliser Brevo pour envoyer l'email
-    const { RESEND_API_KEY } = process.env;
-    if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here') {
-      try {
-        console.log(`🔄 [forgotPassword] Envoi via Brevo...`);
-        const result = await axios.post('https://api.brevo.com/v3/smtp/email', {
-          to: [{ email }],
-          sender: { email: 'noreply@medicare.com', name: 'MediCare' },
-          subject: "Votre code de réinitialisation",
-          htmlContent: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
-          textContent: `Votre code de réinitialisation est ${code}. Il expire dans 10 minutes.`,
-        }, {
-          headers: {
-            'api-key': RESEND_API_KEY,
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`, result.data.messageId);
-      } catch (emailErr) {
-        console.error(`❌ [forgotPassword] Erreur envoi email: ${emailErr.message}`);
-      }
+    // Utiliser sendEmail pour envoyer l'email (Resend, SMTP, ou Brevo)
+    const emailResult = await sendEmail({
+      to: email,
+      subject: "Votre code de réinitialisation",
+      text: `Votre code de réinitialisation est ${code}. Il expire dans 10 minutes.`,
+      html: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
+    });
+    
+    if (emailResult.success) {
+      console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email} via ${emailResult.method}`);
     } else {
-      console.log(`⚠️ [forgotPassword] Brevo non configuré - Code: ${code} pour ${email}`);
+      console.log(`⚠️ [forgotPassword] Email non envoyé - Code: ${code} pour ${email}`);
     }
 
     return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
