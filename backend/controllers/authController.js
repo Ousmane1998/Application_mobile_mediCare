@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import { v2 as cloudinary } from "cloudinary";
 import { OAuth2Client } from "google-auth-library";
 import nodemailer from "nodemailer";
+import axios from "axios";
 
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
@@ -48,30 +49,42 @@ function initResend() {
   return resend;
 }
 
-// Fonction pour envoyer des emails avec fallback vers SMTP
+// Fonction pour envoyer des emails avec Brevo, SMTP, ou Resend
 async function sendEmail({ to, subject, html, text }) {
-  const { RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  const { RESEND_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
   
-  // Essayer d'abord avec Resend
-  if (RESEND_API_KEY && RESEND_FROM_EMAIL) {
+  console.log(`📧 [sendEmail] Tentative d'envoi à: ${to}`);
+  console.log(`📧 [sendEmail] Brevo configuré: ${!!RESEND_API_KEY}`);
+  console.log(`📧 [sendEmail] SMTP configuré: ${!!SMTP_HOST && !!SMTP_USER}`);
+  
+  // Essayer d'abord avec Brevo (utilise RESEND_API_KEY comme clé Brevo)
+  if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here') {
     try {
-      const resend = new Resend(RESEND_API_KEY);
-      const result = await resend.emails.send({
-        from: RESEND_FROM_EMAIL,
-        to,
+      console.log(`🔄 [sendEmail] Tentative Brevo...`);
+      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+        to: [{ email: to }],
+        sender: { email: 'noreply@medicare.com', name: 'MediCare' },
         subject,
-        html,
+        htmlContent: html,
+        textContent: text,
+      }, {
+        headers: {
+          'api-key': RESEND_API_KEY,
+          'Content-Type': 'application/json',
+        },
       });
-      console.log(`✅ [sendEmail] Email envoyé via Resend à: ${to}`, result.id);
-      return { success: true, method: 'resend', id: result.id };
+      
+      console.log(`✅ [sendEmail] Email envoyé via Brevo à: ${to}`, response.data.messageId);
+      return { success: true, method: 'brevo', id: response.data.messageId };
     } catch (e) {
-      console.error(`⚠️ [sendEmail] Erreur Resend: ${e.message}`);
+      console.error(`⚠️ [sendEmail] Erreur Brevo: ${e.message}`);
     }
   }
   
   // Fallback vers SMTP (nodemailer)
   if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
     try {
+      console.log(`🔄 [sendEmail] Tentative SMTP (fallback)...`);
       const transporter = nodemailer.createTransport({
         host: SMTP_HOST,
         port: Number(SMTP_PORT),
@@ -162,7 +175,8 @@ export async function registerPatient(req, res) {
     
     console.log("✅ [registerPatient] Patient créé avec succès :", user._id);
 
-    // Send email with credentials (Resend or SMTP)
+    // Send email with credentials (SMTP prioritaire, Resend fallback)
+    console.log(`📧 [registerPatient] Envoi de l'email à: ${user.email}`);
     const emailResult = await sendEmail({
       to: user.email,
       subject: 'Votre compte MediCare - Identifiants de connexion',
@@ -176,7 +190,7 @@ export async function registerPatient(req, res) {
     });
     
     const emailSent = emailResult.success;
-    console.log(`📧 [registerPatient] Résultat envoi email (${emailResult.method}):`, emailResult);
+    console.log(`📧 [registerPatient] Résultat final (${emailResult.method}): success=${emailResult.success}`);
 
     return res.status(201).json({
       message: emailSent ? 'Patient créé avec succès. Un email a été envoyé avec les identifiants. Pensez à changer le mot de passe.' : "Patient créé avec succès. L'email n'a pas pu être envoyé, communiquez-lui ses identifiants et demandez-lui de changer le mot de passe dès la première connexion.",
@@ -540,21 +554,29 @@ export async function forgotPassword(req, res) {
     await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
     console.log(` [forgotPassword] Code stocké en BD pour: ${email}`);
 
-    const resend = initResend();
-    if (resend) {
+    // Utiliser Brevo pour envoyer l'email
+    const { RESEND_API_KEY } = process.env;
+    if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here') {
       try {
-        const result = await resend.emails.send({
-          from: "MediCare <onboarding@resend.dev>",
-          to: email,
+        console.log(`🔄 [forgotPassword] Envoi via Brevo...`);
+        const result = await axios.post('https://api.brevo.com/v3/smtp/email', {
+          to: [{ email }],
+          sender: { email: 'noreply@medicare.com', name: 'MediCare' },
           subject: "Votre code de réinitialisation",
-          html: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
+          htmlContent: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
+          textContent: `Votre code de réinitialisation est ${code}. Il expire dans 10 minutes.`,
+        }, {
+          headers: {
+            'api-key': RESEND_API_KEY,
+            'Content-Type': 'application/json',
+          },
         });
-        console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`, result);
+        console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`, result.data.messageId);
       } catch (emailErr) {
         console.error(`❌ [forgotPassword] Erreur envoi email: ${emailErr.message}`);
       }
     } else {
-      console.log(`⚠️ [forgotPassword] Resend non configuré - Code: ${code} pour ${email}`);
+      console.log(`⚠️ [forgotPassword] Brevo non configuré - Code: ${code} pour ${email}`);
     }
 
     return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });
