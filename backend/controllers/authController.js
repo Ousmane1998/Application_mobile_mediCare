@@ -49,37 +49,18 @@ function initResend() {
   return resend;
 }
 
-// Fonction pour envoyer des emails avec Resend, SMTP, ou Brevo
+// Fonction pour envoyer des emails avec SMTP, Resend, ou Brevo
 async function sendEmail({ to, subject, html, text }) {
-  const { RESEND_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  const { RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
   
   console.log(`📧 [sendEmail] Tentative d'envoi à: ${to}`);
-  console.log(`📧 [sendEmail] Resend configuré: ${!!RESEND_API_KEY}`);
   console.log(`📧 [sendEmail] SMTP configuré: ${!!SMTP_HOST && !!SMTP_USER}`);
+  console.log(`📧 [sendEmail] Resend configuré: ${!!RESEND_API_KEY}`);
   
-  // Essayer d'abord avec Resend (prioritaire)
-  if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here' && RESEND_API_KEY.startsWith('re_')) {
-    try {
-      console.log(`🔄 [sendEmail] Tentative Resend...`);
-      const resend = new Resend(RESEND_API_KEY);
-      const result = await resend.emails.send({
-        from: 'MediCare <onboarding@resend.dev>',
-        to,
-        subject,
-        html,
-      });
-      
-      console.log(`✅ [sendEmail] Email envoyé via Resend à: ${to}`, result.id);
-      return { success: true, method: 'resend', id: result.id };
-    } catch (e) {
-      console.error(`⚠️ [sendEmail] Erreur Resend: ${e.message}`);
-    }
-  }
-  
-  // Fallback vers SMTP (nodemailer)
+  // Essayer d'abord avec SMTP (prioritaire - plus fiable)
   if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
     try {
-      console.log(`🔄 [sendEmail] Tentative SMTP (fallback)...`);
+      console.log(`🔄 [sendEmail] Tentative SMTP...`);
       const transporter = nodemailer.createTransport({
         host: SMTP_HOST,
         port: Number(SMTP_PORT),
@@ -103,6 +84,26 @@ async function sendEmail({ to, subject, html, text }) {
       return { success: true, method: 'smtp', id: result.messageId };
     } catch (e) {
       console.error(`⚠️ [sendEmail] Erreur SMTP: ${e.message}`);
+    }
+  }
+  
+  // Fallback vers Resend
+  if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here' && RESEND_API_KEY.startsWith('re_')) {
+    try {
+      console.log(`🔄 [sendEmail] Tentative Resend (fallback)...`);
+      const resend = new Resend(RESEND_API_KEY);
+      const fromEmail = RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+      const result = await resend.emails.send({
+        from: `MediCare <${fromEmail}>`,
+        to,
+        subject,
+        html,
+      });
+      
+      console.log(`✅ [sendEmail] Email envoyé via Resend à: ${to}`, result.id);
+      return { success: true, method: 'resend', id: result.id };
+    } catch (e) {
+      console.error(`⚠️ [sendEmail] Erreur Resend: ${e.message}`);
     }
   }
   
