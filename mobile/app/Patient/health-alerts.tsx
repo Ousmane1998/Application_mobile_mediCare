@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getProfile, getMeasuresHistory, getAdvices } from "@/utils/api";
-import PageContainer from "../../components/PageContainer";
 
 type Measure = {
   _id: string;
@@ -145,7 +144,7 @@ const HealthAlertScreen = () => {
   console.log("✅ Mesures normales:", normalMeasures.length);
 
   return (
-    <PageContainer style={styles.container}>
+    <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
@@ -261,7 +260,7 @@ const HealthAlertScreen = () => {
           <Text style={styles.noAlertSubtitle}>Continuez votre excellent travail !</Text>
         </View>
       )}
-    </PageContainer>
+    </ScrollView>
   );
 };
 

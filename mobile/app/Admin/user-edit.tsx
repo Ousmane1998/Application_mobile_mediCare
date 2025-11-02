@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -83,17 +82,17 @@ export default function UserEditPage() {
 
   if (loading) {
     return (
-      <PageContainer style={styles.container}>
+      <ScrollView style={styles.container}>
         <Header />
         <View style={styles.centerContent}>
           <Text style={styles.loadingText}>Chargement...</Text>
         </View>
-      </PageContainer>
+      </ScrollView>
     );
   }
 
   return (
-    <PageContainer scroll style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
       <Header />
 
       <Text style={styles.title}>Modifier l'utilisateur</Text>
@@ -186,7 +185,7 @@ export default function UserEditPage() {
           <Text style={styles.btnText}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Text>
         </TouchableOpacity>
       </View>
-    </PageContainer>
+    </ScrollView>
   );
 }
 

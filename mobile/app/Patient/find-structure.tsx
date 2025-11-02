@@ -158,7 +158,7 @@ export default function FindStructureScreen() {
           </MapView>
 
           <ScrollView style={styles.list}>
-            <Text style={styles.listTitle}>
+            <Text key="title" style={styles.listTitle}>
               {structures.length} structure(s) à moins de 10 km
             </Text>
             {structures.map((s) => (
