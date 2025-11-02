@@ -96,6 +96,30 @@ export const getAppointments = async (req, res) => {
   }
 };
 
+export const getAppointmentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.user) return res.status(401).json({ message: 'Non authentifié' });
+    
+    const appointment = await Appointment.findById(id).populate("patientId medecinId");
+    if (!appointment) return res.status(404).json({ message: 'Rendez-vous non trouvé' });
+    
+    // Vérifier que l'utilisateur a accès à ce rendez-vous
+    const isDoctor = String(appointment.medecinId._id || appointment.medecinId) === String(req.user._id);
+    const isPatient = String(appointment.patientId._id || appointment.patientId) === String(req.user._id);
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isDoctor && !isPatient && !isAdmin) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    
+    console.log('📅 [getAppointmentById] Rendez-vous récupéré :', id);
+    res.json({ appointment });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;

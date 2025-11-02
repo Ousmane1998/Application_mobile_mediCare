@@ -1,6 +1,6 @@
 // routes/appointmentRoutes.js
 import express from "express";
-import { createAppointment, getAppointments, updateAppointment } from "../controllers/appointmentController.js";
+import { createAppointment, getAppointments, getAppointmentById, updateAppointment } from "../controllers/appointmentController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -75,6 +75,7 @@ const router = express.Router();
 
 router.post("/", authMiddleware, createAppointment);
 router.get("/", authMiddleware, getAppointments);
+router.get("/:id", authMiddleware, getAppointmentById);
 router.put("/:id", authMiddleware, updateAppointment);
 
 export default router;

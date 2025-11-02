@@ -48,11 +48,22 @@ export const sendMessage = async (req, res) => {
         ? `Message vocal (${voiceDuration}s)` 
         : `Nouveau message: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`;
       
+      // Récupérer les infos du sender pour la notification
+      const User = (await import("../models/User.js")).default;
+      const sender = await User.findById(senderId);
+      
       await Notification.create({
         userId: receiverId,
         type: 'message',
         message: notifMsg,
-        data: { messageId: message._id, senderId },
+        data: { 
+          messageId: message._id, 
+          senderId,
+          patientId: senderId,
+          patientName: sender ? `${sender.prenom} ${sender.nom}` : 'Patient',
+          prenom: sender?.prenom,
+          nom: sender?.nom
+        },
         isRead: false,
       });
       console.log("✅ [sendMessage] Notification créée pour :", receiverId);

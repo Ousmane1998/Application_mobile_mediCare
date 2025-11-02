@@ -157,12 +157,13 @@ export default function FindStructureScreen() {
             ))}
           </MapView>
 
-          <ScrollView style={styles.list}>
+          <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
             <Text key="title" style={styles.listTitle}>
               {structures.length} structure(s) à moins de 10 km
             </Text>
-            {structures.map((s) => (
-              <View key={s._id} style={styles.card}>
+            <View key="structures-list">
+              {structures.map((s) => (
+                <View key={s._id} style={styles.card}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Ionicons
                     name={
@@ -204,7 +205,8 @@ export default function FindStructureScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+              ))}
+            </View>
           </ScrollView>
         </>
       ) : (

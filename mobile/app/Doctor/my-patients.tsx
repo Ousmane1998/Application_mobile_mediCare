@@ -111,7 +111,10 @@ export default function MyPatientsScreen() {
               {!!p.pathologie && <Text style={styles.sub}>{p.pathologie}</Text>}
               {!!p.telephone && <Text style={styles.sub}>Tel: {p.telephone}</Text>}
             </View>
-            <TouchableOpacity style={styles.btn} onPress={() => router.push({ pathname: '/Doctor/patient/[id]' as any, params: { id: p.id } } as any)}>
+            <TouchableOpacity style={styles.btn} onPress={() => router.push({ pathname: '/Doctor/chat', params: { patientId: p.id, patientName: `${p.prenom} ${p.nom}` } } as any)}>
+              <Ionicons name="chatbox-outline" size={18} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.btn, { marginLeft: 8 }]} onPress={() => router.push({ pathname: '/Doctor/patient/[id]' as any, params: { id: p.id } } as any)}>
               <Ionicons name="chevron-forward" size={18} color="#fff" />
             </TouchableOpacity>
           </View>

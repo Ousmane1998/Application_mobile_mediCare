@@ -305,8 +305,8 @@ export default function PatientAppointmentNewScreen() {
           <TouchableOpacity onPress={onNextMonth}><Text style={{ color: theme.colors.text }}>{'>'}</Text></TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-          {['D','L','M','M','J','V','S'].map(k => (
-            <Text key={k} style={{ width: 40, textAlign: 'center', color: theme.colors.muted }}>{k}</Text>
+          {['D','L','M','M','J','V','S'].map((k, i) => (
+            <Text key={`weekday-${i}`} style={{ width: 40, textAlign: 'center', color: theme.colors.muted }}>{k}</Text>
           ))}
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
@@ -315,7 +315,7 @@ export default function PatientAppointmentNewScreen() {
             const selected = !!d && d === selectedDay && !disabled;
             return (
               <TouchableOpacity
-                key={idx}
+                key={`day-${monthRef.year}-${monthRef.month}-${idx}`}
                 disabled={disabled}
                 onPress={() => {
                   if (!d) return;

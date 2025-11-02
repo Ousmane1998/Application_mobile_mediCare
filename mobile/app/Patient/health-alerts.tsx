@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { getProfile, getMeasuresHistory, getAdvices } from "@/utils/api";
 
 type Measure = {
@@ -73,6 +74,7 @@ const getColorForMeasure = (type: string, severity: string) => {
 };
 
 const HealthAlertScreen = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [measures, setMeasures] = useState<Measure[]>([]);
   const [advices, setAdvices] = useState<Advice[]>([]);
@@ -147,7 +149,7 @@ const HealthAlertScreen = () => {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mes Alertes de Santé</Text>

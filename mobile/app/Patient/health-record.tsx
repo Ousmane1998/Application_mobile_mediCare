@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert, Share, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getMyHealthRecord, getMedecins, type HealthRecord, type AppUser, createNotification, getProfile, ORG_NAME, ORG_LOGO, SECURE_FICHE_BASE, createFicheShareToken, SOCKET_URL, getMeasuresHistory, getOrdonnances } from '../../utils/api';
@@ -20,6 +20,8 @@ export default function PatientHealthRecordScreen() {
   const [doctors, setDoctors] = useState<AppUser[]>([]);
   const [exporting, setExporting] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [measures, setMeasures] = useState<any[]>([]);
+  const [ordonnances, setOrdonnances] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -32,6 +34,25 @@ export default function PatientHealthRecordScreen() {
         // Charger la fiche de santé
         const r = await getMyHealthRecord();
         setRec(r);
+        
+        // Charger les mesures
+        try {
+          const measuresData = await getMeasuresHistory(prof.user._id);
+          setMeasures(Array.isArray(measuresData) ? measuresData : []);
+        } catch (e: any) {
+          console.warn('⚠️ Erreur chargement mesures:', e?.message);
+          setMeasures([]);
+        }
+        
+        // Charger les ordonnances
+        try {
+          const ordonnancesData = await getOrdonnances();
+          setOrdonnances(Array.isArray(ordonnancesData) ? ordonnancesData : []);
+        } catch (e: any) {
+          console.warn('⚠️ Erreur chargement ordonnances:', e?.message);
+          setOrdonnances([]);
+        }
+        
         try {
           const p = await getProfile();
           setProfile(p?.user || null);
@@ -63,10 +84,11 @@ export default function PatientHealthRecordScreen() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
+          <Ionicons name="chevron-back" size={22} color={theme.colors.text} marginTop={25} />
         </TouchableOpacity>
         <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Ma fiche de santé</Text>
       </View>
@@ -286,6 +308,7 @@ export default function PatientHealthRecordScreen() {
           
           setQrCodeUrl(qrUrl);
           setShareOpen(true);
+          Alert.alert('QR Code', 'QR Code généré avec succès !');
         } catch (e: any) {
           console.error('❌ Erreur QR Code:', e);
           Alert.alert('Erreur', e?.message || 'Impossible de générer le QR Code');
@@ -336,13 +359,42 @@ export default function PatientHealthRecordScreen() {
         <Text style={styles.exportText}>{exporting ? 'Génération…' : 'Exporter en PDF'}</Text>
       </TouchableOpacity>
 
-      <View style={{ height: 8 }} />
-      <TouchableOpacity style={styles.shareBtn} onPress={() => setShareOpen(true)}>
-        <Ionicons name="share-social-outline" size={20} color="#fff" />
-        <Text style={styles.shareText}>Partager</Text>
-      </TouchableOpacity>
     </ScrollView>
-    
+
+    {/* Modal QR Code */}
+    <Modal visible={shareOpen} transparent animationType="fade" onRequestClose={() => setShareOpen(false)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>QR Code de votre fiche</Text>
+            <TouchableOpacity onPress={() => setShareOpen(false)}>
+              <Ionicons name="close" size={24} color="#111827" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.qrSection}>
+            <Text style={styles.qrTitle}>Scannez ce code pour accéder à votre fiche</Text>
+            <View style={styles.qrContainer}>
+              {qrCodeUrl ? (
+                <View style={styles.qrBox}>
+                  <Image source={{ uri: qrCodeUrl }} style={{ width: 140, height: 140 }} />
+                </View>
+              ) : (
+                <View style={styles.qrBox}>
+                  <ActivityIndicator size="large" color="#2ccdd2" />
+                </View>
+              )}
+            </View>
+            <Text style={styles.qrSubtitle}>Partagez ce code avec vos médecins</Text>
+          </View>
+
+          <TouchableOpacity style={styles.closeBtn} onPress={() => setShareOpen(false)}>
+            <Text style={styles.closeBtnText}>Fermer</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+    </View>
   );
 }
 
@@ -354,7 +406,7 @@ const styles = StyleSheet.create({
   
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  cardTitle: { fontSize: 16, color: '#111827', fontWeight: '600' },
+  cardTitle: { fontSize: 16, color: '#111827', fontWeight: '600', marginTop:30 },
   idBadge: { fontSize: 12, color: '#6B7280', backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   
   infoGrid: { flexDirection: 'row', gap: 16, marginBottom: 12 },

@@ -1,14 +1,17 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function NavPatient() {
+  const pathname = usePathname();
+  const isChatPage = pathname.includes('/chat');
+
   return (
     <Tabs screenOptions={{ 
       headerShown: false, 
       tabBarActiveTintColor: '#2ccdd2',
       tabBarInactiveTintColor: '#9CA3AF',
-      tabBarStyle: {
+      tabBarStyle: isChatPage ? { display: 'none' } : {
         backgroundColor: '#fff',
         borderTopColor: '#E5E7EB',
         borderTopWidth: 1,

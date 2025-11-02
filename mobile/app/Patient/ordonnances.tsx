@@ -8,10 +8,14 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { authFetch, getProfile } from '../../utils/api';
+import QRCode from 'react-native-qrcode-svg';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 type Ordonnance = {
   _id: string;
@@ -90,6 +94,25 @@ export default function OrdonnancesScreen() {
     setRefreshing(false);
   };
 
+  const handleShare = async (ordonnance: Ordonnance) => {
+    try {
+      const medicamentsText = ordonnance.medicaments
+        .map((m) => `- ${m.nom} (${m.dosage}, ${m.frequence}, ${m.duree})`)
+        .join('\n');
+
+      const message = `Ordonnance de Dr ${ordonnance.medecin.prenom} ${ordonnance.medecin.nom}\n\nMédicaments:\n${medicamentsText}\n\nDate: ${new Date(ordonnance.dateEmission).toLocaleDateString('fr-FR')}`;
+
+      await Share.share({
+        message,
+        title: 'Partager l\'ordonnance',
+      });
+      console.log('✅ [Ordonnance] Partagée');
+    } catch (err: any) {
+      console.error('❌ Erreur partage :', err);
+      Alert.alert('Erreur', 'Impossible de partager l\'ordonnance');
+    }
+  };
+
   const handleDownloadPDF = async (ordonnance: Ordonnance) => {
     try {
       console.log('📥 [Ordonnance] Téléchargement PDF :', ordonnance._id);
@@ -97,14 +120,21 @@ export default function OrdonnancesScreen() {
       // Générer le contenu du PDF
       const pdfContent = generatePDFContent(ordonnance);
       
-      // Afficher un message de succès
-      Alert.alert(
-        'PDF Généré',
-        'L\'ordonnance a été générée avec succès.\n\nEn production, le PDF sera téléchargé automatiquement.',
-        [{ text: 'OK' }]
-      );
+      // Créer un fichier texte (simulation PDF)
+      const fileName = `ordonnance_${ordonnance._id.substring(0, 8)}.txt`;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
       
-      console.log('✅ [Ordonnance] PDF généré');
+      // Écrire le contenu dans le fichier
+      await FileSystem.writeAsStringAsync(filePath, pdfContent);
+      console.log('✅ [Ordonnance] Fichier créé :', filePath);
+      
+      // Partager le fichier
+      await Sharing.shareAsync(filePath, {
+        mimeType: 'text/plain',
+        dialogTitle: 'Télécharger l\'ordonnance',
+      });
+      
+      console.log('✅ [Ordonnance] PDF partagé');
     } catch (err: any) {
       console.error('❌ Erreur téléchargement :', err);
       Alert.alert('Erreur', 'Impossible de générer le PDF');
@@ -150,7 +180,7 @@ QR CODE: [À générer avec une librairie QR]
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setSelectedOrdonnance(null)}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={25} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Détails Ordonnance</Text>
           <View style={{ width: 24 }} />
@@ -210,17 +240,12 @@ QR CODE: [À générer avec une librairie QR]
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Code QR</Text>
           <View style={styles.qrPlaceholder}>
-            <View style={styles.qrCodeBox}>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-              <Text style={styles.qrCodeText}>█ █ █ █ █ █ █ █ █</Text>
-            </View>
+            <QRCode
+              value={selectedOrdonnance._id}
+              size={200}
+              color="black"
+              backgroundColor="white"
+            />
             <Text style={styles.qrText}>Scannez ce code pour vérifier l'ordonnance</Text>
             <Text style={styles.qrSubtext}>{selectedOrdonnance._id.substring(0, 12)}...</Text>
           </View>
@@ -238,9 +263,7 @@ QR CODE: [À générer avec une librairie QR]
 
           <TouchableOpacity
             style={styles.shareButton}
-            onPress={() => {
-              Alert.alert('Partage', 'Partager cette ordonnance avec...');
-            }}
+            onPress={() => handleShare(selectedOrdonnance)}
           >
             <Ionicons name="share-social-outline" size={18} color="#fff" />
             <Text style={styles.buttonText}>Partager</Text>
@@ -307,7 +330,7 @@ QR CODE: [À générer avec une librairie QR]
 const styles = StyleSheet.create({
   container: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingTop: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: '#111827' },
+  headerTitle: { fontSize: 20, fontWeight: '600', color: '#111827', marginTop: 25 },
   
   errorBox: { backgroundColor: '#FEE2E2', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   errorText: { color: '#DC2626', flex: 1 },
