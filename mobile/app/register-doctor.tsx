@@ -1,7 +1,8 @@
 // @ts-nocheck
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authRegisterDoctor } from '../utils/api';
 
 export default function RegisterDoctorScreen() {
@@ -17,12 +18,50 @@ export default function RegisterDoctorScreen() {
   const [hopital, setHopital] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isUserConnected, setIsUserConnected] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const sanitize = (s: string) => s.replace(/[\t\n\r]+/g, ' ').trim();
   const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s);
   const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s);
   const normalizePhone = (s: string) => s.replace(/\D+/g, '');
   const isPhone = (digits: string) => /^7\d{8}$/.test(digits);
+
+  // Vérifier si l'utilisateur est connecté
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        const role = await AsyncStorage.getItem('userRole');
+        
+        console.log('🔍 [RegisterDoctor] Vérification connexion:', { token: !!token, role });
+        
+        if (token && role) {
+          setIsUserConnected(true);
+          setUserRole(role);
+          console.log('✅ [RegisterDoctor] Utilisateur connecté:', { role });
+        } else {
+          setIsUserConnected(false);
+          setUserRole(null);
+          console.log('❌ [RegisterDoctor] Aucun utilisateur connecté');
+        }
+      } catch (err) {
+        console.error('⚠️ [RegisterDoctor] Erreur vérification connexion:', err);
+        setIsUserConnected(false);
+        setUserRole(null);
+      }
+    };
+    
+    checkConnection();
+  }, []);
+
+  // Nettoyer les erreurs quand le composant se démonte
+  useEffect(() => {
+    return () => {
+      setError(null);
+      setSaving(false);
+    };
+  }, []);
 
   const validate = () => {
     const n = sanitize(nom);
@@ -63,9 +102,28 @@ export default function RegisterDoctorScreen() {
       });
 
       console.log('✅ [RegisterDoctor] Inscription réussie:', result);
-      Alert.alert('Succès', 'Inscription réussie! Un email avec vos identifiants a été envoyé.', [
-        { text: 'OK', onPress: () => router.replace('/login') }
-      ]);
+      
+      // Vérifier à nouveau si l'utilisateur est toujours connecté
+      const currentToken = await AsyncStorage.getItem('authToken');
+      const currentRole = await AsyncStorage.getItem('userRole');
+      const isAdmin = currentToken && currentRole && 
+        (currentRole === 'admin' || String(currentRole).toLowerCase() === 'admin');
+      
+      console.log('🔍 [RegisterDoctor] Vérification admin finale:', { isAdmin, currentRole });
+      
+      if (isAdmin) {
+        // Admin connecté → rediriger vers le dashboard admin
+        console.log('👨‍💼 [RegisterDoctor] Admin connecté → Redirection vers Admin/dashboard');
+        Alert.alert('Succès', 'Médecin inscrit avec succès! Un email avec ses identifiants a été envoyé.', [
+          { text: 'OK', onPress: () => router.replace('/Admin/dashboard') }
+        ]);
+      } else {
+        // Pas connecté → rediriger vers login
+        console.log('🔓 [RegisterDoctor] Non connecté → Redirection vers login');
+        Alert.alert('Succès', 'Inscription réussie! Un email avec vos identifiants a été envoyé.', [
+          { text: 'OK', onPress: () => router.replace('/login') }
+        ]);
+      }
     } catch (err: any) {
       console.error('❌ [RegisterDoctor] Erreur:', err.message);
       setError(err.message || 'Erreur lors de l\'inscription');
@@ -75,19 +133,16 @@ export default function RegisterDoctorScreen() {
 
   // Keep focused field visible when keyboard appears
   const scrollRef = useRef<ScrollView>(null);
-  const inputRefs = useRef<Record<string, TextInput | null>>({});
-  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
   const scrollIntoView = (key: string) => {
-    const input = inputRefs.current[key];
-    const sc = scrollRef.current as any;
-    if (!input || !sc) return;
-    requestAnimationFrame(() => {
-      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
-      if (!containerNode || !input.measureLayout) return;
-      input.measureLayout(containerNode, (_x: number, y: number) => {
-        sc.scrollTo({ y: Math.max(y - 24, 0), animated: true });
-      }, () => {});
-    });
+    // Simplified scroll - just scroll down a bit when field is focused
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+  
+  // Register refs (needed for TextInput refs, even if not used for scroll)
+  const register = (key: string) => (el: any) => {
+    // Just a placeholder - we don't need to store these refs anymore
   };
 
   return (
@@ -217,10 +272,20 @@ export default function RegisterDoctorScreen() {
         <Text style={styles.primaryBtnText}>{saving ? 'Envoi…' : "S'inscrire"}</Text>
       </TouchableOpacity>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Déjà un compte ? </Text>
-        <Text style={styles.link} onPress={() => router.replace('/login')}>Connectez-vous</Text>
-      </View>
+      {/* Afficher le lien de connexion SEULEMENT si l'utilisateur n'est pas connecté */}
+      {!isUserConnected && (
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Déjà un compte ? </Text>
+          <Text style={styles.link} onPress={() => router.replace('/login')}>Connectez-vous</Text>
+        </View>
+      )}
+
+      {/* Afficher un message si l'admin est connecté */}
+      {isUserConnected && (userRole === 'admin' || String(userRole).toLowerCase() === 'admin') && (
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Vous êtes connecté en tant qu'admin</Text>
+        </View>
+      )}
 
       <Text style={styles.terms}>
         En vous inscrivant, vous acceptez notre Politique de confidentialité et nos Conditions d&apos;utilisation.

@@ -63,6 +63,7 @@ export default function AdminTabsLayout() {
         options={{
           title: 'Notifications',
           tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" color={color} size={size} />,
+          href: null, // Masquer de la barre de navigation
         }}
       />
       <Tabs.Screen
