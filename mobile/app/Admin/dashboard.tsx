@@ -12,6 +12,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [changing, setChanging] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'Tous' | 'medecin' | 'patient'>('Tous');
 
   useEffect(() => {
     (async () => {
@@ -38,6 +40,18 @@ export default function AdminDashboard() {
       }
     })();
   }, []);
+
+  // Filtrer les utilisateurs selon la recherche et le rôle
+  const filteredUsers = users.filter(u => {
+    // Filtre par rôle
+    if (roleFilter !== 'Tous' && String(u.role) !== roleFilter) return false;
+    
+    // Filtre par recherche
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const hay = `${u.nom||''} ${u.prenom||''} ${u.email||''} ${u.telephone||''}`.toLowerCase();
+    return hay.includes(q);
+  });
 
   const pendingDoctors = users.filter(u => String(u.role) === 'medecin' && !((u as any)?.active === true || String((u as any)?.status || '').toLowerCase() === 'active'));
   
@@ -136,6 +150,8 @@ export default function AdminDashboard() {
           placeholder="Rechercher un utilisateur..."
           placeholderTextColor="#9CA3AF"
           style={styles.search}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
       </View>
 
@@ -157,16 +173,34 @@ export default function AdminDashboard() {
       </TouchableOpacity>
 
       <View style={styles.chipsRow}>
-        <View style={styles.chipActive}><Text style={styles.chipTextActive}>Tous ({users.length})</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>Médecins ({users.filter(u => u.role === 'medecin').length})</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>Patients ({users.filter(u => u.role === 'patient').length})</Text></View>
+        <TouchableOpacity onPress={() => setRoleFilter('Tous')}>
+          <View style={roleFilter === 'Tous' ? styles.chipActive : styles.chip}>
+            <Text style={roleFilter === 'Tous' ? styles.chipTextActive : styles.chipText}>
+              Tous ({users.length})
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setRoleFilter('medecin')}>
+          <View style={roleFilter === 'medecin' ? styles.chipActive : styles.chip}>
+            <Text style={roleFilter === 'medecin' ? styles.chipTextActive : styles.chipText}>
+              Médecins ({users.filter(u => u.role === 'medecin').length})
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setRoleFilter('patient')}>
+          <View style={roleFilter === 'patient' ? styles.chipActive : styles.chip}>
+            <Text style={roleFilter === 'patient' ? styles.chipTextActive : styles.chipText}>
+              Patients ({users.filter(u => u.role === 'patient').length})
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* Liste d'utilisateurs */}
-      {users.length === 0 ? (
-        <View style={styles.emptyBox}><Text style={styles.emptyText}>Aucun utilisateur</Text></View>
+      {filteredUsers.length === 0 ? (
+        <View style={styles.emptyBox}><Text style={styles.emptyText}>{searchQuery ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur'}</Text></View>
       ) : (
-        users.map(u => (
+        filteredUsers.map(u => (
           <UserItem 
             key={u._id} 
             user={u}
@@ -204,9 +238,9 @@ export default function AdminDashboard() {
         </View>
       )}
 
-      {/* FAB - Stats */}
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/Admin/stats' as any)}>
-        <Ionicons name="bar-chart" size={26} color="#fff" />
+      {/* FAB - Inscription Médecin */}
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/register-doctor' as any)}>
+        <Ionicons name="person-add" size={26} color="#fff" />
       </TouchableOpacity>
     </ScrollView>
   );

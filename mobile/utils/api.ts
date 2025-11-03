@@ -128,6 +128,54 @@ export async function updatePhoto(photoBase64OrDataUrl: string) {
   return authFetch('/auth/updatePhoto', { method: 'POST', body: JSON.stringify({ photo: photoBase64OrDataUrl }) });
 }
 
+// Register Doctor (without authentication)
+export async function authRegisterDoctor(payload: {
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  age?: number;
+  adresse?: string;
+  specialite?: string;
+  hopital?: string;
+}) {
+  try {
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    
+    console.log('📝 [authRegisterDoctor] Envoi:', payload);
+    
+    const res = await fetch(`${API_URL}/auth/registerDoctor`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    
+    console.log('📝 [authRegisterDoctor] Statut:', res.status);
+    
+    const data = await res.json().catch(() => undefined);
+    console.log('📝 [authRegisterDoctor] Réponse:', data);
+    
+    if (!res.ok) {
+      const errorMessage = data?.message || data?.error || `Erreur HTTP ${res.status}`;
+      const error: any = new Error(errorMessage);
+      error.status = res.status;
+      throw error;
+    }
+    
+    // Sauvegarder le token si reçu
+    if (data?.token) {
+      await AsyncStorage.setItem('authToken', data.token);
+      console.log('✅ [authRegisterDoctor] Token sauvegardé');
+    }
+    
+    return data;
+  } catch (err: any) {
+    console.error('❌ [authRegisterDoctor] Erreur:', err.message);
+    throw err;
+  }
+}
+
 // Measures
 export type MeasureType = 'tension' | 'glycemie' | 'poids' | 'pouls' | 'temperature';
 export async function addMeasure(payload: { patientId: string; type: MeasureType; value: string; heure?: string; synced?: boolean; notes?: string }) {

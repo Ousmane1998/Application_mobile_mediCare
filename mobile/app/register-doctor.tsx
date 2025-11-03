@@ -1,65 +1,76 @@
 // @ts-nocheck
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import {FileSystemUploadType} from 'expo-file-system/build/legacy/FileSystem.types';
+import { authRegisterDoctor } from '../utils/api';
 
 export default function RegisterDoctorScreen() {
   const router = useRouter();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [prenom, setPrenom] = useState('');
+  const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [specialty, setSpecialty] = useState('');
-  const [licenseNumber, setLicenseNumber] = useState('');
-  const [clinicAddress, setClinicAddress] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [age, setAge] = useState('');
+  const [adresse, setAdresse] = useState('');
+  const [specialite, setSpecialite] = useState('');
   const [hopital, setHopital] = useState('');
-  const [password, setPassword] = useState('');
-  const [photo, setPhoto] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const handleUpload = () => {};
-
   const sanitize = (s: string) => s.replace(/[\t\n\r]+/g, ' ').trim();
-  const hasDanger = (s: string) => /[<>]/.test(s);
   const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s);
-  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s) && s.length <= 100;
+  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s);
   const normalizePhone = (s: string) => s.replace(/\D+/g, '');
   const isPhone = (digits: string) => /^7\d{8}$/.test(digits);
-  const isLicense = (s: string) => /^[A-Za-z0-9\-]{3,50}$/.test(s);
-  const strongPwd = (s: string) => /^(?=.*[A-Za-z])(?=.*\d).{8,64}$/.test(s);
 
   const validate = () => {
-    const fn = sanitize(firstName);
-    const ln = sanitize(lastName);
+    const n = sanitize(nom);
+    const p = sanitize(prenom);
     const em = sanitize(email);
-    const ph = normalizePhone(phone);
-    const sp = sanitize(specialty);
-    const lic = sanitize(licenseNumber);
-    const adr = sanitize(clinicAddress);
+    const ph = normalizePhone(telephone);
+    const ad = sanitize(adresse);
+    const sp = sanitize(specialite);
     const hop = sanitize(hopital);
-    const pw = password;
 
-    if ([fn, ln, em, ph, sp, lic, adr, hop, pw].some(v => v === '')) return 'Tous les champs sont requis.';
-    if ([fn, ln, sp, lic, adr, hop].some(hasDanger)) return 'Caractères interdits détectés (<, >).';
-    if (!isName(ln) || !isName(fn)) return 'Nom et prénom doivent comporter 2–50 lettres (accents autorisés).';
+    // Champs requis: nom, prenom, email, telephone
+    if (!n || !p || !em || !ph) return 'Champs requis: nom, prénom, email, téléphone.';
+    if (!isName(n) || !isName(p)) return 'Nom et prénom doivent comporter 2–50 lettres (accents autorisés).';
     if (!isEmail(em)) return 'Email invalide.';
     if (!isPhone(ph)) return "Téléphone invalide. Format attendu: 7XXXXXXXX.";
-    if (!isLicense(lic)) return "Numéro d'agrément invalide (3–50 alphanumériques et tirets).";
-    if (sp.length > 60 || hop.length > 80 || adr.length > 120) return 'Texte trop long.';
-    if (!strongPwd(pw)) return 'Mot de passe faible: 8–64 caractères, au moins une lettre et un chiffre.';
     return null;
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (saving) return;
     const v = validate();
     if (v) { setError(v); return; }
     setError(null);
     setSaving(true);
-    router.replace('/login');
+
+    try {
+      console.log('📝 [RegisterDoctor] Envoi des données:', { nom, prenom, email, telephone, adresse, specialite, hopital });
+      
+      const result = await authRegisterDoctor({
+        nom: sanitize(nom),
+        prenom: sanitize(prenom),
+        email: sanitize(email),
+        telephone: normalizePhone(telephone),
+        age: age ? Number(age) : undefined,
+        adresse: sanitize(adresse),
+        specialite: sanitize(specialite),
+        hopital: sanitize(hopital),
+      });
+
+      console.log('✅ [RegisterDoctor] Inscription réussie:', result);
+      Alert.alert('Succès', 'Inscription réussie! Un email avec vos identifiants a été envoyé.', [
+        { text: 'OK', onPress: () => router.replace('/login') }
+      ]);
+    } catch (err: any) {
+      console.error('❌ [RegisterDoctor] Erreur:', err.message);
+      setError(err.message || 'Erreur lors de l\'inscription');
+      setSaving(false);
+    }
   };
 
   // Keep focused field visible when keyboard appears
@@ -93,32 +104,33 @@ export default function RegisterDoctorScreen() {
       {error ? <Text style={{ color: '#DC2626', marginBottom: 8 }}>{error}</Text> : null}
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Nom</Text>
+        <Text style={styles.label}>Nom *</Text>
         <TextInput
-          ref={register('lastName')}
+          ref={register('nom')}
           style={styles.input}
           placeholder="Entrez votre nom"
-          value={lastName}
-          onChangeText={setLastName}
+          value={nom}
+          onChangeText={setNom}
           maxLength={50}
-          onFocus={() => scrollIntoView('lastName')}
+          onFocus={() => scrollIntoView('nom')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Prénom</Text>
+        <Text style={styles.label}>Prénom *</Text>
         <TextInput
-          ref={register('firstName')}
+          ref={register('prenom')}
           style={styles.input}
           placeholder="Entrez votre prénom"
-          value={firstName}
-          onChangeText={setFirstName}
-          onFocus={() => scrollIntoView('firstName')}
+          value={prenom}
+          onChangeText={setPrenom}
+          maxLength={50}
+          onFocus={() => scrollIntoView('prenom')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Adresse e-mail</Text>
+        <Text style={styles.label}>Adresse e-mail *</Text>
         <TextInput
           ref={register('email')}
           style={styles.input}
@@ -133,68 +145,54 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Numéro de téléphone</Text>
+        <Text style={styles.label}>Numéro de téléphone *</Text>
         <TextInput
-          ref={register('phone')}
+          ref={register('telephone')}
           style={styles.input}
           placeholder="77 123 45 67"
           keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
+          value={telephone}
+          onChangeText={setTelephone}
           maxLength={16}
-          onFocus={() => scrollIntoView('phone')}
+          onFocus={() => scrollIntoView('telephone')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text>Mot de passe</Text>
+        <Text style={styles.label}>Âge</Text>
         <TextInput
-          ref={register('password')}
+          ref={register('age')}
           style={styles.input}
-          placeholder="Entrez votre mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          maxLength={64}
-          secureTextEntry
-          onFocus={() => scrollIntoView('password')}
+          placeholder="Entrez votre âge"
+          keyboardType="number-pad"
+          value={age}
+          onChangeText={setAge}
+          maxLength={3}
+          onFocus={() => scrollIntoView('age')}
         />
       </View>
 
       <Text style={styles.sectionTitle}>Informations Professionnelles</Text>
 
-      
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Spécialité</Text>
         <TextInput
-          ref={register('specialty')}
+          ref={register('specialite')}
           style={styles.input}
-          placeholder="Cardiologue, generaliste,..."
-          value={specialty}
-          onChangeText={setSpecialty}
+          placeholder="Cardiologue, généraliste, ..."
+          value={specialite}
+          onChangeText={setSpecialite}
           maxLength={60}
-          onFocus={() => scrollIntoView('specialty')}
+          onFocus={() => scrollIntoView('specialite')}
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Numéro d&apos;ordre</Text>
-        <TextInput
-          ref={register('license')}
-          style={styles.input}
-          placeholder="Entrez votre numéro d'ordre"
-          value={licenseNumber}
-          onChangeText={setLicenseNumber}
-          maxLength={50}
-          onFocus={() => scrollIntoView('license')}
-        />
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Structure de rattachement</Text>
+        <Text style={styles.label}>Hôpital / Structure</Text>
         <TextInput
           ref={register('hopital')}
           style={styles.input}
-          placeholder="Entrez le nom du structure ou vous etes rattaché"
+          placeholder="Nom de votre hôpital ou structure"
           value={hopital}
           onChangeText={setHopital}
           maxLength={80}
@@ -203,24 +201,16 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Adresse de la structure</Text>
+        <Text style={styles.label}>Adresse</Text>
         <TextInput
-          ref={register('clinicAddress')}
+          ref={register('adresse')}
           style={styles.input}
-          placeholder="Entrez l'adresse de la structure"
-          value={clinicAddress}
-          onChangeText={setClinicAddress}
+          placeholder="Adresse de votre structure"
+          value={adresse}
+          onChangeText={setAdresse}
           maxLength={120}
-          onFocus={() => scrollIntoView('clinicAddress')}
+          onFocus={() => scrollIntoView('adresse')}
         />
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Photo</Text>
-        <Text>Telecharger une photo</Text>
-        <TouchableOpacity onPress={handleUpload}>
-          <Text>Telecharger une photo</Text>
-        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={[styles.primaryBtn, (saving || !!validate()) && { opacity: 0.7 }]} disabled={saving || !!validate()} onPress={onSubmit}>

@@ -59,6 +59,13 @@ export default function AdminTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
