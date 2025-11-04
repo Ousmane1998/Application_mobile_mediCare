@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, A
 import Header from '../../components/header';
 import { useRouter } from 'expo-router';
 import NavPatient from '../../components/navPatient';
-import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, getMedecinById, type AppointmentItem } from '../../utils/api';
+import { getProfile, getMeasuresHistory, getAppointments, getMessages, getNotifications, getMedecinById, getOfflineMeasures, syncOfflineMeasures, type AppointmentItem } from '../../utils/api';
 import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function PatientDashboardScreen() {
@@ -20,6 +20,8 @@ export default function PatientDashboardScreen() {
   const [nextAppt, setNextAppt] = useState<AppointmentItem | null>(null);
   const [recentMsg, setRecentMsg] = useState<any | null>(null);
   const [unread, setUnread] = useState<number>(0);
+  const [offlineMeasuresCount, setOfflineMeasuresCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     try {
@@ -29,14 +31,25 @@ export default function PatientDashboardScreen() {
       const fullName = `${prof.user?.prenom || ''} ${prof.user?.nom || ''}`.trim();
       setMeName(fullName);
       const history = await getMeasuresHistory(id);
-      const byType: Record<string, any> = {};
-      (Array.isArray(history) ? history : []).forEach((m: any) => {
-        const t = String(m.type || '').toLowerCase();
-        const cur = byType[t];
-        const time = new Date(m.date || m.createdAt || Date.now()).getTime();
-        if (!cur || time > cur._ts) byType[t] = { ...m, _ts: time };
-      });
-      setLatest(byType);
+      
+      // Trier toutes les mesures par date décroissante
+      const sortedMeasures = (Array.isArray(history) ? history : [])
+        .map((m: any) => ({ ...m, _ts: new Date(m.date || m.createdAt || Date.now()).getTime() }))
+        .sort((a: any, b: any) => b._ts - a._ts);
+      
+      // Garder les 2 derniers TYPES (dernières mesures de types différents)
+      const latest: Record<string, any> = {};
+      const seenTypes = new Set<string>();
+      
+      for (const measure of sortedMeasures) {
+        const type = String(measure.type || '').toLowerCase();
+        if (!seenTypes.has(type) && seenTypes.size < 2) {
+          latest[type] = measure;
+          seenTypes.add(type);
+        }
+      }
+      
+      setLatest(latest);
       
       // Rendez-vous: afficher le dernier rendez-vous confirmé ou en attente
       const appts = await getAppointments();
@@ -68,6 +81,10 @@ export default function PatientDashboardScreen() {
       const notifs = await getNotifications(id);
       const unreadCount = (Array.isArray(notifs) ? notifs : []).filter(n => !n.isRead).length;
       setUnread(unreadCount);
+
+      // Mesures hors ligne
+      const offlineMeasures = await getOfflineMeasures();
+      setOfflineMeasuresCount(offlineMeasures.length);
     } finally {
       setLoading(false);
     }
@@ -113,46 +130,75 @@ export default function PatientDashboardScreen() {
     router.push('/Patient/emergency-alert');
   };
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const result = await syncOfflineMeasures();
+      alert(result.message);
+      await load(); // Recharger les données
+    } catch (e: any) {
+      alert('Erreur lors de la synchronisation: ' + e.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Header />
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {meName || 'Patient'}!</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {meName || 'Patient'}!</Text>
+          {offlineMeasuresCount > 0 && (
+            <TouchableOpacity 
+              style={[styles.syncBtn, { backgroundColor: '#3B82F6', opacity: syncing ? 0.6 : 1 }]} 
+              onPress={handleSync}
+              disabled={syncing}
+            >
+              <Ionicons name="sync" size={16} color="#fff" style={{ marginRight: 6 }} />
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Sync ({offlineMeasuresCount})</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vos dernières mesures</Text>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.cardHeaderRow}>
-            <Ionicons name="trending-up-outline" size={24} color="green" />
-            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Glycémie</Text>
+        {gly && (
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderRow}>
+              <Ionicons name="trending-up-outline" size={24} color="green" />
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Glycémie</Text>
+            </View>
+            <Text style={[styles.bigValue, { color: theme.colors.text }]}>{gly?.value ? `${gly.value}` : '—'}</Text>
+            <Text style={styles.statusOk}>{gly?._ts ? getRelativeTime(gly.date || gly.createdAt) : 'Aucune donnée'}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+              <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
+                <Text style={styles.smallBtnText}>Ajouter</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/Patient/measures-history')}>
+                <Text style={{ color: theme.colors.primary }}>Voir l'historique</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text style={[styles.bigValue, { color: theme.colors.text }]}>{gly?.value ? `${gly.value}` : '—'}</Text>
-          <Text style={styles.statusOk}>{gly?._ts ? new Date(gly._ts).toLocaleString() : 'Aucune donnée'}</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
-              <Text style={styles.smallBtnText}>Ajouter</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/Patient/measures-history')}>
-              <Text style={{ color: theme.colors.primary }}>Voir l’historique</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        )}
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.cardHeaderRow}>
-            <Ionicons name="trending-up-outline" size={24} color="green" />
-            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Pression Artérielle</Text>
+        {tens && (
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderRow}>
+              <Ionicons name="trending-up-outline" size={24} color="green" />
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Pression Artérielle</Text>
+            </View>
+            <Text style={[styles.bigValue, { color: theme.colors.text }]}>{tens?.value ? `${tens.value}` : '—'}</Text>
+            <Text style={styles.statusWarn}>{tens?._ts ? getRelativeTime(tens.date || tens.createdAt) : 'Aucune donnée'}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+              <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
+                <Text style={styles.smallBtnText}>Ajouter</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/Patient/measures-history')}>
+                <Text style={{ color: theme.colors.primary }}>Voir l'historique</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text style={[styles.bigValue, { color: theme.colors.text }]}>{tens?.value ? `${tens.value}` : '—'}</Text>
-          <Text style={styles.statusWarn}>{tens?._ts ? new Date(tens._ts).toLocaleString() : 'Aucune donnée'}</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            <TouchableOpacity style={styles.smallBtn} onPress={() => router.push('/Patient/measure-add')}>
-              <Text style={styles.smallBtnText}>Ajouter</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/Patient/measures-history')}>
-              <Text style={{ color: theme.colors.primary }}>Voir l’historique</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        )}
 
         <TouchableOpacity style={[styles.findStructureBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} onPress={() => router.push('/Patient/find-structure')}>
           <Ionicons name="location-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
@@ -210,7 +256,8 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 32 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   menu: { fontSize: 22, color: '#111827' },
-  greeting: { marginTop: 16, fontSize: 24, color: '#111827' },
+  greeting: { marginTop: 16, fontSize: 24, color: '#111827', flex: 1 },
+  syncBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#3B82F6', marginTop: 16 },
   floatingEmergencyBtn: { position: 'absolute', bottom: 90, right: 20, width: 64, height: 64, borderRadius: 32, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, elevation: 10, zIndex: 100 },
   sectionTitle: { marginTop: 16, marginBottom: 8, fontSize: 16, color: '#111827' },
 

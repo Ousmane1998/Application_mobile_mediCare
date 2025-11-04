@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Platform,
   KeyboardAvoidingView,
+  Switch,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,7 @@ export default function PatientMeasureAddScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [offlineMode, setOfflineMode] = useState(false);
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: "success" | "error" | "info" }>({
     visible: false,
     message: "",
@@ -221,8 +223,21 @@ useEffect(() => {
       setSaving(true);
       setError(null);
       const dateISO = dateObj ? dateObj.toISOString() : undefined;
-      await addMeasure({ patientId: me.id, type, value: value.trim().replace(',', '.'), heure: dateISO, notes: notes.trim() || undefined });
-      setSnack({ visible: true, message: 'Mesure ajoutée.', type: 'success' });
+      const measureData = { patientId: me.id, type, value: value.trim().replace(',', '.'), heure: dateISO, notes: notes.trim() || undefined };
+
+      if (offlineMode) {
+        // Mode hors ligne : sauvegarder localement
+        const offlineMeasures = await AsyncStorage.getItem('offlineMeasures');
+        const measures = offlineMeasures ? JSON.parse(offlineMeasures) : [];
+        measures.push({ ...measureData, synced: false, createdAt: new Date().toISOString() });
+        await AsyncStorage.setItem('offlineMeasures', JSON.stringify(measures));
+        setSnack({ visible: true, message: '📱 Mesure sauvegardée localement. Elle sera synchronisée quand vous aurez une connexion.', type: 'success' });
+      } else {
+        // Mode en ligne : envoyer au serveur
+        await addMeasure(measureData);
+        setSnack({ visible: true, message: 'Mesure ajoutée.', type: 'success' });
+      }
+      
       setTimeout(() => router.back(), 800);
     } catch (e: any) {
       setError(e?.message || "Erreur lors de l'ajout");
@@ -237,14 +252,10 @@ useEffect(() => {
   const inputRefs = useRef<Record<string, TextInput | null>>({});
   const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
   const scrollIntoView = (key: string) => {
-    const input = inputRefs.current[key];
-    const sc = scrollRef.current as any;
-    if (!input || !sc) return;
-    requestAnimationFrame(() => {
-      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
-      if (!containerNode || !input.measureLayout) return;
-      input.measureLayout(containerNode, (_x: number, y: number) => sc.scrollTo({ y: Math.max(y - 24, 0), animated: true }), () => {});
-    });
+    // Simplified scroll behavior - just scroll down a bit
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   return (
@@ -332,6 +343,21 @@ useEffect(() => {
         <TextInput ref={register('notes')} style={[styles.input, { minHeight: 90, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes} multiline placeholder="Ajouter une note..." onFocus={() => scrollIntoView('notes')} />
       </View>
 
+      <View style={[styles.group, styles.offlineModeContainer]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name={offlineMode ? "cloud-offline-outline" : "cloud-done-outline"} size={18} color={offlineMode ? "#EF4444" : "#10B981"} />
+            <Text style={styles.label}>Mode hors-ligne</Text>
+          </View>
+          <Switch value={offlineMode} onValueChange={setOfflineMode} />
+        </View>
+        {offlineMode && (
+          <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>
+            📱 Vos mesures seront sauvegardées localement et synchronisées automatiquement quand vous aurez une connexion.
+          </Text>
+        )}
+      </View>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TouchableOpacity style={[styles.primaryBtn, (saving || !!valueError) && { opacity: 0.7 }]} disabled={saving || !!valueError} onPress={onSave}>
@@ -366,7 +392,7 @@ const styles = StyleSheet.create({
   chipText: { color: "#111827", fontSize: 13 },
   group: { marginBottom: 12 },
   label: { fontSize: 13, color: "#374151", marginBottom: 6 },
- 
+  offlineModeContainer: { backgroundColor: "#FEF3C7", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#FCD34D" },
   input: {
     backgroundColor: "#fff",
     borderWidth: 1,

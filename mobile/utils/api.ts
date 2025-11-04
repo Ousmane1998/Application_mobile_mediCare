@@ -190,6 +190,74 @@ export async function getMeasures(patientId: string) {
   return authFetch(`/measures/${encodeURIComponent(patientId)}`);
 }
 
+// Offline Measures Sync
+export async function getOfflineMeasures() {
+  try {
+    const offlineMeasures = await AsyncStorage.getItem('offlineMeasures');
+    return offlineMeasures ? JSON.parse(offlineMeasures) : [];
+  } catch (e) {
+    console.error('❌ [getOfflineMeasures] Erreur:', e);
+    return [];
+  }
+}
+
+export async function syncOfflineMeasures() {
+  try {
+    const measures = await getOfflineMeasures();
+    if (measures.length === 0) {
+      console.log('✅ [syncOfflineMeasures] Aucune mesure à synchroniser');
+      return { synced: 0, failed: 0, message: 'Aucune mesure à synchroniser' };
+    }
+
+    let synced = 0;
+    let failed = 0;
+    const failedMeasures = [];
+
+    for (const measure of measures) {
+      try {
+        if (!measure.synced) {
+          console.log('📤 [syncOfflineMeasures] Synchronisation de:', measure.type);
+          await addMeasure({
+            patientId: measure.patientId,
+            type: measure.type,
+            value: measure.value,
+            heure: measure.heure,
+            notes: measure.notes,
+          });
+          synced++;
+        }
+      } catch (e: any) {
+        console.error('❌ [syncOfflineMeasures] Erreur sync:', e.message);
+        failed++;
+        failedMeasures.push(measure);
+      }
+    }
+
+    // Sauvegarder les mesures non synchronisées
+    if (failedMeasures.length > 0) {
+      await AsyncStorage.setItem('offlineMeasures', JSON.stringify(failedMeasures));
+    } else {
+      await AsyncStorage.removeItem('offlineMeasures');
+    }
+
+    const message = `✅ ${synced} mesure(s) synchronisée(s)${failed > 0 ? `, ${failed} échouée(s)` : ''}`;
+    console.log(message);
+    return { synced, failed, message };
+  } catch (e: any) {
+    console.error('❌ [syncOfflineMeasures] Erreur:', e.message);
+    return { synced: 0, failed: 0, message: 'Erreur lors de la synchronisation' };
+  }
+}
+
+export async function clearOfflineMeasures() {
+  try {
+    await AsyncStorage.removeItem('offlineMeasures');
+    console.log('✅ [clearOfflineMeasures] Mesures locales supprimées');
+  } catch (e) {
+    console.error('❌ [clearOfflineMeasures] Erreur:', e);
+  }
+}
+
 // Advices
 export async function getAdvices(patientId: string) {
   return authFetch(`/advices/${encodeURIComponent(patientId)}`);
