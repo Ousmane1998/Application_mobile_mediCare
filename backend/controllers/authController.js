@@ -448,12 +448,12 @@ export async function updatePhoto(req, res) {
     }
 
     // Ensure Cloudinary configured
-    if (!require('cloudinary').v2.config().cloud_name) {
+    if (!cloudinary.config().cloud_name) {
       return res.status(500).json({ message: "Stockage externe non configuré (Cloudinary)." });
     }
 
     // Upload
-    const uploadRes = await (await import('cloudinary')).v2.uploader.upload(`data:${mime};base64,${base64Data}` , {
+    const uploadRes = await cloudinary.uploader.upload(`data:${mime};base64,${base64Data}` , {
       folder: 'medicare/avatars',
       resource_type: 'image',
       overwrite: true,

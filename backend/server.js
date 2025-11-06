@@ -99,8 +99,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Start server
 const PORT = process.env.PORT || 5000;
 
-console.log("🔗 [SERVER] Tentative de connexion à MongoDB...");
-console.log("📌 [SERVER] MONGODB_URI :", process.env.MONGODB_URI ? "✅ Défini" : "❌ Non défini");
+console.log("[SERVER] Tentative de connexion à MongoDB...");
+console.log("[SERVER] MONGODB_URI :", process.env.MONGODB_URI ? "✅ Défini" : "❌ Non défini");
 
 connectDB(process.env.MONGODB_URI)
   .then(() => {
@@ -110,8 +110,8 @@ connectDB(process.env.MONGODB_URI)
     });
   })
   .catch((err) => {
-    console.error("❌ [SERVER] Erreur de connexion à la base de données :", err.message);
-    console.error("📌 [SERVER] Stack :", err.stack);
+    console.error("[SERVER] Erreur de connexion à la base de données :", err.message);
+    console.error("[SERVER] Stack :", err.stack);
     process.exit(1);
   });
 
