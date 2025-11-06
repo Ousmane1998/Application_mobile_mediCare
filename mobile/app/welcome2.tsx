@@ -15,7 +15,7 @@ export default function Welcome2Screen() {
   return (
     <View style={styles.container}>
       <View style={styles.illustration}>
-        <Image source={require('../assets/images/medicare chat.png')} style={{width: 250, height: 250}} />
+        <Image source={require('../assets/images/medicare chat.png')} style={{width: 250, height: 250, marginTop:40}} />
       </View>
 
       <View style={styles.content}>
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 50,
-    paddingBottom: 24,
+    paddingBottom: 40,
     justifyContent: 'space-between',
   },
   illustration: {

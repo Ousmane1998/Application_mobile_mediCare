@@ -173,13 +173,13 @@ export default function PatientMeasuresHistoryScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, marginTop: 24, paddingHorizontal: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={37}  />
           </TouchableOpacity>
           <Text style={styles.title}>Historique des mesures</Text>
         </View>
         <TouchableOpacity onPress={() => router.push('/Patient/measure-add')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 12 }}>
           <Ionicons name="add-circle-outline" size={20} color="#10B981" />
-          <Text style={{ color: '#10B981', fontWeight: '600', fontSize: 14 }}>Ajouter</Text>
+          <Text style={{ color: '#10B981', fontWeight: '600', fontSize: 14, }}>Ajouter</Text>
         </TouchableOpacity>
       </View>
 
@@ -355,7 +355,7 @@ export default function PatientMeasuresHistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 16 },
-  title: { fontSize: 20, color: '#111827' },
+  title: { fontSize: 20, color: '#111827',marginTop: 40 },
   chip: { backgroundColor: '#E5E7EB', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, marginRight: 8 },
   chipActive: { backgroundColor: '#2ccdd2', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, marginRight: 8 },
   chipText: { color: '#111827' },

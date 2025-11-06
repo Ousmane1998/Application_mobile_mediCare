@@ -1,6 +1,6 @@
 // @ts-nocheck
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import {FileSystemUploadType} from 'expo-file-system/build/legacy/FileSystem.types';
 import { formatPhone, normalizePhone, nextSelectionAtEnd } from '../utils/phone';
@@ -36,16 +36,49 @@ export default function RegisterDoctorScreen() {
   const [photo, setPhoto] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const handleUpload = () => {};
+  const [isUserConnected, setIsUserConnected] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const sanitize = (s: string) => s.replace(/[\t\n\r]+/g, ' ').trim();
-  const hasDanger = (s: string) => /[<>]/.test(s);
   const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s);
   const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s) && s.length <= 100;
   const isPhone = (digits: string) => /^7\d{8}$/.test(digits);
-  const isLicense = (s: string) => /^[A-Za-z0-9\-]{3,50}$/.test(s);
-  const strongPwd = (s: string) => /^(?=.*[A-Za-z])(?=.*\d).{8,64}$/.test(s);
+
+  // Vérifier si l'utilisateur est connecté
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        const role = await AsyncStorage.getItem('userRole');
+        
+        console.log('🔍 [RegisterDoctor] Vérification connexion:', { token: !!token, role });
+        
+        if (token && role) {
+          setIsUserConnected(true);
+          setUserRole(role);
+          console.log('✅ [RegisterDoctor] Utilisateur connecté:', { role });
+        } else {
+          setIsUserConnected(false);
+          setUserRole(null);
+          console.log('❌ [RegisterDoctor] Aucun utilisateur connecté');
+        }
+      } catch (err) {
+        console.error('⚠️ [RegisterDoctor] Erreur vérification connexion:', err);
+        setIsUserConnected(false);
+        setUserRole(null);
+      }
+    };
+    
+    checkConnection();
+  }, []);
+
+  // Nettoyer les erreurs quand le composant se démonte
+  useEffect(() => {
+    return () => {
+      setError(null);
+      setSaving(false);
+    };
+  }, []);
 
   const validate = () => {
     // conserve la validation globale comme sauvegarde
@@ -55,7 +88,7 @@ export default function RegisterDoctorScreen() {
     return null;
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (saving) return;
     fv.markAllTouched();
     if (!fv.isValid) { setError(null); return; }
@@ -63,24 +96,63 @@ export default function RegisterDoctorScreen() {
     if (v) { setError(v); return; }
     setError(null);
     setSaving(true);
-    router.replace('/login');
+
+    try {
+      console.log('📝 [RegisterDoctor] Envoi des données:', { nom, prenom, email, telephone, adresse, specialite, hopital });
+      
+      const result = await authRegisterDoctor({
+        nom: sanitize(nom),
+        prenom: sanitize(prenom),
+        email: sanitize(email),
+        telephone: normalizePhone(telephone),
+        age: age ? Number(age) : undefined,
+        adresse: sanitize(adresse),
+        specialite: sanitize(specialite),
+        hopital: sanitize(hopital),
+      });
+
+      console.log('✅ [RegisterDoctor] Inscription réussie:', result);
+      
+      // Vérifier à nouveau si l'utilisateur est toujours connecté
+      const currentToken = await AsyncStorage.getItem('authToken');
+      const currentRole = await AsyncStorage.getItem('userRole');
+      const isAdmin = currentToken && currentRole && 
+        (currentRole === 'admin' || String(currentRole).toLowerCase() === 'admin');
+      
+      console.log('🔍 [RegisterDoctor] Vérification admin finale:', { isAdmin, currentRole });
+      
+      if (isAdmin) {
+        // Admin connecté → rediriger vers le dashboard admin
+        console.log('👨‍💼 [RegisterDoctor] Admin connecté → Redirection vers Admin/dashboard');
+        Alert.alert('Succès', 'Médecin inscrit avec succès! Un email avec ses identifiants a été envoyé.', [
+          { text: 'OK', onPress: () => router.replace('/Admin/dashboard') }
+        ]);
+      } else {
+        // Pas connecté → rediriger vers login
+        console.log('🔓 [RegisterDoctor] Non connecté → Redirection vers login');
+        Alert.alert('Succès', 'Inscription réussie! Un email avec vos identifiants a été envoyé.', [
+          { text: 'OK', onPress: () => router.replace('/login') }
+        ]);
+      }
+    } catch (err: any) {
+      console.error('❌ [RegisterDoctor] Erreur:', err.message);
+      setError(err.message || 'Erreur lors de l\'inscription');
+      setSaving(false);
+    }
   };
 
   // Keep focused field visible when keyboard appears
   const scrollRef = useRef<ScrollView>(null);
-  const inputRefs = useRef<Record<string, TextInput | null>>({});
-  const register = (key: string) => (el: TextInput | null) => { inputRefs.current[key] = el; };
   const scrollIntoView = (key: string) => {
-    const input = inputRefs.current[key];
-    const sc = scrollRef.current as any;
-    if (!input || !sc) return;
-    requestAnimationFrame(() => {
-      const containerNode = sc.getInnerViewNode ? sc.getInnerViewNode() : sc.getScrollableNode?.();
-      if (!containerNode || !input.measureLayout) return;
-      input.measureLayout(containerNode, (_x: number, y: number) => {
-        sc.scrollTo({ y: Math.max(y - 24, 0), animated: true });
-      }, () => {});
-    });
+    // Simplified scroll - just scroll down a bit when field is focused
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+  
+  // Register refs (needed for TextInput refs, even if not used for scroll)
+  const register = (key: string) => (el: any) => {
+    // Just a placeholder - we don't need to store these refs anymore
   };
 
   return (
@@ -97,7 +169,7 @@ export default function RegisterDoctorScreen() {
       {error ? <Text style={{ color: '#DC2626', marginBottom: 8 }}>{error}</Text> : null}
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Nom</Text>
+        <Text style={styles.label}>Nom *</Text>
         <TextInput
           ref={register('lastName')}
           style={[styles.input, fv.getError('lastName') && { borderColor: '#dc2626' }]}
@@ -112,7 +184,7 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Prénom</Text>
+        <Text style={styles.label}>Prénom *</Text>
         <TextInput
           ref={register('firstName')}
           style={[styles.input, fv.getError('firstName') && { borderColor: '#dc2626' }]}
@@ -126,7 +198,7 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Adresse e-mail</Text>
+        <Text style={styles.label}>Adresse e-mail *</Text>
         <TextInput
           ref={register('email')}
           style={[styles.input, fv.getError('email') && { borderColor: '#dc2626' }]}
@@ -143,7 +215,7 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Numéro de téléphone</Text>
+        <Text style={styles.label}>Numéro de téléphone *</Text>
         <TextInput
           ref={register('phone')}
           style={[styles.input, fv.getError('phone') && { borderColor: '#dc2626' }]}
@@ -160,7 +232,7 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text>Mot de passe</Text>
+        <Text style={styles.label}>Âge</Text>
         <TextInput
           ref={register('password')}
           style={[styles.input, fv.getError('password') && { borderColor: '#dc2626' }]}
@@ -177,7 +249,6 @@ export default function RegisterDoctorScreen() {
 
       <Text style={styles.sectionTitle}>Informations Professionnelles</Text>
 
-      
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Spécialité</Text>
         <TextInput
@@ -224,7 +295,7 @@ export default function RegisterDoctorScreen() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Adresse de la structure</Text>
+        <Text style={styles.label}>Adresse</Text>
         <TextInput
           ref={register('clinicAddress')}
           style={[styles.input, fv.getError('clinicAddress') && { borderColor: '#dc2626' }]}
@@ -250,10 +321,20 @@ export default function RegisterDoctorScreen() {
         <Text style={styles.primaryBtnText}>{saving ? 'Envoi…' : "S'inscrire"}</Text>
       </TouchableOpacity>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Déjà un compte ? </Text>
-        <Text style={styles.link} onPress={() => router.replace('/login')}>Connectez-vous</Text>
-      </View>
+      {/* Afficher le lien de connexion SEULEMENT si l'utilisateur n'est pas connecté */}
+      {!isUserConnected && (
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Déjà un compte ? </Text>
+          <Text style={styles.link} onPress={() => router.replace('/login')}>Connectez-vous</Text>
+        </View>
+      )}
+
+      {/* Afficher un message si l'admin est connecté */}
+      {isUserConnected && (userRole === 'admin' || String(userRole).toLowerCase() === 'admin') && (
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Vous êtes connecté en tant qu'admin</Text>
+        </View>
+      )}
 
       <Text style={styles.terms}>
         En vous inscrivant, vous acceptez notre Politique de confidentialité et nos Conditions d&apos;utilisation.

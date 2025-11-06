@@ -132,7 +132,7 @@ const AdviceDoctorScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={40} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Créer un conseil</Text>
           <TouchableOpacity>
@@ -382,6 +382,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     color: "#111827",
+    marginTop: 40,
   },
 
   // Content

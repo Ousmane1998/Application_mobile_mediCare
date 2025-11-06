@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { adminGetStats, type AdminStats } from '../../utils/api';
@@ -73,16 +73,26 @@ export default function AdminStatsScreen() {
       console.log('📊 Chargement des stats...');
       setError(null);
       const s = await adminGetStats();
-      console.log('✅ Stats reçues:', s);
+      console.log('✅ Stats reçues (type):', typeof s);
+      console.log('✅ Stats reçues (valeur):', s);
       console.log('📊 Valeurs:', { total: s?.total, patients: s?.patients, medecins: s?.medecins, admins: s?.admins });
-      if (!s || (s.total === 0 && s.patients === 0 && s.medecins === 0)) {
+      
+      // Vérifier si c'est un objet avec une propriété 'stats'
+      let statsData = s;
+      if (s && s.stats && typeof s.stats === 'object') {
+        console.log('✅ Stats trouvées dans .stats');
+        statsData = s.stats;
+      }
+      
+      if (!statsData || (statsData.total === 0 && statsData.patients === 0 && statsData.medecins === 0)) {
         console.warn('⚠️ Attention: Les stats sont vides ou nulles!');
       }
-      setStats(s);
+      setStats(statsData);
     } catch (e: any) {
       console.error('❌ Erreur stats:', e);
       console.error('❌ Message:', e?.message);
       console.error('❌ Status:', e?.status);
+      console.error('❌ Stack:', e?.stack);
       setError(e?.message || 'Erreur de chargement');
     } finally {
       setLoading(false);
@@ -122,7 +132,7 @@ export default function AdminStatsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color="#111827" />
+          <Ionicons name="chevron-back" size={22} color="#111827" marginTop={40} />
         </TouchableOpacity>
         <Text style={styles.title}>Statistiques</Text>
       </View>
@@ -256,7 +266,7 @@ export default function AdminStatsScreen() {
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 16 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  title: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 12 ,marginTop:45},
 
   errorBox: { backgroundColor: '#FEE2E2', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   errorText: { color: '#DC2626', fontSize: 14, flex: 1 },

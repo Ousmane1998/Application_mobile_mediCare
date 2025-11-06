@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 12,
+    paddingBottom: 50,
     justifyContent: 'space-between',
   },
   header: {
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: '#fff',
     fontSize: 16,
+    
   },
   loginRow: {
     flexDirection: 'row',

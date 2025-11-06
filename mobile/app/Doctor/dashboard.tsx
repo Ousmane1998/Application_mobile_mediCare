@@ -22,24 +22,40 @@ export default function DoctorDashboardScreen() {
   const [pathologies, setPathologies] = useState<Array<{ name: string; count: number }>>([]);
   const [alertsFilter, setAlertsFilter] = useState<'Toutes' | '24h' | '7j'>('Toutes');
   const [alertsType, setAlertsType] = useState<'Tous' | 'Messages' | 'Rendez-vous' | 'Alertes'>('Tous');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   const filteredPatients = useMemo(() => {
-    // Utiliser alertsType pour filtrer les patients (au lieu de patientFilter)
-    if (alertsType === 'Tous') return patients;
+    let result = patients;
     
-    const patientIds = new Set<string>();
-    
-    if (alertsType === 'Messages') {
-      messages.forEach(m => patientIds.add(m.userId));
-    } else if (alertsType === 'Rendez-vous') {
-      appointments.forEach(a => patientIds.add(a.userId));
-    } else if (alertsType === 'Alertes') {
-      alerts.forEach(a => patientIds.add(a.userId));
+    // Filtrer par alertsType
+    if (alertsType !== 'Tous') {
+      const patientIds = new Set<string>();
+      
+      if (alertsType === 'Messages') {
+        messages.forEach(m => patientIds.add(m.userId));
+      } else if (alertsType === 'Rendez-vous') {
+        appointments.forEach(a => patientIds.add(a.userId));
+      } else if (alertsType === 'Alertes') {
+        alerts.forEach(a => patientIds.add(a.userId));
+      }
+
+      result = result.filter(p => patientIds.has(p._id));
     }
-    
-    return patients.filter(p => patientIds.has(p._id));
-  }, [patients, messages, appointments, alerts, alertsType]);
-  
+
+    // Filtrer par recherche
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(p =>
+        `${p.prenom} ${p.nom}`.toLowerCase().includes(query) ||
+        (p.email && String(p.email).toLowerCase().includes(query)) ||
+        (p.telephone && String(p.telephone).includes(query)) ||
+        (p.pathologie && String(p.pathologie).toLowerCase().includes(query))
+      );
+    }
+
+    return result;
+  }, [patients, messages, appointments, alerts, alertsType, searchQuery]);
+
   const filteredAlerts = useMemo(() => {
     if (!alerts?.length) return [] as NotificationItem[];
     const now = Date.now();
@@ -161,7 +177,14 @@ export default function DoctorDashboardScreen() {
                 style={[styles.search, { color: theme.colors.text }]}
                 placeholderTextColor={theme.colors.muted}
                 selectionColor={theme.colors.primary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color={theme.colors.muted} />
+                </TouchableOpacity>
+              )}
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }}>
@@ -222,7 +245,13 @@ export default function DoctorDashboardScreen() {
                 </View>
                 <TouchableOpacity 
                   style={[styles.smsButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => router.push(`/Doctor/chat?patientId=${p._id}&patientName=${p.prenom}%20${p.nom}`)}
+                  onPress={() => router.push({
+                    pathname: '/Doctor/chat-detail',
+                    params: {
+                      patientId: p._id,
+                      patientName: `${p.prenom} ${p.nom}`
+                    }
+                  } as any)}
                 >
                   <Ionicons name="chatbubbles-outline" size={20} color="#fff" />
                 </TouchableOpacity>
@@ -243,7 +272,7 @@ export default function DoctorDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 16 },
+  container: { paddingHorizontal: 16, paddingTop: 32 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { marginTop: 12, fontSize: 22, color: '#111827' },
   cardsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },

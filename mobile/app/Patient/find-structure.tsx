@@ -9,8 +9,6 @@ import { getNearbyStructures } from "../../utils/api";
 import {router} from "expo-router";
 import { useAppTheme } from "../../theme/ThemeContext";
 
-const { theme } = useAppTheme();
-
 type StructureType = "Hopital" | "Pharmacie" | "Clinique";
 
 interface Structure {
@@ -25,6 +23,7 @@ interface Structure {
 }
 
 export default function FindStructureScreen() {
+  const { theme } = useAppTheme();
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [structures, setStructures] = useState<Structure[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +109,7 @@ export default function FindStructureScreen() {
     <View style={styles.container}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, marginTop: 8, paddingHorizontal: 16 }}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={37}/>
           </TouchableOpacity>
           <Text style={styles.title}>Trouver une structure</Text>
         </View>
@@ -158,12 +157,13 @@ export default function FindStructureScreen() {
             ))}
           </MapView>
 
-          <ScrollView style={styles.list}>
-            <Text style={styles.listTitle}>
+          <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
+            <Text key="title" style={styles.listTitle}>
               {structures.length} structure(s) à moins de 10 km
             </Text>
-            {structures.map((s) => (
-              <View key={s._id} style={styles.card}>
+            <View key="structures-list">
+              {structures.map((s) => (
+                <View key={s._id} style={styles.card}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Ionicons
                     name={
@@ -205,7 +205,8 @@ export default function FindStructureScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+              ))}
+            </View>
           </ScrollView>
         </>
       ) : (
@@ -219,7 +220,7 @@ export default function FindStructureScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  title: { fontSize: 16, color: "#111827", marginBottom: 8 },
+  title: { fontSize: 16, color: "#111827", marginTop: 40 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   radiusSelector: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
   radiusLabel: { fontSize: 14, color: "#111827", marginBottom: 8 },

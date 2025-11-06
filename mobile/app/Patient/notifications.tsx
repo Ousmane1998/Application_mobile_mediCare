@@ -189,7 +189,7 @@ export default function PatientNotificationsScreen() {
       <View style={styles.headerRow}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color="#111827" />
+            <Ionicons name="chevron-back" size={22} color="#111827" margin={40}/>
           </TouchableOpacity>
           <Text style={styles.title}>Notifications</Text>
         </View>
@@ -233,9 +233,9 @@ export default function PatientNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 16 },
+  container: { paddingHorizontal: 16, paddingTop: 32 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  title: { fontSize: 20, color: '#111827' },
+  title: { fontSize: 20, color: '#111827' , marginTop:40},
   filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   filterChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#E5E7EB' },
   filterChipActive: { backgroundColor: '#D1FAE5' },

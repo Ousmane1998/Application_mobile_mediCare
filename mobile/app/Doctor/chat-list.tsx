@@ -10,7 +10,6 @@ import {
   RefreshControl,
   FlatList,
   Image,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -133,7 +132,7 @@ export default function ChatListScreen() {
       style={[styles.conversationCard, { backgroundColor: theme.colors.card }]}
       onPress={() =>
         router.push({
-          pathname: '/Doctor/chat-detail',
+          pathname: '/Doctor/chat',
           params: {
             patientId: item.patientId,
             patientName: item.patientName,
@@ -173,7 +172,7 @@ export default function ChatListScreen() {
         style={styles.chatButton}
         onPress={() =>
           router.push({
-            pathname: '/Doctor/chat-detail',
+            pathname: '/Doctor/chat',
             params: {
               patientId: item.patientId,
               patientName: item.patientName,
@@ -200,10 +199,7 @@ export default function ChatListScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Messages</Text>
-        <TouchableOpacity 
-          style={styles.newMessageBtn}
-          onPress={() => router.push('/Doctor/chat-new')}
-        >
+        <TouchableOpacity style={styles.newMessageBtn}>
           <Ionicons name="create-outline" size={22} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
@@ -358,7 +354,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontSize: 18,
-    marginTop: 16,
+    fontSize: 16,
+    marginTop: 12,
   },
 });

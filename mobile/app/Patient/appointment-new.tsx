@@ -305,8 +305,8 @@ export default function PatientAppointmentNewScreen() {
           <TouchableOpacity onPress={onNextMonth}><Text style={{ color: theme.colors.text }}>{'>'}</Text></TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-          {['D','L','M','M','J','V','S'].map(k => (
-            <Text key={k} style={{ width: 40, textAlign: 'center', color: theme.colors.muted }}>{k}</Text>
+          {['D','L','M','M','J','V','S'].map((k, i) => (
+            <Text key={`weekday-${i}`} style={{ width: 40, textAlign: 'center', color: theme.colors.muted }}>{k}</Text>
           ))}
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
@@ -315,7 +315,7 @@ export default function PatientAppointmentNewScreen() {
             const selected = !!d && d === selectedDay && !disabled;
             return (
               <TouchableOpacity
-                key={idx}
+                key={`day-${monthRef.year}-${monthRef.month}-${idx}`}
                 disabled={disabled}
                 onPress={() => {
                   if (!d) return;
@@ -419,10 +419,10 @@ export default function PatientAppointmentNewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
+  container: { flex: 1, padding: 16, paddingTop: 32 },
+  centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16, paddingTop: 32 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  title: { fontSize: 18, color: '#000', fontWeight: 'bold' },
+  title: { fontSize: 18, color: '#000', fontWeight: 'bold',marginTop:60 },
   group: { marginBottom: 16 },
   label: { fontSize: 13, color: '#374151', marginBottom: 8, fontWeight: '600' },
   

@@ -4,9 +4,12 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
+import Notification from "../models/Notification.js";
 import { Resend } from "resend";
 import { v2 as cloudinary } from "cloudinary";
 import { OAuth2Client } from "google-auth-library";
+import nodemailer from "nodemailer";
+import axios from "axios";
 
 import { tokenBlacklist } from "../middlewares/tokenBlacklist.js";
 
@@ -45,6 +48,92 @@ function initResend() {
   const resend = new Resend(RESEND_API_KEY);
   console.log(`✅ [initResend] Resend configuré avec succès`);
   return resend;
+}
+
+// Fonction pour envoyer des emails avec SMTP, Resend, ou Brevo
+async function sendEmail({ to, subject, html, text }) {
+  const { RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  
+  console.log(`📧 [sendEmail] Tentative d'envoi à: ${to}`);
+  console.log(`📧 [sendEmail] SMTP configuré: ${!!SMTP_HOST && !!SMTP_USER}`);
+  console.log(`📧 [sendEmail] Resend configuré: ${!!RESEND_API_KEY}`);
+  
+  // Essayer d'abord avec SMTP (prioritaire - plus fiable)
+  if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
+    try {
+      console.log(`🔄 [sendEmail] Tentative SMTP...`);
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: Number(SMTP_PORT),
+        secure: Number(SMTP_PORT) === 465,
+        auth: {
+          user: SMTP_USER,
+          pass: SMTP_PASS,
+        },
+      });
+      
+      const from = SMTP_FROM || `"MediCare" <${SMTP_USER}>`;
+      const result = await transporter.sendMail({
+        from,
+        to,
+        subject,
+        html,
+        text,
+      });
+      
+      console.log(`✅ [sendEmail] Email envoyé via SMTP à: ${to}`, result.messageId);
+      return { success: true, method: 'smtp', id: result.messageId };
+    } catch (e) {
+      console.error(`⚠️ [sendEmail] Erreur SMTP: ${e.message}`);
+    }
+  }
+  
+  // Fallback vers Resend
+  if (RESEND_API_KEY && RESEND_API_KEY !== 'your_resend_api_key_here' && RESEND_API_KEY.startsWith('re_')) {
+    try {
+      console.log(`🔄 [sendEmail] Tentative Resend (fallback)...`);
+      const resend = new Resend(RESEND_API_KEY);
+      const fromEmail = RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+      const result = await resend.emails.send({
+        from: `MediCare <${fromEmail}>`,
+        to,
+        subject,
+        html,
+      });
+      
+      console.log(`✅ [sendEmail] Email envoyé via Resend à: ${to}`, result.id);
+      return { success: true, method: 'resend', id: result.id };
+    } catch (e) {
+      console.error(`⚠️ [sendEmail] Erreur Resend: ${e.message}`);
+    }
+  }
+  
+  // Fallback vers Brevo (si clé commence par SG.)
+  if (RESEND_API_KEY && RESEND_API_KEY.startsWith('SG.')) {
+    try {
+      console.log(`🔄 [sendEmail] Tentative Brevo (fallback)...`);
+      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+        to: [{ email: to }],
+        sender: { email: 'noreply@medicare.com', name: 'MediCare' },
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }, {
+        headers: {
+          'api-key': RESEND_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log(`✅ [sendEmail] Email envoyé via Brevo à: ${to}`, response.data.messageId);
+      return { success: true, method: 'brevo', id: response.data.messageId };
+    } catch (e) {
+      console.error(`⚠️ [sendEmail] Erreur Brevo: ${e.message}`);
+    }
+  }
+  
+  console.error(`❌ [sendEmail] Aucune méthode d'envoi d'email configurée`);
+  return { success: false, method: 'none' };
 }
 
 
@@ -107,28 +196,46 @@ export async function registerPatient(req, res) {
     
     console.log("✅ [registerPatient] Patient créé avec succès :", user._id);
 
-    // Send email with credentials
-    let emailSent = false;
-    const mailer = getMailer();
-    if (mailer) {
-      try {
-        await mailer.transporter.sendMail({
-          from: mailer.from,
-          to: user.email,
-          subject: 'Votre compte MediCare',
-          text: `Bonjour ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé.\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nNous vous recommandons de changer votre mot de passe après connexion.`,
-          html: `<p>Bonjour ${user.prenom || ''} ${user.nom || ''},</p>
-                 <p>Votre compte <b>MediCare</b> a été créé.</p>
-                 <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
-                 <b>Mot de passe</b>: ${defaultPassword}</p>
-                 <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>`,
+    // Send email with credentials (SMTP prioritaire, Resend fallback)
+    console.log(`📧 [registerPatient] Envoi de l'email à: ${user.email}`);
+    const emailResult = await sendEmail({
+      to: user.email,
+      subject: 'Votre compte MediCare - Identifiants de connexion',
+      text: `Bonjour ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé avec succès.\n\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nPar mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.\n\nCordialement,\nL'équipe MediCare`,
+      html: `<p>Bonjour <b>${user.prenom || ''} ${user.nom || ''}</b>,</p>
+             <p>Votre compte <b>MediCare</b> a été créé avec succès.</p>
+             <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
+             <b>Mot de passe</b>: <code>${defaultPassword}</code></p>
+             <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>
+             <p>Cordialement,<br/>L'équipe MediCare</p>`,
+    });
+    
+    const emailSent = emailResult.success;
+    console.log(`📧 [registerPatient] Résultat final (${emailResult.method}): success=${emailResult.success}`);
+
+    // 📬 Créer une notification pour les ADMINS (nouvel utilisateur créé)
+    try {
+      const admins = await User.find({ role: 'admin' }).select('_id');
+      console.log(`👨‍💼 [registerPatient] Admins trouvés: ${admins.length}`);
+      
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: 'user_registration',
+          title: 'Nouvel utilisateur créé',
+          message: `Un nouveau patient ${user.prenom} ${user.nom} a été créé par le médecin`,
+          data: {
+            userId: user._id,
+            userName: `${user.prenom} ${user.nom}`,
+            userEmail: user.email,
+            userRole: 'patient',
+          },
+          isRead: false,
         });
-        emailSent = true;
-        console.log("📧 [registerPatient] Email envoyé avec succès");
-      } catch (e) {
-        emailSent = false;
-        console.log("⚠️ [registerPatient] Email non envoyé :", e.message);
       }
+      console.log(`✅ [registerPatient] Notifications créées pour les admins`);
+    } catch (notifErr) {
+      console.error(`⚠️ [registerPatient] Erreur création notification admin:`, notifErr.message);
     }
 
     return res.status(201).json({
@@ -167,6 +274,8 @@ export async function registerPatient(req, res) {
 
 // POST /api/auth/registerDoctor
 export async function registerDoctor(req, res) {
+  console.log("📥 [registerDoctor] Requête reçue :", req.body);
+  
   try {
     const {
       nom,
@@ -174,50 +283,100 @@ export async function registerDoctor(req, res) {
       telephone,
       email,
       adresse,
-      age,
-      password,
-      role, // "patient" | "medecin" | "admin"
       specialite,
       hopital,
-      // adresseHopital,
     } = req.body || {};
 
-    if (!telephone || !password || !nom) {
-      return res.status(400).json({ message: "Champs requis manquants (telephone, password, nom)." });
+    // Champs requis (SANS password - généré automatiquement)
+    if (!telephone || !nom || !email) {
+      console.log("❌ [registerDoctor] Champs manquants");
+      return res.status(400).json({ message: "Champs requis: nom, telephone, email." });
     }
 
     if (!phoneRegex.test(String(telephone))) {
+      console.log("❌ [registerDoctor] Téléphone invalide :", telephone);
       return res.status(400).json({ message: "Format téléphone invalide. Format attendu: 7XXXXXXXX." });
     }
-    if (email && !emailRegex.test(String(email))) {
+    if (!emailRegex.test(String(email))) {
+      console.log("❌ [registerDoctor] Email invalide :", email);
       return res.status(400).json({ message: "Format email invalide. Format attendu: string@string.string." });
     }
-    if (String(password).length < 6) {
-      return res.status(400).json({ message: "Le mot de passe doit contenir au moins 6 caractères." });
-    }
 
-    const existing = await User.findOne({ $or: [{ telephone }, { email }] });
+    const telNumber = Number(telephone);
+    const existing = await User.findOne({ $or: [{ telephone: telNumber }, { email: String(email).toLowerCase() }] });
     if (existing) {
-      return res.status(400).json({ message: "Utilisateur existant (email ou téléphone)." });
+      console.log("⚠️ [registerDoctor] Utilisateur existe déjà :", { email, telephone: telNumber });
+      return res.status(400).json({ message: "Un utilisateur avec cet email ou téléphone existe déjà." });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    // Générer un mot de passe par défaut (comme pour les patients)
+    const defaultPassword = "medicare@123";
+    const hashed = await bcrypt.hash(defaultPassword, 10);
+    
+    console.log("✅ [registerDoctor] Données médecin à créer :", {
+      nom, prenom, email, telephone: telNumber, adresse, specialite, hopital
+    });
+
     const user = await User.create({
       nom,
       prenom,
-      telephone,
-      email,
-      adresse,
-      age,
-      hopital,
+      telephone: telNumber,
+      email: String(email).toLowerCase(),
+      adresse: adresse || "",
+      specialite: specialite || "",
+      hopital: hopital || "",
       password: hashed,
-      role: role || undefined,
-      specialite,
+      role: 'medecin',
     });
+
+    console.log("✅ [registerDoctor] Médecin créé avec succès :", user._id);
+
+    // Send email with credentials (SMTP prioritaire, Resend fallback)
+    console.log(`📧 [registerDoctor] Envoi de l'email à: ${user.email}`);
+    const emailResult = await sendEmail({
+      to: user.email,
+      subject: 'Votre compte MediCare - Identifiants de connexion',
+      text: `Bonjour Dr ${user.prenom || ''} ${user.nom || ''},\n\nVotre compte MediCare a été créé avec succès.\n\nIdentifiant: ${user.email || user.telephone}\nMot de passe: ${defaultPassword}\n\nPar mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.\n\nCordialement,\nL'équipe MediCare`,
+      html: `<p>Bonjour <b>Dr ${user.prenom || ''} ${user.nom || ''}</b>,</p>
+             <p>Votre compte <b>MediCare</b> a été créé avec succès.</p>
+             <p><b>Identifiant</b>: ${user.email || user.telephone}<br/>
+             <b>Mot de passe</b>: <code>${defaultPassword}</code></p>
+             <p><i>Par mesure de sécurité, veuillez changer votre mot de passe dès votre première connexion.</i></p>
+             <p>Cordialement,<br/>L'équipe MediCare</p>`,
+    });
+    
+    const emailSent = emailResult.success;
+    console.log(`📧 [registerDoctor] Résultat final (${emailResult.method}): success=${emailResult.success}`);
+
+    // 📬 Créer une notification pour les ADMINS (nouvel médecin créé)
+    try {
+      const admins = await User.find({ role: 'admin' }).select('_id');
+      console.log(`👨‍💼 [registerDoctor] Admins trouvés: ${admins.length}`);
+      
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: 'user_registration',
+          title: 'Nouvel médecin créé',
+          message: `Un nouveau médecin ${user.prenom} ${user.nom} s'est inscrit`,
+          data: {
+            userId: user._id,
+            userName: `${user.prenom} ${user.nom}`,
+            userEmail: user.email,
+            userRole: 'medecin',
+          },
+          isRead: false,
+        });
+      }
+      console.log(`✅ [registerDoctor] Notifications créées pour les admins`);
+    } catch (notifErr) {
+      console.error(`⚠️ [registerDoctor] Erreur création notification admin:`, notifErr.message);
+    }
 
     const token = signToken(user);
     return res.status(201).json({
-      message: "Inscription réussie",
+      message: "Inscription réussie. Un email avec les identifiants a été envoyé.",
+      emailSent,
       token,
       user: {
         id: user._id,
@@ -226,9 +385,12 @@ export async function registerDoctor(req, res) {
         email: user.email,
         telephone: user.telephone,
         role: user.role,
+        specialite: user.specialite,
+        hopital: user.hopital,
       },
     });
   } catch (err) {
+    console.error("❌ [registerDoctor] Erreur :", err.message);
     return res.status(500).json({ message: "Erreur lors de l'inscription." });
   }
 }
@@ -236,6 +398,7 @@ export async function registerDoctor(req, res) {
 // POST /api/auth/googleLogin
 export async function googleLogin(req, res) {
   try {
+    // ... (rest of the code remains the same)
     const idToken = req.body?.idToken;
     if (!idToken) return res.status(400).json({ message: "idToken requis." });
 
@@ -493,21 +656,18 @@ export async function forgotPassword(req, res) {
     await PasswordReset.create({ identifier: email.toLowerCase(), codeHash, expiresAt });
     console.log(` [forgotPassword] Code stocké en BD pour: ${email}`);
 
-    const resend = initResend();
-    if (resend) {
-      try {
-        const result = await resend.emails.send({
-          from: "MediCare <onboarding@resend.dev>",
-          to: email,
-          subject: "Votre code de réinitialisation",
-          html: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
-        });
-        console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email}`, result);
-      } catch (emailErr) {
-        console.error(`❌ [forgotPassword] Erreur envoi email: ${emailErr.message}`);
-      }
+    // Utiliser sendEmail pour envoyer l'email (Resend, SMTP, ou Brevo)
+    const emailResult = await sendEmail({
+      to: email,
+      subject: "Votre code de réinitialisation",
+      text: `Votre code de réinitialisation est ${code}. Il expire dans 10 minutes.`,
+      html: `<p>Votre code de réinitialisation est <b>${code}</b>.</p><p>Il expire dans 10 minutes.</p>`,
+    });
+    
+    if (emailResult.success) {
+      console.log(`✅ [forgotPassword] Email envoyé avec succès à: ${email} via ${emailResult.method}`);
     } else {
-      console.log(`⚠️ [forgotPassword] Resend non configuré - Code: ${code} pour ${email}`);
+      console.log(`⚠️ [forgotPassword] Email non envoyé - Code: ${code} pour ${email}`);
     }
 
     return res.json({ message: "Si un compte existe, un email avec un code a été envoyé." });

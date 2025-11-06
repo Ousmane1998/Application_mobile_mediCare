@@ -50,6 +50,13 @@ const AdviceScreen = () => {
   const [patientId, setPatientId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedAdvices, setSavedAdvices] = useState<string[]>([]);
+  const [activeFilter, setActiveFilter] = useState<string>("Tous");
+
+  const categories = ["Tous", "Nutrition", "Activité", "Médicaments", "Prévention"];
+
+  const filteredAdvices = activeFilter === "Tous" 
+    ? advices 
+    : advices.filter(advice => advice.categorie === activeFilter);
 
   useEffect(() => {
     fetchAdvices();
@@ -134,21 +141,17 @@ const AdviceScreen = () => {
 
       {/* Tabs */}
       <View style={styles.tabsContainer}>
-        <TouchableOpacity style={[styles.tab, styles.tabActive]}>
-          <Text style={[styles.tabText, styles.tabTextActive]}>Tous</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
-          <Text style={styles.tabText}>Nutrition</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
-          <Text style={styles.tabText}>Activité</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
-          <Text style={styles.tabText}>Médicaments</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
-          <Text style={styles.tabText}>Prévention</Text>
-        </TouchableOpacity>
+        {categories.map((category) => (
+          <TouchableOpacity 
+            key={category}
+            style={[styles.tab, activeFilter === category && styles.tabActive]}
+            onPress={() => setActiveFilter(category)}
+          >
+            <Text style={[styles.tabText, activeFilter === category && styles.tabTextActive]}>
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Content */}
@@ -159,19 +162,21 @@ const AdviceScreen = () => {
         </View>
       )}
 
-      {advices.length === 0 ? (
+      {filteredAdvices.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
             <Ionicons name="document-text" size={50} color="#d1d5db" />
           </View>
           <Text style={styles.emptyTitle}>Aucun conseil pour le moment</Text>
           <Text style={styles.emptySubtitle}>
-            Votre médecin vous enverra des conseils personnalisés ici
+            {activeFilter === "Tous" 
+              ? "Votre médecin vous enverra des conseils personnalisés ici"
+              : `Aucun conseil en ${activeFilter}`}
           </Text>
         </View>
       ) : (
         <View style={styles.advicesContainer}>
-          {advices.map((advice) => {
+          {filteredAdvices.map((advice) => {
             const categoryColor =
               categoryColors[advice.categorie] || categoryColors.Général;
             const categoryIcon =
@@ -287,6 +292,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#111827",
+    marginTop: 50,
   },
 
   // Tabs

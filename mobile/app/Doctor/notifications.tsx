@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Animated, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getNotifications, markNotificationRead, deleteNotification, type NotificationItem, getProfile, type UserProfile, SOCKET_URL } from '../../utils/api';
 import io from 'socket.io-client';
@@ -9,6 +9,89 @@ import { useRouter } from 'expo-router';
 // Notifications orientées médecin: nouveaux messages, demandes de rendez-vous, alertes patient
 
 const FILTERS = ['Tout', 'Messages', 'Rendez-vous', 'Alertes', 'SOS'] as const;
+
+// Composant pour le glissement
+function SwipeableNotificationItem({ 
+  notification, 
+  onMarkRead, 
+  onDelete, 
+  onPress, 
+  children 
+}: any) {
+  const pan = useRef(new Animated.ValueXY()).current;
+  const [swiped, setSwiped] = useState(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (evt, gestureState) => Math.abs(gestureState.dx) > 10,
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dx < 0) {
+          pan.x.setValue(Math.max(gestureState.dx, -100));
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx < -50) {
+          setSwiped(true);
+          Animated.timing(pan.x, {
+            toValue: -100,
+            duration: 200,
+            useNativeDriver: false,
+          }).start();
+        } else {
+          setSwiped(false);
+          Animated.timing(pan.x, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  const handleDelete = () => {
+    Animated.timing(pan.x, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start(() => {
+      setSwiped(false);
+      onDelete(String(notification._id));
+    });
+  };
+
+  return (
+    <View style={styles.swipeContainer}>
+      <View style={styles.deleteAction}>
+        <TouchableOpacity onPress={handleDelete} style={styles.deleteActionButton}>
+          <Ionicons name="trash" size={20} color="#fff" />
+          <Text style={styles.deleteActionText}>Supprimer</Text>
+        </TouchableOpacity>
+      </View>
+      <Animated.View
+        style={[
+          styles.notificationWrapper,
+          { transform: [{ translateX: pan.x }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity 
+          style={[styles.card, !notification.isRead && styles.cardUnread]} 
+          activeOpacity={0.7} 
+          onPress={() => {
+            if (!notification.isRead) {
+              onMarkRead(String(notification._id));
+            }
+            onPress();
+          }}
+        >
+          {children}
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+}
 
 function iconAndAccentFor(n: NotificationItem) {
   const t = (n.type || '').toLowerCase();
@@ -192,6 +275,37 @@ export default function DoctorNotificationsScreen() {
     }
   };
 
+  const onOpenMessage = (n: any) => {
+    // Pour les anciennes notifications, senderId = patientId
+    const patientId = n?.data?.patientId || n?.data?.senderId || n?.userId;
+    
+    // Essayer plusieurs sources pour le nom
+    let patientName = n?.data?.patientName;
+    if (!patientName || patientName === 'Patient') {
+      const prenom = n?.data?.prenom || '';
+      const nom = n?.data?.nom || '';
+      patientName = `${prenom} ${nom}`.trim();
+    }
+    if (!patientName) {
+      patientName = 'Patient';
+    }
+    
+    console.log('💬 [Message] Ouverture chat:', { patientId, patientName, fullData: n?.data });
+    
+    if (patientId) {
+      onMarkRead(String(n._id));
+      router.push({
+        pathname: '/Doctor/chat-detail',
+        params: {
+          patientId: String(patientId),
+          patientName: patientName
+        }
+      });
+    } else {
+      Alert.alert('Erreur', 'Impossible d\'ouvrir la conversation: patient non trouvé');
+    }
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -242,10 +356,13 @@ export default function DoctorNotificationsScreen() {
         const isRdvPending = ((n as any)?.type === 'rdv' || (n as any)?.type === 'appointment') && (n as any)?.data?.status === 'pending';
         const isAlerte = ['alerte', 'alert'].includes((n as any)?.type?.toLowerCase());
         const isEmergency = (n as any)?.type === 'emergency';
+        const isMessage = (n as any)?.type?.toLowerCase() === 'message';
         const senderInitials = extractSenderInitials(n);
         
         const onOpen = () => {
-          if (canOpenMeasure) {
+          if (isMessage) {
+            onOpenMessage(n);
+          } else if (canOpenMeasure) {
             router.push({
               pathname: '/Doctor/measure-detail',
               params: { 
@@ -256,10 +373,16 @@ export default function DoctorNotificationsScreen() {
           } else if (canOpenFiche) {
             router.push(`/Doctor/health-record/${(n as any).data.patientId}`);
           } else if (isRdvPending) {
-            router.push({
-              pathname: '/Doctor/appointment-confirm',
-              params: { appointmentId: (n as any).data.appointmentId }
-            });
+            const appointmentId = (n as any).data?.appointmentId || (n as any).data?._id;
+            console.log('📅 [RDV] Ouverture RDV:', { appointmentId, data: (n as any).data });
+            if (appointmentId) {
+              router.push({
+                pathname: '/Doctor/appointment-confirm',
+                params: { appointmentId: String(appointmentId) }
+              });
+            } else {
+              Alert.alert('Erreur', 'Impossible d\'ouvrir le rendez-vous: ID non trouvé');
+            }
           } else if (isEmergency) {
             router.push({
               pathname: '/Doctor/emergency-detail',
@@ -275,11 +398,17 @@ export default function DoctorNotificationsScreen() {
         };
         
         return (
-          <TouchableOpacity key={String(n._id)} style={styles.card} activeOpacity={(canOpenMeasure || canOpenFiche || isRdvPending || isEmergency) ? 0.7 : 1} onPress={onOpen}>
+          <SwipeableNotificationItem
+            key={String(n._id)}
+            notification={n}
+            onMarkRead={onMarkRead}
+            onDelete={onDelete}
+            onPress={onOpen}
+          >
             <View style={styles.cardHead}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {senderInitials ? (
-                  <View style={styles.avatarSmall}>
+                  <View style={[styles.avatarSmall, { backgroundColor: accent }]}>
                     <Text style={styles.avatarInitialsSmall}>{senderInitials}</Text>
                   </View>
                 ) : (
@@ -289,14 +418,8 @@ export default function DoctorNotificationsScreen() {
                   </View>
                 )}
               </View>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                {!n.isRead && (
-                  <TouchableOpacity onPress={() => onMarkRead(String(n._id))}><Text style={[styles.cta, { color: accent }]}>Marquer lu</Text></TouchableOpacity>
-                )}
-                <TouchableOpacity onPress={() => onDelete(String(n._id))}><Text style={[styles.cta, { color: '#EF4444' }]}>Supprimer</Text></TouchableOpacity>
-              </View>
             </View>
-            <Text style={styles.cardTitle}>{title}</Text>
+            <Text style={[styles.cardTitle, !n.isRead && styles.cardTitleUnread]}>{title}</Text>
             {!!time && <Text style={styles.time}>{time}</Text>}
             {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
             
@@ -351,7 +474,7 @@ export default function DoctorNotificationsScreen() {
                 </TouchableOpacity>
               </View>
             )}
-          </TouchableOpacity>
+          </SwipeableNotificationItem>
         );
       })}
 
@@ -361,24 +484,34 @@ export default function DoctorNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 16 },
+  container: { paddingHorizontal: 16, paddingTop: 32 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  title: { fontSize: 20, color: '#111827' },
+  title: { fontSize: 20, color: '#111827' , marginTop: 40},
   filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   filterChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#E5E7EB' },
   filterChipActive: { backgroundColor: '#D1FAE5' },
   filterText: { color: '#374151' },
   filterTextActive: { color: '#065F46' },
-  card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12 },
+  
+  // Swipe Container
+  swipeContainer: { position: 'relative', marginBottom: 12, overflow: 'hidden', borderRadius: 16 },
+  deleteAction: { position: 'absolute', right: 0, top: 0, bottom: 0, backgroundColor: '#EF4444', borderRadius: 16, justifyContent: 'center', alignItems: 'center', width: 100, zIndex: 0 },
+  deleteActionButton: { alignItems: 'center', justifyContent: 'center', gap: 4 },
+  deleteActionText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  
+  notificationWrapper: { zIndex: 1 },
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 16 },
+  cardUnread: { backgroundColor: '#F0FFFE', borderLeftWidth: 4, borderLeftColor: '#2ccdd2' },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   iconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   dot: { width: 8, height: 8, borderRadius: 999, position: 'absolute', top: 4, right: 4 },
   cta: { fontWeight: '600' },
   cardTitle: { fontSize: 16, color: '#111827', marginTop: 8 },
-  time: { color: '#6B7280', marginTop: 4 },
+  cardTitleUnread: { fontWeight: '600', color: '#111827' },
+  time: { color: '#6B7280', marginTop: 4, fontSize: 12 },
   subtitle: { color: '#374151', marginTop: 6 },
-  avatarSmall: { width: 28, height: 28, borderRadius: 999, backgroundColor: '#2ccdd2', alignItems: 'center', justifyContent: 'center' },
-  avatarInitialsSmall: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  avatarSmall: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsSmall: { color: '#fff', fontSize: 14, fontWeight: '700' },
   
   // Action Buttons
   actionButtons: { flexDirection: 'row', gap: 8, marginTop: 12 },

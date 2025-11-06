@@ -128,6 +128,54 @@ export async function updatePhoto(photoBase64OrDataUrl: string) {
   return authFetch('/auth/updatePhoto', { method: 'POST', body: JSON.stringify({ photo: photoBase64OrDataUrl }) });
 }
 
+// Register Doctor (without authentication)
+export async function authRegisterDoctor(payload: {
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  age?: number;
+  adresse?: string;
+  specialite?: string;
+  hopital?: string;
+}) {
+  try {
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    
+    console.log('📝 [authRegisterDoctor] Envoi:', payload);
+    
+    const res = await fetch(`${API_URL}/auth/registerDoctor`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    
+    console.log('📝 [authRegisterDoctor] Statut:', res.status);
+    
+    const data = await res.json().catch(() => undefined);
+    console.log('📝 [authRegisterDoctor] Réponse:', data);
+    
+    if (!res.ok) {
+      const errorMessage = data?.message || data?.error || `Erreur HTTP ${res.status}`;
+      const error: any = new Error(errorMessage);
+      error.status = res.status;
+      throw error;
+    }
+    
+    // Sauvegarder le token si reçu
+    if (data?.token) {
+      await AsyncStorage.setItem('authToken', data.token);
+      console.log('✅ [authRegisterDoctor] Token sauvegardé');
+    }
+    
+    return data;
+  } catch (err: any) {
+    console.error('❌ [authRegisterDoctor] Erreur:', err.message);
+    throw err;
+  }
+}
+
 // Measures
 export type MeasureType = 'tension' | 'glycemie' | 'poids' | 'pouls' | 'temperature';
 export async function addMeasure(payload: { patientId: string; type: MeasureType; value: string; heure?: string; synced?: boolean; notes?: string }) {
@@ -140,6 +188,74 @@ export async function getMeasuresHistory(patientId: string) {
 
 export async function getMeasures(patientId: string) {
   return authFetch(`/measures/${encodeURIComponent(patientId)}`);
+}
+
+// Offline Measures Sync
+export async function getOfflineMeasures() {
+  try {
+    const offlineMeasures = await AsyncStorage.getItem('offlineMeasures');
+    return offlineMeasures ? JSON.parse(offlineMeasures) : [];
+  } catch (e) {
+    console.error('❌ [getOfflineMeasures] Erreur:', e);
+    return [];
+  }
+}
+
+export async function syncOfflineMeasures() {
+  try {
+    const measures = await getOfflineMeasures();
+    if (measures.length === 0) {
+      console.log('✅ [syncOfflineMeasures] Aucune mesure à synchroniser');
+      return { synced: 0, failed: 0, message: 'Aucune mesure à synchroniser' };
+    }
+
+    let synced = 0;
+    let failed = 0;
+    const failedMeasures = [];
+
+    for (const measure of measures) {
+      try {
+        if (!measure.synced) {
+          console.log('📤 [syncOfflineMeasures] Synchronisation de:', measure.type);
+          await addMeasure({
+            patientId: measure.patientId,
+            type: measure.type,
+            value: measure.value,
+            heure: measure.heure,
+            notes: measure.notes,
+          });
+          synced++;
+        }
+      } catch (e: any) {
+        console.error('❌ [syncOfflineMeasures] Erreur sync:', e.message);
+        failed++;
+        failedMeasures.push(measure);
+      }
+    }
+
+    // Sauvegarder les mesures non synchronisées
+    if (failedMeasures.length > 0) {
+      await AsyncStorage.setItem('offlineMeasures', JSON.stringify(failedMeasures));
+    } else {
+      await AsyncStorage.removeItem('offlineMeasures');
+    }
+
+    const message = `✅ ${synced} mesure(s) synchronisée(s)${failed > 0 ? `, ${failed} échouée(s)` : ''}`;
+    console.log(message);
+    return { synced, failed, message };
+  } catch (e: any) {
+    console.error('❌ [syncOfflineMeasures] Erreur:', e.message);
+    return { synced: 0, failed: 0, message: 'Erreur lors de la synchronisation' };
+  }
+}
+
+export async function clearOfflineMeasures() {
+  try {
+    await AsyncStorage.removeItem('offlineMeasures');
+    console.log('✅ [clearOfflineMeasures] Mesures locales supprimées');
+  } catch (e) {
+    console.error('❌ [clearOfflineMeasures] Erreur:', e);
+  }
 }
 
 // Advices

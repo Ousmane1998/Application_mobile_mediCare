@@ -49,6 +49,46 @@ export default function AdminTabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" color={color} size={size} />,
         }}
       />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" color={color} size={size} />,
+          href: null, // Masquer de la barre de navigation
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+        }}
+      />
+      {/* Pages cachées - accessibles par navigation mais pas dans la barre */}
+      <Tabs.Screen
+        name="profile-edit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="user-edit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="doctors-activation"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="password-change"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

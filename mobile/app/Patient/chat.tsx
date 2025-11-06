@@ -17,26 +17,12 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons, MaterialIcons, Entypo } from "@expo/vector-icons";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RouteProp } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { getProfile, getMessages, sendMessage, getMedecinById, setTypingStatus, markMessageAsRead, deleteViewOnceMessage } from "../../utils/api";
 import { useAppTheme } from "../../theme/ThemeContext";
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Audio } from 'expo-av';
-
-type RootStackParamList = {
-  Home: undefined;
-  Chat: undefined;
-};
-
-type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Chat">;
-type ChatScreenRouteProp = RouteProp<RootStackParamList, "Chat">;
-
-type Props = {
-  navigation: ChatScreenNavigationProp;
-  route: ChatScreenRouteProp;
-};
 
 type Message = {
   _id?: string;
@@ -57,7 +43,8 @@ type Doctor = {
   email?: string;
 };
 
-const ChatScreen: React.FC<Props> = ({ navigation }) => {
+export default function ChatScreen() {
+  const router = useRouter();
   const { theme } = useAppTheme();
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -445,7 +432,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     >
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBack}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.iconBack}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
 
@@ -606,9 +593,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
       </Modal>
     </KeyboardAvoidingView>
   );
-};
-
-export default ChatScreen;
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6", marginTop: 32 },

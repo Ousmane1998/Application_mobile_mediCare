@@ -202,34 +202,40 @@ export const getNearbyStructures = async (req, res) => {
 
     console.log(`🔍 Recherche structures près de: ${lat}, ${lng} (rayon: ${maxRadius}km)`);
 
-    // Calculer la distance pour chaque structure
-    const structuresAvecDistance = DAKAR_STRUCTURES.map(s => ({
-      nom: s.nom,
-      type: s.type,
-      lat: s.lat,
-      lng: s.lng,
-      adresse: s.adresse,
-      tel: s.tel,
-      distance: calculateDistance(lat, lng, s.lat, s.lng)
-    }));
+    // 1️⃣ Essayer d'abord Overpass API (vraies structures OpenStreetMap)
+    let structures = await getStructuresFromOverpass(lat, lng, maxRadius * 1000);
+    
+    // 2️⃣ Si Overpass échoue, utiliser les structures de secours Dakar
+    if (structures.length === 0) {
+      console.log(`⚠️ Overpass API vide, utilisation des structures de secours`);
+      
+      const structuresAvecDistance = DAKAR_STRUCTURES.map(s => ({
+        nom: s.nom,
+        type: s.type,
+        lat: s.lat,
+        lng: s.lng,
+        adresse: s.adresse,
+        tel: s.tel,
+        distance: calculateDistance(lat, lng, s.lat, s.lng)
+      }));
+
+      structures = structuresAvecDistance
+        .filter(s => s.distance <= maxRadius)
+        .sort((a, b) => a.distance - b.distance);
+    }
 
     // Afficher toutes les distances pour déboguer
     console.log(`📍 Distances calculées:`);
-    structuresAvecDistance.forEach(s => {
+    structures.forEach(s => {
       console.log(`  - ${s.nom}: ${s.distance.toFixed(2)} km`);
     });
 
-    // Filtrer par rayon et trier par distance
-    const nearbyStructures = structuresAvecDistance
-      .filter(s => s.distance <= maxRadius)
-      .sort((a, b) => a.distance - b.distance);
-
-    console.log(`✅ Structures trouvées (rayon ${maxRadius}km): ${nearbyStructures.length}`);
+    console.log(`✅ Structures trouvées (rayon ${maxRadius}km): ${structures.length}`);
 
     res.json({
       message: "Structures trouvées",
-      count: nearbyStructures.length,
-      structures: nearbyStructures
+      count: structures.length,
+      structures: structures
     });
   } catch (err) {
     console.error("❌ Erreur getNearbyStructures:", err);

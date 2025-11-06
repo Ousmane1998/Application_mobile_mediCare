@@ -180,7 +180,7 @@ const OrdonnanceCreateScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#111827" marginTop={40} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Créer une Ordonnance</Text>
           <View style={{ width: 24 }} />
@@ -350,6 +350,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     color: '#111827',
+    marginTop: 40,
   },
 
   // Patient Card
