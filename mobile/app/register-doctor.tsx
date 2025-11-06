@@ -3,19 +3,36 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import {FileSystemUploadType} from 'expo-file-system/build/legacy/FileSystem.types';
+import { formatPhone, normalizePhone, nextSelectionAtEnd } from '../utils/phone';
+import { useFormValidation } from '../hooks/useFormValidation';
 
 export default function RegisterDoctorScreen() {
   const router = useRouter();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [specialty, setSpecialty] = useState('');
-  const [licenseNumber, setLicenseNumber] = useState('');
-  const [clinicAddress, setClinicAddress] = useState('');
-  const [hopital, setHopital] = useState('');
-  const [password, setPassword] = useState('');
+  const fv = useFormValidation(
+    {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      specialty: '',
+      licenseNumber: '',
+      clinicAddress: '',
+      hopital: '',
+      password: '',
+    },
+    {
+      firstName: (v) => (!isName(sanitize(String(v || ''))) ? 'Prénom invalide (2–50 lettres).' : null),
+      lastName: (v) => (!isName(sanitize(String(v || ''))) ? 'Nom invalide (2–50 lettres).' : null),
+      email: (v) => (!isEmail(sanitize(String(v || ''))) ? 'Email invalide.' : null),
+      phone: (v) => (!isPhone(normalizePhone(String(v || ''))) ? "Téléphone invalide. Format 7XXXXXXXX." : null),
+      specialty: (v) => (sanitize(String(v || '')).length === 0 ? 'Spécialité requise.' : (sanitize(String(v || '')).length > 60 ? 'Spécialité trop longue.' : null)),
+      licenseNumber: (v) => (!isLicense(sanitize(String(v || ''))) ? "Numéro d'agrément invalide." : null),
+      clinicAddress: (v) => (sanitize(String(v || '')).length === 0 ? 'Adresse requise.' : (sanitize(String(v || '')).length > 120 ? 'Adresse trop longue.' : null)),
+      hopital: (v) => (sanitize(String(v || '')).length === 0 ? 'Structure requise.' : (sanitize(String(v || '')).length > 80 ? 'Structure trop longue.' : null)),
+      password: (v) => (!strongPwd(String(v || '')) ? 'Mot de passe faible (8+, 1 lettre et 1 chiffre).' : null),
+    }
+  );
   const [photo, setPhoto] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -26,35 +43,22 @@ export default function RegisterDoctorScreen() {
   const hasDanger = (s: string) => /[<>]/.test(s);
   const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s);
   const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s) && s.length <= 100;
-  const normalizePhone = (s: string) => s.replace(/\D+/g, '');
   const isPhone = (digits: string) => /^7\d{8}$/.test(digits);
   const isLicense = (s: string) => /^[A-Za-z0-9\-]{3,50}$/.test(s);
   const strongPwd = (s: string) => /^(?=.*[A-Za-z])(?=.*\d).{8,64}$/.test(s);
 
   const validate = () => {
-    const fn = sanitize(firstName);
-    const ln = sanitize(lastName);
-    const em = sanitize(email);
-    const ph = normalizePhone(phone);
-    const sp = sanitize(specialty);
-    const lic = sanitize(licenseNumber);
-    const adr = sanitize(clinicAddress);
-    const hop = sanitize(hopital);
-    const pw = password;
-
-    if ([fn, ln, em, ph, sp, lic, adr, hop, pw].some(v => v === '')) return 'Tous les champs sont requis.';
-    if ([fn, ln, sp, lic, adr, hop].some(hasDanger)) return 'Caractères interdits détectés (<, >).';
-    if (!isName(ln) || !isName(fn)) return 'Nom et prénom doivent comporter 2–50 lettres (accents autorisés).';
-    if (!isEmail(em)) return 'Email invalide.';
-    if (!isPhone(ph)) return "Téléphone invalide. Format attendu: 7XXXXXXXX.";
-    if (!isLicense(lic)) return "Numéro d'agrément invalide (3–50 alphanumériques et tirets).";
-    if (sp.length > 60 || hop.length > 80 || adr.length > 120) return 'Texte trop long.';
-    if (!strongPwd(pw)) return 'Mot de passe faible: 8–64 caractères, au moins une lettre et un chiffre.';
+    // conserve la validation globale comme sauvegarde
+    const vals = fv.values;
+    if (Object.values(vals).some((v) => String(v || '').trim() === '')) return 'Tous les champs sont requis.';
+    if ([vals.firstName, vals.lastName, vals.specialty, vals.licenseNumber, vals.clinicAddress, vals.hopital].some(hasDanger)) return 'Caractères interdits détectés (<, >).';
     return null;
   };
 
   const onSubmit = () => {
     if (saving) return;
+    fv.markAllTouched();
+    if (!fv.isValid) { setError(null); return; }
     const v = validate();
     if (v) { setError(v); return; }
     setError(null);
@@ -96,68 +100,79 @@ export default function RegisterDoctorScreen() {
         <Text style={styles.label}>Nom</Text>
         <TextInput
           ref={register('lastName')}
-          style={styles.input}
+          style={[styles.input, fv.getError('lastName') && { borderColor: '#dc2626' }]}
           placeholder="Entrez votre nom"
-          value={lastName}
-          onChangeText={setLastName}
+          value={fv.values.lastName}
+          onChangeText={(v) => fv.setField('lastName', v)}
           maxLength={50}
           onFocus={() => scrollIntoView('lastName')}
+          {...fv.getInputProps('lastName')}
         />
+        {fv.touched.lastName && fv.getError('lastName') ? (<Text style={styles.fieldError}>{fv.getError('lastName')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Prénom</Text>
         <TextInput
           ref={register('firstName')}
-          style={styles.input}
+          style={[styles.input, fv.getError('firstName') && { borderColor: '#dc2626' }]}
           placeholder="Entrez votre prénom"
-          value={firstName}
-          onChangeText={setFirstName}
+          value={fv.values.firstName}
+          onChangeText={(v) => fv.setField('firstName', v)}
           onFocus={() => scrollIntoView('firstName')}
+          {...fv.getInputProps('firstName')}
         />
+        {fv.touched.firstName && fv.getError('firstName') ? (<Text style={styles.fieldError}>{fv.getError('firstName')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Adresse e-mail</Text>
         <TextInput
           ref={register('email')}
-          style={styles.input}
+          style={[styles.input, fv.getError('email') && { borderColor: '#dc2626' }]}
           placeholder="nom@exemple.com"
           keyboardType="email-address"
           autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
+          value={fv.values.email}
+          onChangeText={(v) => fv.setField('email', v)}
           maxLength={100}
           onFocus={() => scrollIntoView('email')}
+          {...fv.getInputProps('email')}
         />
+        {fv.touched.email && fv.getError('email') ? (<Text style={styles.fieldError}>{fv.getError('email')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Numéro de téléphone</Text>
         <TextInput
           ref={register('phone')}
-          style={styles.input}
+          style={[styles.input, fv.getError('phone') && { borderColor: '#dc2626' }]}
           placeholder="77 123 45 67"
           keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
-          maxLength={16}
+          value={formatPhone(fv.values.phone)}
+          selection={nextSelectionAtEnd(formatPhone(fv.values.phone))}
+          onChangeText={(v) => fv.setField('phone', formatPhone(v))}
+          maxLength={12}
           onFocus={() => scrollIntoView('phone')}
+          {...fv.getInputProps('phone')}
         />
+        {fv.touched.phone && fv.getError('phone') ? (<Text style={styles.fieldError}>{fv.getError('phone')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <Text>Mot de passe</Text>
         <TextInput
           ref={register('password')}
-          style={styles.input}
+          style={[styles.input, fv.getError('password') && { borderColor: '#dc2626' }]}
           placeholder="Entrez votre mot de passe"
-          value={password}
-          onChangeText={setPassword}
+          value={fv.values.password}
+          onChangeText={(v) => fv.setField('password', v)}
           maxLength={64}
           secureTextEntry
           onFocus={() => scrollIntoView('password')}
+          {...fv.getInputProps('password')}
         />
+        {fv.touched.password && fv.getError('password') ? (<Text style={styles.fieldError}>{fv.getError('password')}</Text>) : null}
       </View>
 
       <Text style={styles.sectionTitle}>Informations Professionnelles</Text>
@@ -167,52 +182,60 @@ export default function RegisterDoctorScreen() {
         <Text style={styles.label}>Spécialité</Text>
         <TextInput
           ref={register('specialty')}
-          style={styles.input}
+          style={[styles.input, fv.getError('specialty') && { borderColor: '#dc2626' }]}
           placeholder="Cardiologue, generaliste,..."
-          value={specialty}
-          onChangeText={setSpecialty}
+          value={fv.values.specialty}
+          onChangeText={(v) => fv.setField('specialty', v)}
           maxLength={60}
           onFocus={() => scrollIntoView('specialty')}
+          {...fv.getInputProps('specialty')}
         />
+        {fv.touched.specialty && fv.getError('specialty') ? (<Text style={styles.fieldError}>{fv.getError('specialty')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Numéro d&apos;ordre</Text>
         <TextInput
           ref={register('license')}
-          style={styles.input}
+          style={[styles.input, fv.getError('licenseNumber') && { borderColor: '#dc2626' }]}
           placeholder="Entrez votre numéro d'ordre"
-          value={licenseNumber}
-          onChangeText={setLicenseNumber}
+          value={fv.values.licenseNumber}
+          onChangeText={(v) => fv.setField('licenseNumber', v)}
           maxLength={50}
           onFocus={() => scrollIntoView('license')}
+          {...fv.getInputProps('licenseNumber')}
         />
+        {fv.touched.licenseNumber && fv.getError('licenseNumber') ? (<Text style={styles.fieldError}>{fv.getError('licenseNumber')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Structure de rattachement</Text>
         <TextInput
           ref={register('hopital')}
-          style={styles.input}
+          style={[styles.input, fv.getError('hopital') && { borderColor: '#dc2626' }]}
           placeholder="Entrez le nom du structure ou vous etes rattaché"
-          value={hopital}
-          onChangeText={setHopital}
+          value={fv.values.hopital}
+          onChangeText={(v) => fv.setField('hopital', v)}
           maxLength={80}
           onFocus={() => scrollIntoView('hopital')}
+          {...fv.getInputProps('hopital')}
         />
+        {fv.touched.hopital && fv.getError('hopital') ? (<Text style={styles.fieldError}>{fv.getError('hopital')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Adresse de la structure</Text>
         <TextInput
           ref={register('clinicAddress')}
-          style={styles.input}
+          style={[styles.input, fv.getError('clinicAddress') && { borderColor: '#dc2626' }]}
           placeholder="Entrez l'adresse de la structure"
-          value={clinicAddress}
-          onChangeText={setClinicAddress}
+          value={fv.values.clinicAddress}
+          onChangeText={(v) => fv.setField('clinicAddress', v)}
           maxLength={120}
           onFocus={() => scrollIntoView('clinicAddress')}
+          {...fv.getInputProps('clinicAddress')}
         />
+        {fv.touched.clinicAddress && fv.getError('clinicAddress') ? (<Text style={styles.fieldError}>{fv.getError('clinicAddress')}</Text>) : null}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -223,7 +246,7 @@ export default function RegisterDoctorScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={[styles.primaryBtn, (saving || !!validate()) && { opacity: 0.7 }]} disabled={saving || !!validate()} onPress={onSubmit}>
+      <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSubmit}>
         <Text style={styles.primaryBtnText}>{saving ? 'Envoi…' : "S'inscrire"}</Text>
       </TouchableOpacity>
 
@@ -285,6 +308,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     fontSize: 15,
+  },
+  fieldError: {
+    color: '#dc2626',
+    fontSize: 12,
+    marginTop: 6,
   },
   primaryBtn: {
     backgroundColor: '#2ccdd2',

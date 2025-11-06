@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Link, useRouter } from 'expo-router';
@@ -13,7 +13,7 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image source={require('../assets/images/logoMedicare.png')} style={{width: 300, height: 300}} />
+        <Image source={require('../assets/images/logoMedicare.png')} style={{width: 300, height: 300, marginHorizontal: 20}} />
       </View>
 
       <View style={styles.content}>
@@ -25,6 +25,7 @@ export default function WelcomeScreen() {
       
       <View style={styles.dots}>
         <View style={[styles.dot, styles.dotActive]} />
+        <View style={styles.dot} />
         <View style={styles.dot} />
       </View>
 

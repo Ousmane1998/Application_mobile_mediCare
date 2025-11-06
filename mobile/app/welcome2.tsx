@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,11 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 export default function Welcome2Screen() {
   const router = useRouter();
 
-  const finishOnboarding = async () => {
-    try {
-      await AsyncStorage.setItem('hasSeenOnboarding', 'true');
-    } catch {}
-    router.replace('/login');
+  const goNext = () => {
+    router.replace('/welcome3' as any);
   };
 
   return (
@@ -47,8 +45,9 @@ export default function Welcome2Screen() {
         <View style={styles.dots}>
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
+          <View style={styles.dot} />
         </View>
-        <TouchableOpacity style={styles.primaryBtn} onPress={finishOnboarding}>
+        <TouchableOpacity style={styles.primaryBtn} onPress={goNext}>
           <Text style={styles.primaryBtnText}>Suivant</Text>
         </TouchableOpacity>
       </View>

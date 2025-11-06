@@ -102,7 +102,7 @@ export default function PatientDashboardScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={{ marginTop: 8, color: theme.colors.muted }}>Chargement...</Text>
       </View>
@@ -114,9 +114,9 @@ export default function PatientDashboardScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Header />
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text style={[styles.greeting, { color: theme.colors.text }]}>Bonjour, {meName || 'Patient'}!</Text>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vos dernières mesures</Text>
 

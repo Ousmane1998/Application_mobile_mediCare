@@ -14,6 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { authFetch, getProfile } from '@/utils/api';
+import { hasDanger } from '../../utils/validation';
 
 type Medication = {
   id: string;
@@ -33,6 +34,18 @@ const OrdonnanceCreateScreen = () => {
   const [patient, setPatient] = useState<any>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [notes, setNotes] = useState('');
+  const [touched, setTouched] = useState<Record<string, { nom?: boolean; dosage?: boolean; frequence?: boolean; duree?: boolean }>>({});
+
+  const getError = (field: keyof Medication, value: string) => {
+    const v = String(value || '').trim();
+    if (!v) return 'Champ requis.';
+    if (hasDanger(v)) return 'Caractères interdits (<, >).';
+    if (v.length > 100) return 'Trop long (max 100).';
+    return null;
+  };
+  const markTouched = (id: string, field: keyof Medication) => {
+    setTouched((prev) => ({ ...prev, [id]: { ...(prev[id] || {}), [field]: true } }));
+  };
 
   useEffect(() => {
     fetchData();
@@ -220,36 +233,44 @@ const OrdonnanceCreateScreen = () => {
                 </View>
 
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, touched[med.id]?.nom && getError('nom', med.nom) && { borderColor: '#dc2626' }]}
                   placeholder="Nom du médicament"
                   placeholderTextColor="#9CA3AF"
                   value={med.nom}
                   onChangeText={(text) => updateMedication(med.id, 'nom', text)}
+                  onBlur={() => markTouched(med.id, 'nom')}
                 />
+                {touched[med.id]?.nom && getError('nom', med.nom) ? (<Text style={styles.fieldError}>{getError('nom', med.nom)}</Text>) : null}
 
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, touched[med.id]?.dosage && getError('dosage', med.dosage) && { borderColor: '#dc2626' }]}
                   placeholder="Dosage (ex: 500mg)"
                   placeholderTextColor="#9CA3AF"
                   value={med.dosage}
                   onChangeText={(text) => updateMedication(med.id, 'dosage', text)}
+                  onBlur={() => markTouched(med.id, 'dosage')}
                 />
+                {touched[med.id]?.dosage && getError('dosage', med.dosage) ? (<Text style={styles.fieldError}>{getError('dosage', med.dosage)}</Text>) : null}
 
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, touched[med.id]?.frequence && getError('frequence', med.frequence) && { borderColor: '#dc2626' }]}
                   placeholder="Fréquence (ex: 2x par jour)"
                   placeholderTextColor="#9CA3AF"
                   value={med.frequence}
                   onChangeText={(text) => updateMedication(med.id, 'frequence', text)}
+                  onBlur={() => markTouched(med.id, 'frequence')}
                 />
+                {touched[med.id]?.frequence && getError('frequence', med.frequence) ? (<Text style={styles.fieldError}>{getError('frequence', med.frequence)}</Text>) : null}
 
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, touched[med.id]?.duree && getError('duree', med.duree) && { borderColor: '#dc2626' }]}
                   placeholder="Durée (ex: 7 jours)"
                   placeholderTextColor="#9CA3AF"
                   value={med.duree}
                   onChangeText={(text) => updateMedication(med.id, 'duree', text)}
+                  onBlur={() => markTouched(med.id, 'duree')}
                 />
+                {touched[med.id]?.duree && getError('duree', med.duree) ? (<Text style={styles.fieldError}>{getError('duree', med.duree)}</Text>) : null}
               </View>
             ))
           )}
@@ -284,10 +305,10 @@ const OrdonnanceCreateScreen = () => {
           <TouchableOpacity
             style={[
               styles.submitButton,
-              (submitting || medications.length === 0) && styles.submitButtonDisabled,
+              submitting && styles.submitButtonDisabled,
             ]}
             onPress={handleSubmit}
-            disabled={submitting || medications.length === 0}
+            disabled={submitting}
           >
             {submitting ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -489,4 +510,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fff',
   },
+  fieldError: { color: '#dc2626', fontSize: 12, marginTop: -6, marginBottom: 6 },
 });

@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { formatPhone, normalizePhone, nextSelectionAtEnd } from '../../utils/phone';
 import { useRouter } from 'expo-router';
 import { getProfile, updateProfile, type UserProfile } from '../../utils/api';
 import Snackbar from '../../components/Snackbar';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { sanitize, hasDanger, isEmailValid, phoneDigits, isPhoneDigitsValid } from '../../utils/validation';
 
 export default function AdminProfileEditScreen() {
   const router = useRouter();
@@ -12,18 +15,36 @@ export default function AdminProfileEditScreen() {
   const [form, setForm] = useState<{ nom: string; prenom: string; email?: string; adresse?: string; age?: string; telephone?: string }>({ nom: '', prenom: '' });
   const [snack, setSnack] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
 
+  const fv = useFormValidation(
+    { nom: '', prenom: '', email: '', adresse: '', age: '', telephone: '' },
+    {
+      nom: (v) => (!String(v || '').trim() ? 'Nom requis.' : null),
+      prenom: (v) => (!String(v || '').trim() ? 'Prénom requis.' : null),
+      email: (v) => (isEmailValid(String(v || '')) ? null : 'Email invalide.'),
+      adresse: (v) => (!String(v || '').trim() ? 'Adresse requise.' : (String(v || '').length > 120 ? 'Adresse trop longue.' : null)),
+      age: (v) => (/^\d{1,3}$/.test(String(v || '')) ? null : 'Âge invalide.'),
+      telephone: (v) => (isPhoneDigitsValid(phoneDigits(String(v || ''))) ? null : 'Téléphone invalide (7XXXXXXXX).'),
+    }
+  );
+
   useEffect(() => {
     (async () => {
       try {
         const data = await getProfile();
         const u = data.user as UserProfile;
-        setForm({
+        const next = {
           nom: u.nom || '',
           prenom: u.prenom || '',
           email: u.email || '',
           adresse: u.adresse || '',
           age: u.age ? String(u.age) : '',
           telephone: u.telephone || '',
+        };
+        setForm(next);
+        // init hook values
+        (Object.keys(next) as Array<keyof typeof next>).forEach((k) => {
+          // @ts-ignore
+          fv.setField(k, next[k]);
         });
       } catch (e: any) {
         setError(e?.message || 'Erreur de chargement');
@@ -34,34 +55,19 @@ export default function AdminProfileEditScreen() {
   }, []);
 
   const onSave = async () => {
-    if (!form.nom || !form.prenom || !form.email || !form.adresse || !form.age || !form.telephone) {
-      setSnack({ visible: true, message: 'Tous les champs sont requis.', type: 'error' });
-      return;
-    }
-    const emailRegex = /^\S+@\S+\.\S+$/;
-    const phoneRegex = /^7\d{8}$/;
-    if (!emailRegex.test(form.email)) {
-      setSnack({ visible: true, message: 'Format email invalide. Format attendu: string@string.string.', type: 'error' });
-      return;
-    }
-    if (!phoneRegex.test(form.telephone)) {
-      setSnack({ visible: true, message: 'Format téléphone invalide. Format attendu: 7XXXXXXXX.', type: 'error' });
-      return;
-    }
-    if (isNaN(Number(form.age))) {
-      setSnack({ visible: true, message: 'Âge invalide.', type: 'error' });
-      return;
-    }
+    fv.markAllTouched();
+    if (!fv.isValid) { setSnack({ visible: true, message: 'Veuillez corriger les erreurs.', type: 'error' }); return; }
+    const telDigits = normalizePhone(fv.values.telephone || '');
     try {
       setSaving(true);
       setError(null);
       await updateProfile({
-        nom: form.nom,
-        prenom: form.prenom,
-        email: form.email,
-        adresse: form.adresse,
-        age: Number(form.age),
-        telephone: form.telephone,
+        nom: String(fv.values.nom),
+        prenom: String(fv.values.prenom),
+        email: String(fv.values.email),
+        adresse: String(fv.values.adresse),
+        age: Number(fv.values.age),
+        telephone: telDigits,
       });
       setSnack({ visible: true, message: 'Profil modifié avec succès.', type: 'success' });
       setTimeout(() => router.back(), 800);
@@ -85,12 +91,12 @@ export default function AdminProfileEditScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Modifier le profil</Text>
 
-      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} /></View>
-      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} /></View>
-      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput style={styles.input} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" /></View>
-      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} /></View>
-      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" /></View>
-      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" /></View>
+      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput style={[styles.input, fv.getError('nom') && { borderColor: '#dc2626' }]} value={fv.values.nom} onChangeText={(v) => fv.setField('nom', v)} {...fv.getInputProps('nom')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput style={[styles.input, fv.getError('prenom') && { borderColor: '#dc2626' }]} value={fv.values.prenom} onChangeText={(v) => fv.setField('prenom', v)} {...fv.getInputProps('prenom')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput style={[styles.input, fv.getError('email') && { borderColor: '#dc2626' }]} value={fv.values.email} onChangeText={(v) => fv.setField('email', v)} keyboardType="email-address" autoCapitalize="none" {...fv.getInputProps('email')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput style={[styles.input, fv.getError('adresse') && { borderColor: '#dc2626' }]} value={fv.values.adresse} onChangeText={(v) => fv.setField('adresse', v)} {...fv.getInputProps('adresse')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput style={[styles.input, fv.getError('age') && { borderColor: '#dc2626' }]} value={fv.values.age} onChangeText={(v) => fv.setField('age', v)} keyboardType="numeric" {...fv.getInputProps('age')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput style={[styles.input, fv.getError('telephone') && { borderColor: '#dc2626' }]} value={formatPhone(fv.values.telephone || '')} selection={nextSelectionAtEnd(formatPhone(fv.values.telephone || ''))} onChangeText={(v) => fv.setField('telephone', formatPhone(v))} keyboardType="phone-pad" maxLength={12} placeholder="7X XXX XX XX" {...fv.getInputProps('telephone')} /></View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 

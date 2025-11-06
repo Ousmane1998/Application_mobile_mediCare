@@ -1,16 +1,18 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '../theme/ThemeContext';
 
 export default function NavPatient() {
+  const { theme } = useAppTheme();
   return (
     <Tabs screenOptions={{ 
       headerShown: false, 
-      tabBarActiveTintColor: '#2ccdd2',
-      tabBarInactiveTintColor: '#9CA3AF',
+      tabBarActiveTintColor: theme.colors.primary,
+      tabBarInactiveTintColor: theme.colors.muted,
       tabBarStyle: {
-        backgroundColor: '#fff',
-        borderTopColor: '#E5E7EB',
+        backgroundColor: theme.colors.card,
+        borderTopColor: theme.colors.border,
         borderTopWidth: 1,
       }
     }}>

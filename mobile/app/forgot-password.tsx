@@ -2,36 +2,39 @@ import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { requestPasswordReset } from '../utils/api';
+import { useFormValidation } from '../hooks/useFormValidation';
+import { sanitize, hasDanger, isEmailValid } from '../utils/validation';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [identifier, setIdentifier] = useState('');
+  const fv = useFormValidation(
+    { identifier: '' },
+    {
+      identifier: (raw) => {
+        const v = sanitize(String(raw || ''));
+        if (!v) return 'Email requis.';
+        if (hasDanger(v)) return 'Caractères interdits (<, >).';
+        if (!isEmailValid(v)) return 'Email invalide.';
+        return null;
+      },
+    }
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-
-  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
-  const hasDanger = (s: string) => /[<>]/.test(s || '');
-  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s || '');
-  const validate = () => {
-    const v = sanitize(identifier);
-    if (!v) return 'Email requis.';
-    if (hasDanger(v)) return 'Caractères interdits (<, >).';
-    if (!isEmail(v) || v.length > 100) return 'Email invalide.';
-    return null;
-  };
+  const validate = () => null;
 
   const onSubmit = async () => {
     setError(null);
     setInfo(null);
-    const v = validate();
-    if (v) { setError(v); return; }
+    fv.markAllTouched();
+    if (!fv.isValid) { setError(null); return; }
     try {
       setLoading(true);
-      await requestPasswordReset(sanitize(identifier));
+      await requestPasswordReset(sanitize(fv.values.identifier));
       setInfo('Un code de réinitialisation vous a été envoyé par email.');
       router.push('/reset-password' as any);
-      router.setParams({ identifier });
+      router.setParams({ identifier: fv.values.identifier });
     } catch (e: any) {
       setError(e?.message || 'Erreur lors de la demande.');
     } finally {
@@ -62,13 +65,14 @@ export default function ForgotPasswordScreen() {
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Email</Text>
-        <TextInput ref={inputRef} style={styles.input} value={identifier} onChangeText={setIdentifier} placeholder="ex: example@example.com" autoCapitalize="none" maxLength={100} onFocus={onFocusScroll} />
+        <TextInput ref={inputRef} style={[styles.input, fv.getError('identifier') && { borderColor: '#dc2626' }]} value={fv.values.identifier} onChangeText={(v) => fv.setField('identifier', v)} placeholder="ex: example@example.com" autoCapitalize="none" maxLength={100} onFocus={onFocusScroll} {...fv.getInputProps('identifier')} />
+        {fv.touched.identifier && fv.getError('identifier') ? (<Text style={styles.fieldError}>{fv.getError('identifier')}</Text>) : null}
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, (loading || !!validate()) && { opacity: 0.7 }]} disabled={loading || !!validate()} onPress={onSubmit}>
+      <TouchableOpacity style={[styles.primaryBtn, loading && { opacity: 0.7 }]} disabled={loading} onPress={onSubmit}>
         <Text style={styles.primaryBtnText}>{loading ? 'Envoi…' : 'Envoyer le code'}</Text>
       </TouchableOpacity>
 
@@ -88,6 +92,7 @@ const styles = StyleSheet.create({
   fieldGroup: { marginTop: 16 },
   label: { color: '#374151', marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12 },
+  fieldError: { color: '#dc2626', fontSize: 12, marginTop: 6 },
   primaryBtn: { backgroundColor: '#2ccdd2', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16 },
   primaryBtnText: { color: '#fff', fontSize: 16 },
   error: { color: '#dc2626', marginTop: 8 },

@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { listHealthRecords, updateHealthRecord, type HealthRecord } from '../../utils/api';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { hasDanger } from '../../utils/validation';
 
 export default function DoctorPatientHealthRecordScreen() {
   const router = useRouter();
@@ -32,6 +34,16 @@ export default function DoctorPatientHealthRecordScreen() {
     allergies?: string;
     antecedents?: string;
   }>({});
+  const fv = useFormValidation(
+    { groupeSanguin: '', maladies: '', traitements: '', allergies: '', antecedents: '' },
+    {
+      groupeSanguin: (v) => (String(v || '').length > 10 ? 'Trop long.' : (hasDanger(String(v || '')) ? 'Caractères interdits (<, >).' : null)),
+      maladies: (v) => (String(v || '').length > 500 ? 'Trop long.' : (hasDanger(String(v || '')) ? 'Caractères interdits (<, >).' : null)),
+      traitements: (v) => (String(v || '').length > 500 ? 'Trop long.' : (hasDanger(String(v || '')) ? 'Caractères interdits (<, >).' : null)),
+      allergies: (v) => (String(v || '').length > 500 ? 'Trop long.' : (hasDanger(String(v || '')) ? 'Caractères interdits (<, >).' : null)),
+      antecedents: (v) => (String(v || '').length > 500 ? 'Trop long.' : (hasDanger(String(v || '')) ? 'Caractères interdits (<, >).' : null)),
+    }
+  );
 
   useEffect(() => {
     (async () => {
@@ -41,12 +53,17 @@ export default function DoctorPatientHealthRecordScreen() {
         const found = (Array.isArray(list) ? list : []).find((f: any) => String((f.patient?._id)||f.patient) === String(patientId));
         setRec(found || null);
         if (found) {
-          setForm({
+          const next = {
             groupeSanguin: found.groupeSanguin || '',
             maladies: (found.maladies || []).join(', '),
             traitements: (found.traitements || []).join(', '),
             allergies: (found.allergies || []).join(', '),
             antecedents: (found.antecedents || []).join(', '),
+          };
+          setForm(next);
+          (Object.keys(next) as Array<keyof typeof next>).forEach((k) => {
+            // @ts-ignore
+            fv.setField(k, next[k] || '');
           });
         }
       } catch (e: any) {
@@ -59,15 +76,17 @@ export default function DoctorPatientHealthRecordScreen() {
 
   const parseList = (v?: string) => (v ? v.split(',').map(s => s.trim()).filter(Boolean) : []);
   const onSave = async () => {
+    fv.markAllTouched();
+    if (!fv.isValid) { Alert.alert('Validation', 'Veuillez corriger les erreurs.'); return; }
     if (!rec?._id) return;
     try {
       setSaving(true);
       await updateHealthRecord(rec._id, {
-        groupeSanguin: form.groupeSanguin || undefined,
-        maladies: parseList(form.maladies),
-        traitements: parseList(form.traitements),
-        allergies: parseList(form.allergies),
-        antecedents: parseList(form.antecedents),
+        groupeSanguin: fv.values.groupeSanguin || undefined,
+        maladies: parseList(fv.values.maladies),
+        traitements: parseList(fv.values.traitements),
+        allergies: parseList(fv.values.allergies),
+        antecedents: parseList(fv.values.antecedents),
       });
       Alert.alert('Succès', 'Fiche mise à jour');
       setEditMode(false);
@@ -103,14 +122,18 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.label}>Groupe sanguin</Text>
         {editMode ? (
-          <TextInput
-            ref={register('groupeSanguin')}
-            onFocus={() => scrollIntoView('groupeSanguin')}
-            placeholder="Ex: O+, A-, ..."
-            value={form.groupeSanguin}
-            onChangeText={(t) => setForm((f) => ({ ...f, groupeSanguin: t }))}
-            style={styles.input}
-          />
+          <>
+            <TextInput
+              ref={register('groupeSanguin')}
+              onFocus={() => scrollIntoView('groupeSanguin')}
+              placeholder="Ex: O+, A-, ..."
+              value={fv.values.groupeSanguin}
+              onChangeText={(t) => fv.setField('groupeSanguin', t)}
+              style={[styles.input, fv.getError('groupeSanguin') && { borderColor: '#dc2626' }]}
+              {...fv.getInputProps('groupeSanguin')}
+            />
+            {fv.touched.groupeSanguin && fv.getError('groupeSanguin') ? (<Text style={styles.fieldError}>{fv.getError('groupeSanguin')}</Text>) : null}
+          </>
         ) : (
           <Text style={styles.value}>{rec.groupeSanguin || '—'}</Text>
         )}
@@ -122,7 +145,10 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Allergies</Text>
         {editMode ? (
-          <TextInput ref={register('allergies')} onFocus={() => scrollIntoView('allergies')} placeholder="Séparées par des virgules" value={form.allergies} onChangeText={(t) => setForm((f) => ({ ...f, allergies: t }))} style={styles.input} multiline />
+          <>
+            <TextInput ref={register('allergies')} onFocus={() => scrollIntoView('allergies')} placeholder="Séparées par des virgules" value={fv.values.allergies} onChangeText={(t) => fv.setField('allergies', t)} style={[styles.input, fv.getError('allergies') && { borderColor: '#dc2626' }]} multiline {...fv.getInputProps('allergies')} />
+            {fv.touched.allergies && fv.getError('allergies') ? (<Text style={styles.fieldError}>{fv.getError('allergies')}</Text>) : null}
+          </>
         ) : (
           (rec.allergies && rec.allergies.length > 0) ? rec.allergies.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -133,7 +159,10 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Maladies</Text>
         {editMode ? (
-          <TextInput ref={register('maladies')} onFocus={() => scrollIntoView('maladies')} placeholder="Séparées par des virgules" value={form.maladies} onChangeText={(t) => setForm((f) => ({ ...f, maladies: t }))} style={styles.input} multiline />
+          <>
+            <TextInput ref={register('maladies')} onFocus={() => scrollIntoView('maladies')} placeholder="Séparées par des virgules" value={fv.values.maladies} onChangeText={(t) => fv.setField('maladies', t)} style={[styles.input, fv.getError('maladies') && { borderColor: '#dc2626' }]} multiline {...fv.getInputProps('maladies')} />
+            {fv.touched.maladies && fv.getError('maladies') ? (<Text style={styles.fieldError}>{fv.getError('maladies')}</Text>) : null}
+          </>
         ) : (
           (rec.maladies && rec.maladies.length > 0) ? rec.maladies.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -144,7 +173,10 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Traitements</Text>
         {editMode ? (
-          <TextInput ref={register('traitements')} onFocus={() => scrollIntoView('traitements')} placeholder="Séparés par des virgules" value={form.traitements} onChangeText={(t) => setForm((f) => ({ ...f, traitements: t }))} style={styles.input} multiline />
+          <>
+            <TextInput ref={register('traitements')} onFocus={() => scrollIntoView('traitements')} placeholder="Séparés par des virgules" value={fv.values.traitements} onChangeText={(t) => fv.setField('traitements', t)} style={[styles.input, fv.getError('traitements') && { borderColor: '#dc2626' }]} multiline {...fv.getInputProps('traitements')} />
+            {fv.touched.traitements && fv.getError('traitements') ? (<Text style={styles.fieldError}>{fv.getError('traitements')}</Text>) : null}
+          </>
         ) : (
           (rec.traitements && rec.traitements.length > 0) ? rec.traitements.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -155,7 +187,10 @@ export default function DoctorPatientHealthRecordScreen() {
       <View style={styles.card}>
         <Text style={styles.section}>Antécédents</Text>
         {editMode ? (
-          <TextInput ref={register('antecedents')} onFocus={() => scrollIntoView('antecedents')} placeholder="Séparés par des virgules" value={form.antecedents} onChangeText={(t) => setForm((f) => ({ ...f, antecedents: t }))} style={styles.input} multiline />
+          <>
+            <TextInput ref={register('antecedents')} onFocus={() => scrollIntoView('antecedents')} placeholder="Séparés par des virgules" value={fv.values.antecedents} onChangeText={(t) => fv.setField('antecedents', t)} style={[styles.input, fv.getError('antecedents') && { borderColor: '#dc2626' }]} multiline {...fv.getInputProps('antecedents')} />
+            {fv.touched.antecedents && fv.getError('antecedents') ? (<Text style={styles.fieldError}>{fv.getError('antecedents')}</Text>) : null}
+          </>
         ) : (
           (rec.antecedents && rec.antecedents.length > 0) ? rec.antecedents.map((t, i) => (
             <Text key={`${t}_${i}`} style={styles.item}>• {t}</Text>
@@ -186,4 +221,5 @@ const styles = StyleSheet.create({
   itemMuted: { color: '#6B7280' },
   saveBtn: { backgroundColor: '#10B981', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   saveText: { color: '#fff', fontSize: 16 },
+  fieldError: { color: '#dc2626', fontSize: 12, marginTop: 6 },
 });

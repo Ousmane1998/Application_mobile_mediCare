@@ -334,7 +334,7 @@ useEffect(() => {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, (saving || !!valueError) && { opacity: 0.7 }]} disabled={saving || !!valueError} onPress={onSave}>
+      <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Sauvegarder'}</Text>
       </TouchableOpacity>
 

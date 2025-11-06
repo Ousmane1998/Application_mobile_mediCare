@@ -2,8 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getProfile, updateProfile, updatePhoto, type UserProfile } from '../../utils/api';
+import { formatPhone, normalizePhone, isPhone, nextSelectionAtEnd } from '../../utils/phone';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { sanitize as s1, hasDanger, isEmailValid, phoneDigits, isPhoneDigitsValid, isName, isAgeValid } from '../../utils/validation';
 
 export default function DoctorProfileEditScreen() {
   const router = useRouter();
@@ -27,33 +30,25 @@ export default function DoctorProfileEditScreen() {
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | undefined>(undefined);
 
-  // Validation helpers
-  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
-  const hasDanger = (s: string) => /[<>]/.test(s || '');
-  const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s || '');
-  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s || '');
-  const normalizePhone = (s: string) => (s || '').replace(/\D+/g, '');
-  const isPhone = (digits: string) => /^7\d{8}$/.test(digits || '');
-  const isAge = (s: string) => /^\d{1,3}$/.test(s || '') && Number(s) >= 0 && Number(s) <= 120;
+  const fv = useFormValidation(
+    { nom: '', prenom: '', email: '', adresse: '', age: '', telephone: '', specialite: '', hopital: '' },
+    {
+      nom: (v) => (isName(String(v || '')) ? null : 'Nom invalide (2–50).'),
+      prenom: (v) => (isName(String(v || '')) ? null : 'Prénom invalide (2–50).'),
+      email: (v) => (isEmailValid(String(v || '')) ? null : 'Email invalide.'),
+      adresse: (v) => (!String(v || '').trim() ? 'Adresse requise.' : (String(v || '').length > 120 ? 'Adresse trop longue.' : null)),
+      age: (v) => (isAgeValid(String(v || '')) ? null : 'Âge invalide (0–120).'),
+      telephone: (v) => (isPhoneDigitsValid(phoneDigits(String(v || ''))) ? null : 'Téléphone invalide (7XXXXXXXX).'),
+      specialite: (v) => (String(v || '').length > 60 ? 'Spécialité trop longue.' : null),
+      hopital: (v) => (String(v || '').length > 80 ? 'Hôpital trop long.' : null),
+    }
+  );
 
+  // Validation globale conservée au besoin
   const validate = (): string | null => {
-    const v = {
-      nom: sanitize(form.nom),
-      prenom: sanitize(form.prenom),
-      email: sanitize(form.email || ''),
-      adresse: sanitize(form.adresse || ''),
-      age: sanitize(form.age || ''),
-      telephone: normalizePhone(form.telephone || ''),
-      specialite: sanitize(form.specialite || ''),
-      hopital: sanitize(form.hopital || ''),
-    };
-    if (!v.nom || !v.prenom || !v.email || !v.adresse || !v.age || !v.telephone) return 'Tous les champs requis.';
-    if ([v.nom, v.prenom, v.adresse, v.specialite, v.hopital].some(hasDanger)) return 'Caractères interdits (<, >).';
-    if (!isName(v.nom) || !isName(v.prenom)) return 'Nom/Prénom: 2–50 lettres.';
-    if (!isEmail(v.email) || v.email.length > 100) return 'Email invalide.';
-    if (!isPhone(v.telephone)) return 'Téléphone invalide (7XXXXXXXX).';
-    if (v.adresse.length > 120 || v.specialite.length > 60 || v.hopital.length > 80) return 'Texte trop long.';
-    if (!isAge(v.age)) return 'Âge invalide (0–120).';
+    const v = fv.values;
+    if (!String(v.nom).trim() || !String(v.prenom).trim() || !String(v.email).trim() || !String(v.adresse).trim() || !String(v.age).trim() || !String(v.telephone).trim()) return 'Tous les champs requis.';
+    if ([v.nom, v.prenom, v.adresse, v.specialite, v.hopital].some((x) => hasDanger(String(x || '')))) return 'Caractères interdits (<, >).';
     return null;
   };
 
@@ -62,7 +57,7 @@ export default function DoctorProfileEditScreen() {
       try {
         const data = await getProfile();
         const u = data.user as UserProfile;
-        setForm({
+        const next = {
           nom: u.nom || '',
           prenom: u.prenom || '',
           email: u.email || '',
@@ -71,6 +66,11 @@ export default function DoctorProfileEditScreen() {
           telephone: u.telephone || '',
           specialite: u.specialite || '',
           hopital: u.hopital || '',
+        };
+        setForm(next);
+        (Object.keys(next) as Array<keyof typeof next>).forEach((k) => {
+          // @ts-ignore
+          fv.setField(k, next[k]);
         });
         if (u.photo) setPhotoPreview(u.photo);
       } catch (e: any) {
@@ -82,20 +82,22 @@ export default function DoctorProfileEditScreen() {
   }, []);
 
   const onSave = async () => {
+    fv.markAllTouched();
+    if (!fv.isValid) { Alert.alert('Validation', 'Veuillez corriger les erreurs.'); return; }
     const v = validate();
     if (v) { Alert.alert('Validation', v); return; }
     try {
       setSaving(true);
       setError(null);
       await updateProfile({
-        nom: sanitize(form.nom),
-        prenom: sanitize(form.prenom),
-        email: sanitize(form.email || ''),
-        adresse: sanitize(form.adresse || ''),
-        age: Number(sanitize(form.age || '')),
-        telephone: normalizePhone(form.telephone || ''),
-        specialite: sanitize(form.specialite || ''),
-        hopital: sanitize(form.hopital || ''),
+        nom: s1(String(fv.values.nom)),
+        prenom: s1(String(fv.values.prenom)),
+        email: s1(String(fv.values.email || '')),
+        adresse: s1(String(fv.values.adresse || '')),
+        age: Number(s1(String(fv.values.age || ''))),
+        telephone: normalizePhone(fv.values.telephone || ''),
+        specialite: s1(String(fv.values.specialite || '')),
+        hopital: s1(String(fv.values.hopital || '')),
       });
       Alert.alert('Succès', 'Profil modifié avec succès.', [{ text: 'OK', onPress: () => router.back() }]);
     } catch (e: any) {
@@ -161,18 +163,18 @@ export default function DoctorProfileEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput ref={register('nom')} onFocus={() => scrollIntoView('nom')} style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} maxLength={50} /></View>
-      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput ref={register('prenom')} onFocus={() => scrollIntoView('prenom')} style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} maxLength={50} /></View>
-      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput ref={register('email')} onFocus={() => scrollIntoView('email')} style={styles.input} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" maxLength={100} /></View>
-      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput ref={register('adresse')} onFocus={() => scrollIntoView('adresse')} style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} maxLength={120} /></View>
-      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput ref={register('age')} onFocus={() => scrollIntoView('age')} style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" maxLength={3} /></View>
-      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput ref={register('telephone')} onFocus={() => scrollIntoView('telephone')} style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" maxLength={16} /></View>
-      <View style={styles.group}><Text style={styles.label}>Spécialité</Text><TextInput ref={register('specialite')} onFocus={() => scrollIntoView('specialite')} style={styles.input} value={form.specialite} onChangeText={(v) => setForm((f) => ({ ...f, specialite: v }))} maxLength={60} /></View>
-      <View style={styles.group}><Text style={styles.label}>Hôpital</Text><TextInput ref={register('hopital')} onFocus={() => scrollIntoView('hopital')} style={styles.input} value={form.hopital} onChangeText={(v) => setForm((f) => ({ ...f, hopital: v }))} maxLength={80} /></View>
+      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput ref={register('nom')} onFocus={() => scrollIntoView('nom')} style={[styles.input, fv.getError('nom') && { borderColor: '#dc2626' }]} value={fv.values.nom} onChangeText={(v) => fv.setField('nom', v)} maxLength={50} {...fv.getInputProps('nom')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput ref={register('prenom')} onFocus={() => scrollIntoView('prenom')} style={[styles.input, fv.getError('prenom') && { borderColor: '#dc2626' }]} value={fv.values.prenom} onChangeText={(v) => fv.setField('prenom', v)} maxLength={50} {...fv.getInputProps('prenom')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput ref={register('email')} onFocus={() => scrollIntoView('email')} style={[styles.input, fv.getError('email') && { borderColor: '#dc2626' }]} value={fv.values.email} onChangeText={(v) => fv.setField('email', v)} keyboardType="email-address" autoCapitalize="none" maxLength={100} {...fv.getInputProps('email')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput ref={register('adresse')} onFocus={() => scrollIntoView('adresse')} style={[styles.input, fv.getError('adresse') && { borderColor: '#dc2626' }]} value={fv.values.adresse} onChangeText={(v) => fv.setField('adresse', v)} maxLength={120} {...fv.getInputProps('adresse')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput ref={register('age')} onFocus={() => scrollIntoView('age')} style={[styles.input, fv.getError('age') && { borderColor: '#dc2626' }]} value={fv.values.age} onChangeText={(v) => fv.setField('age', v)} keyboardType="numeric" maxLength={3} {...fv.getInputProps('age')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput ref={register('telephone')} onFocus={() => scrollIntoView('telephone')} style={[styles.input, fv.getError('telephone') && { borderColor: '#dc2626' }]} value={formatPhone(fv.values.telephone || '')} selection={nextSelectionAtEnd(formatPhone(fv.values.telephone || ''))} onChangeText={(v) => fv.setField('telephone', formatPhone(v))} keyboardType="phone-pad" maxLength={12} placeholder="7X XXX XX XX" {...fv.getInputProps('telephone')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Spécialité</Text><TextInput ref={register('specialite')} onFocus={() => scrollIntoView('specialite')} style={[styles.input, fv.getError('specialite') && { borderColor: '#dc2626' }]} value={fv.values.specialite} onChangeText={(v) => fv.setField('specialite', v)} maxLength={60} {...fv.getInputProps('specialite')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Hôpital</Text><TextInput ref={register('hopital')} onFocus={() => scrollIntoView('hopital')} style={[styles.input, fv.getError('hopital') && { borderColor: '#dc2626' }]} value={fv.values.hopital} onChangeText={(v) => fv.setField('hopital', v)} maxLength={80} {...fv.getInputProps('hopital')} /></View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, (saving || !!validate()) && { opacity: 0.7 }]} disabled={saving || !!validate()} onPress={onSave}>
+      <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
       </TouchableOpacity>
       </ScrollView>

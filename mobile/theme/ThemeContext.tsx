@@ -21,7 +21,7 @@ const Light = (): AppTheme => ({
   mode: 'light',
   effectiveMode: 'light',
   colors: {
-    background: '#F3F4F6',
+    background: '#FFFFFF',
     text: '#111827',
     card: '#FFFFFF',
     border: '#E5E7EB',

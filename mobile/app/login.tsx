@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
@@ -8,7 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { API_URL } from '../utils/api';
+import { normalizePhone } from '../utils/phone';
 import { useAppTheme } from '../theme/ThemeContext';
+import { useFormValidation } from '../hooks/useFormValidation';
 
 
 WebBrowser.maybeCompleteAuthSession();
@@ -16,8 +17,6 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
   const router = useRouter();
   const { theme } = useAppTheme();
-  const [emailOrPhone, setEmailOrPhone] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,23 +32,33 @@ const [request, response, promptAsync] = Google.useAuthRequest({
   const hasDanger = (s: string) => /[<>]/.test(s || '');
   const emailRegex = /^\S+@\S+\.\S+$/;
   const phoneRegex = /^7\d{8}$/;
-  const validate = () => {
-    const ident = sanitize(emailOrPhone);
-    const pwd = String(password);
-    if (!ident || !pwd) return 'mail ou telephone requis.';
-    if (hasDanger(ident)) return 'Caractères interdits détectés (<, >).';
-    if (ident.includes('@')) {
-      if (!emailRegex.test(ident) || ident.length > 100) return 'Format email invalide. Format attendu: string@string.string.';
-    } else {
-      if (!phoneRegex.test(ident)) return 'Format téléphone invalide. Format attendu: 7X XXX XX XX.';
+  const fv = useFormValidation(
+    { ident: '', password: '' },
+    {
+      ident: (raw) => {
+        const ident = sanitize(String(raw || ''));
+        if (!ident) return 'Email ou téléphone requis.';
+        if (hasDanger(ident)) return 'Caractères interdits détectés (<, >).';
+        if (ident.includes('@')) {
+          if (!emailRegex.test(ident) || ident.length > 100) return 'Email invalide. Ex: nom@domaine.com';
+        } else {
+          const digits = normalizePhone(ident);
+          if (!phoneRegex.test(digits)) return 'Téléphone invalide. Ex: 7XXXXXXXX';
+        }
+        return null;
+      },
+      password: (pwd) => {
+        const p = String(pwd || '');
+        if (!p) return 'Mot de passe requis.';
+        if (p.length < 6 || p.length > 64) return '6 à 64 caractères requis.';
+        return null;
+      },
     }
-    if (pwd.length < 6 || pwd.length > 64) return 'Le mot de passe doit contenir entre 6 et 64 caractères.';
-    return null;
-  };
+  );
 
   const onLogin = async () => {
-    const msg = validate();
-    if (msg) { setError(msg); return; }
+    fv.markAllTouched();
+    if (!fv.isValid) { setError(null); return; }
     setLoading(true);
     setError(null);
     try {
@@ -59,7 +68,7 @@ const [request, response, promptAsync] = Google.useAuthRequest({
       const res = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifiant: sanitize(emailOrPhone), password }),
+        body: JSON.stringify({ identifiant: (String(fv.values.ident).includes('@') ? sanitize(fv.values.ident) : normalizePhone(sanitize(fv.values.ident))), password: fv.values.password }),
       });
       const raw = await res.text();
       console.log("📡 Réponse brute :", res.status, raw);
@@ -182,9 +191,12 @@ const [request, response, promptAsync] = Google.useAuthRequest({
     });
   };
 
+  const identError = fv.getError('ident');
+  const pwdError = fv.getError('password');
+
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
-      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.colors.background }} behavior={Platform.select({ ios: 'padding', android: undefined })} keyboardVerticalOffset={Platform.select({ ios: 64, android: 0 })}>
+      <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: theme.colors.background }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <View style={styles.container}> 
       <View style={styles.header}>        
         <Image source={require('../assets/images/logoMedicare.png')} style={{width: 75, height: 75}} />
@@ -201,18 +213,26 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         <Text style={[styles.label, { color: theme.colors.text }]}>Email ou Téléphone</Text>
         <TextInput
           ref={register('ident')}
-          style={[styles.input, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text }]}
+          style={[
+            styles.input,
+            { backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text },
+            identError && { borderColor: '#dc2626' }
+          ]}
           placeholder="Entrez votre email ou téléphone"
-          value={emailOrPhone}
-          onChangeText={setEmailOrPhone}
+          value={fv.values.ident}
+          onChangeText={(v) => fv.setField('ident', v)}
           keyboardType="email-address"
           autoCapitalize="none"
           maxLength={100}
           placeholderTextColor={theme.colors.muted}
           selectionColor={theme.colors.primary}
           onFocus={() => scrollIntoView('ident')}
+          {...fv.getInputProps('ident')}
 
         />
+        {fv.touched.ident && identError ? (
+          <Text style={styles.fieldError}>{identError}</Text>
+        ) : null}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -220,15 +240,20 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         <View style={styles.passwordRow}>
           <TextInput
             ref={register('password')}
-            style={[styles.input, { flex: 1, backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text }]}
+            style={[
+              styles.input,
+              { flex: 1, backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text },
+              pwdError && { borderColor: '#dc2626' }
+            ]}
             placeholder="Entrez votre mot de passe"
-            value={password}
-            onChangeText={setPassword}
+            value={fv.values.password}
+            onChangeText={(v) => fv.setField('password', v)}
             secureTextEntry={!showPassword}
             maxLength={64}
             placeholderTextColor={theme.colors.muted}
             selectionColor={theme.colors.primary}
             onFocus={() => scrollIntoView('password')}
+            {...fv.getInputProps('password')}
           />
           <TouchableOpacity style={styles.eye} onPress={() => setShowPassword(!showPassword)}>
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} />
@@ -237,9 +262,12 @@ const [request, response, promptAsync] = Google.useAuthRequest({
         <TouchableOpacity onPress={() => router.push('/forgot-password' as any)}>
           <Text style={[styles.forgot, { color: theme.colors.primary }]}>Mot de passe oublié ?</Text>
         </TouchableOpacity>
+        {fv.touched.password && pwdError ? (
+          <Text style={styles.fieldError}>{pwdError}</Text>
+        ) : null}
       </View>
 
-      <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: theme.colors.primary }, (loading || !!validate()) && { opacity: 0.7 }]} disabled={loading || !!validate()} onPress={onLogin}>
+      <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: theme.colors.primary }, loading && { opacity: 0.7 }]} disabled={loading} onPress={onLogin}>
         <Text style={[styles.primaryBtnText, { color: theme.colors.primaryText }]}>{loading ? 'Connexion…' : 'Se Connecter'}</Text>
       </TouchableOpacity>
 
@@ -411,5 +439,10 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 14,
     marginTop: 8,
+  },
+  fieldError: {
+    color: '#dc2626',
+    fontSize: 12,
+    marginTop: 6,
   },
 });

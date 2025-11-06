@@ -4,8 +4,10 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import io from 'socket.io-client';
 import { SOCKET_URL, getNotifications, getProfile } from '../utils/api';
+import { useAppTheme } from '../theme/ThemeContext';
 
 export default function NavDoctor() {
+  const { theme } = useAppTheme();
   const [unread, setUnread] = useState(0);
   const socketRef = useRef<any>(null);
 
@@ -40,11 +42,11 @@ export default function NavDoctor() {
   return (
     <Tabs screenOptions={{ 
       headerShown: false, 
-      tabBarActiveTintColor: '#2ccdd2',
-      tabBarInactiveTintColor: '#9CA3AF',
+      tabBarActiveTintColor: theme.colors.primary,
+      tabBarInactiveTintColor: theme.colors.muted,
       tabBarStyle: {
-        backgroundColor: '#fff',
-        borderTopColor: '#E5E7EB',
+        backgroundColor: theme.colors.card,
+        borderTopColor: theme.colors.border,
         borderTopWidth: 1,
       }
     }}>

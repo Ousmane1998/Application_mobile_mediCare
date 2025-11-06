@@ -3,16 +3,25 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 
 import RNPickerSelect from 'react-native-picker-select';
 import { useRouter } from 'expo-router';
 import { createPatient } from '../../utils/api';
+import { formatPhone, normalizePhone, isPhone, nextSelectionAtEnd } from '../../utils/phone';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { sanitize, hasDanger, isEmailValid, isName, isStrongPassword, isAgeValid, phoneDigits, isPhoneDigitsValid } from '../../utils/validation';
 
 export default function DoctorAddPatientScreen() {
   const router = useRouter();
-  const [nom, setNom] = useState('');
-  const [prenom, setPrenom] = useState('');
-  const [email, setEmail] = useState('');
+  const fv = useFormValidation(
+    { nom: '', prenom: '', email: '', telephone: '', password: '', age: '', adresse: '' },
+    {
+      nom: (v) => (isName(String(v || '')) ? null : 'Nom invalide (2–50).'),
+      prenom: (v) => (isName(String(v || '')) ? null : 'Prénom invalide (2–50).'),
+      email: (v) => (isEmailValid(String(v || '')) ? null : 'Email invalide.'),
+      telephone: (v) => (isPhoneDigitsValid(phoneDigits(String(v || ''))) ? null : 'Téléphone invalide (7XXXXXXXX).'),
+      password: (v) => (!String(v || '') ? null : (isStrongPassword(String(v || '')) ? null : 'Mot de passe faible: 8–64, 1 lettre et 1 chiffre.')),
+      age: (v) => (!String(v || '') ? null : (isAgeValid(String(v || '')) ? null : 'Âge invalide (0–120).')),
+      adresse: (v) => (String(v || '').length > 120 ? 'Adresse trop longue (max 120).' : null),
+    }
+  );
   const [telephone, setTelephone] = useState('');
-  const [password, setPassword] = useState('');
-  const [age, setAge] = useState('');
-  const [adresse, setAdresse] = useState('');
   const [idMedecin, setIdMedecin] = useState('');
 
   const [pathologie, setPathologie] = useState('Diabète');
@@ -20,49 +29,29 @@ export default function DoctorAddPatientScreen() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
-  const hasDanger = (s: string) => /[<>]/.test(s || '');
-  const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s || '');
-  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s || '');
-  const normalizePhone = (s: string) => (s || '').replace(/\D+/g, '');
-  const isPhone = (digits: string) => /^7\d{8}$/.test(digits || '');
-  const strongPwd = (s: string) => /^(?=.*[A-Za-z])(?=.*\d).{8,64}$/.test(s || '');
-  const isAge = (s: string) => /^\d{1,3}$/.test(s || '') && Number(s) >= 0 && Number(s) <= 120;
-
   const validate = () => {
-    const vNom = sanitize(nom);
-    const vPrenom = sanitize(prenom);
-    const vEmail = sanitize(email);
-    const vTelDigits = normalizePhone(telephone);
-    const vAdresse = sanitize(adresse);
-    const vPwd = password;
-    const vAge = sanitize(age);
-
-    if ([vNom, vPrenom, vEmail, vTelDigits].some(v => !v)) return 'Veuillez remplir tous les champs obligatoires.';
-    if ([vNom, vPrenom, vAdresse].some(hasDanger)) return 'Caractères interdits détectés (<, >).';
-    if (!isName(vNom) || !isName(vPrenom)) return 'Nom et prénom: 2–50 lettres (accents autorisés).';
-    if (!isEmail(vEmail)) return 'Email invalide.';
-    if (!isPhone(vTelDigits)) return 'Téléphone invalide (format 7XXXXXXXX).';
-    if (vAdresse.length > 120) return 'Adresse trop longue (max 120).';
-    if (vAge && !isAge(vAge)) return "Âge invalide (0–120).";
-    if (vPwd && !strongPwd(vPwd)) return 'Mot de passe faible: 8–64 caractères, au moins une lettre et un chiffre.';
+    const vals = fv.values;
+    if (![vals.nom, vals.prenom, vals.email, telephone].every((x) => String(x || '').trim())) return 'Veuillez remplir tous les champs obligatoires.';
+    if ([vals.nom, vals.prenom, vals.adresse].some((x) => hasDanger(String(x || '')))) return 'Caractères interdits détectés (<, >).';
     return null;
   };
   const onSave = async () => {
     setError(null);
     setInfo(null);
+    fv.markAllTouched();
+    if (!fv.isValid) { setError('Veuillez corriger les erreurs.'); return; }
     const v = validate();
     if (v) { setError(v); return; }
     try {
       setLoading(true);
       const res = await createPatient({
-        nom: sanitize(nom),
-        prenom: sanitize(prenom),
-        email: sanitize(email),
+        nom: sanitize(String(fv.values.nom)),
+        prenom: sanitize(String(fv.values.prenom)),
+        email: sanitize(String(fv.values.email)),
         telephone: normalizePhone(telephone),
-        age: sanitize(age),
+        age: sanitize(String(fv.values.age)),
         pathologie,
-        adresse: sanitize(adresse),
+        adresse: sanitize(String(fv.values.adresse)),
         idMedecin,
       });
 
@@ -88,39 +77,53 @@ export default function DoctorAddPatientScreen() {
 
       <View style={styles.group}>
         <Text style={styles.label}>Nom</Text>
-        <TextInput style={styles.input} value={nom} onChangeText={setNom} placeholder="Entrez le nom de famille" maxLength={50} />
+        <TextInput style={[styles.input, fv.getError('nom') && { borderColor: '#dc2626' }]} value={fv.values.nom} onChangeText={(v) => fv.setField('nom', v)} placeholder="Entrez le nom de famille" maxLength={50} {...fv.getInputProps('nom')} />
+        {fv.touched.nom && fv.getError('nom') ? (<Text style={styles.fieldError}>{fv.getError('nom')}</Text>) : null}
       </View>
 
       <View style={styles.group}>
         <Text style={styles.label}>Prénom</Text>
-        <TextInput style={styles.input} value={prenom} onChangeText={setPrenom} placeholder="Entrez le prénom" maxLength={50} />
+        <TextInput style={[styles.input, fv.getError('prenom') && { borderColor: '#dc2626' }]} value={fv.values.prenom} onChangeText={(v) => fv.setField('prenom', v)} placeholder="Entrez le prénom" maxLength={50} {...fv.getInputProps('prenom')} />
+        {fv.touched.prenom && fv.getError('prenom') ? (<Text style={styles.fieldError}>{fv.getError('prenom')}</Text>) : null}
       </View>
 
       <View style={styles.group}>
         <Text style={styles.label}>Adresse e-mail</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="example@email.com" autoCapitalize="none" maxLength={100} />
+        <TextInput style={[styles.input, fv.getError('email') && { borderColor: '#dc2626' }]} value={fv.values.email} onChangeText={(v) => fv.setField('email', v)} placeholder="example@email.com" autoCapitalize="none" maxLength={100} {...fv.getInputProps('email')} />
+        {fv.touched.email && fv.getError('email') ? (<Text style={styles.fieldError}>{fv.getError('email')}</Text>) : null}
       </View>
 
       <View style={styles.group}>
         <Text style={styles.label}>Numéro de téléphone</Text>
-        <TextInput style={styles.input} value={telephone} onChangeText={setTelephone} placeholder="7XXXXXXXX" keyboardType="number-pad" maxLength={16} />
+        <TextInput
+          style={styles.input}
+          value={formatPhone(telephone)}
+          selection={nextSelectionAtEnd(formatPhone(telephone))}
+          onChangeText={(v) => setTelephone(formatPhone(v))}
+          placeholder="7X XXX XX XX"
+          keyboardType="phone-pad"
+          maxLength={12}
+        />
       </View>
 
       <View style={styles.group}>
         <Text style={styles.label}>Adresse</Text>
         <TextInput
-          style={styles.input}
-          value={adresse}
-          onChangeText={setAdresse}
+          style={[styles.input, fv.getError('adresse') && { borderColor: '#dc2626' }]}
+          value={fv.values.adresse}
+          onChangeText={(v) => fv.setField('adresse', v)}
           placeholder="Adresse du patient"
           maxLength={120}
+          {...fv.getInputProps('adresse')}
         />
+        {fv.touched.adresse && fv.getError('adresse') ? (<Text style={styles.fieldError}>{fv.getError('adresse')}</Text>) : null}
       </View>
 
 
       <View style={styles.group}>
         <Text style={styles.label}>Age</Text>
-        <TextInput style={styles.input} value={age} onChangeText={setAge} placeholder="Entrez l'âge" keyboardType="number-pad" maxLength={3} />
+        <TextInput style={[styles.input, fv.getError('age') && { borderColor: '#dc2626' }]} value={fv.values.age} onChangeText={(v) => fv.setField('age', v)} placeholder="Entrez l'âge" keyboardType="number-pad" maxLength={3} {...fv.getInputProps('age')} />
+        {fv.touched.age && fv.getError('age') ? (<Text style={styles.fieldError}>{fv.getError('age')}</Text>) : null}
       </View>
 
       <View style={styles.group}>
@@ -141,7 +144,7 @@ export default function DoctorAddPatientScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, (loading || !!validate()) && { opacity: 0.7 }]} disabled={loading || !!validate()} onPress={onSave}>
+      <TouchableOpacity style={[styles.primaryBtn, loading && { opacity: 0.7 }]} disabled={loading} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{loading ? 'Enregistrement…' : 'Enregistrer le patient'}</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -158,6 +161,7 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: '#fff', fontSize: 16 },
   error: { color: '#DC2626', marginTop: 8 },
   info: { color: '#065F46', marginTop: 8 },
+  fieldError: { color: '#dc2626', fontSize: 12, marginTop: 6 },
 });
 
 const pickerSelectStyles = {

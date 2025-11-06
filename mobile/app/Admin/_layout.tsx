@@ -3,8 +3,10 @@ import { View, ActivityIndicator } from 'react-native';
 import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfile } from '../../utils/api';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function AdminTabsLayout() {
+  const { theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     (async () => {
@@ -23,11 +25,16 @@ export default function AdminTabsLayout() {
   }, []);
 
   if (loading) {
-    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator /></View>;
+    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background }}><ActivityIndicator /></View>;
   }
 
   return (
-    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: '#10B981' }}>
+    <Tabs screenOptions={{ 
+      headerShown: false, 
+      tabBarActiveTintColor: theme.colors.primary,
+      tabBarInactiveTintColor: theme.colors.muted,
+      tabBarStyle: { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border, borderTopWidth: 1 }
+    }}>
       <Tabs.Screen
         name="users"
         options={{

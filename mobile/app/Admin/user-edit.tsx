@@ -1,19 +1,32 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { formatPhone, normalizePhone, nextSelectionAtEnd } from '../../utils/phone';
 import PageContainer from '../../components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/header';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { adminUpdateUser, adminUpdateUserRole, adminListUsers, type AppUser } from '../../utils/api';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { isEmailValid, phoneDigits, isPhoneDigitsValid, isName, sanitize, hasDanger } from '../../utils/validation';
 
 export default function UserEditPage() {
   const router = useRouter();
   const { userId } = useLocalSearchParams();
   const [user, setUser] = useState<AppUser | null>(null);
-  const [nom, setNom] = useState('');
-  const [prenom, setPrenom] = useState('');
-  const [email, setEmail] = useState('');
+  const fv = useFormValidation(
+    { nom: '', prenom: '', email: '', telephone: '' },
+    {
+      nom: (v) => (isName(String(v || '')) ? null : 'Nom invalide (2–50).'),
+      prenom: (v) => (isName(String(v || '')) ? null : 'Prénom invalide (2–50).'),
+      email: (v) => (isEmailValid(String(v || '')) ? null : 'Email invalide.'),
+      telephone: (v) => {
+        const d = phoneDigits(String(v || ''));
+        if (!d) return null; // facultatif
+        return isPhoneDigitsValid(d) ? null : 'Téléphone invalide (7XXXXXXXX).';
+      },
+    }
+  );
   const [telephone, setTelephone] = useState('');
   const [role, setRole] = useState('patient');
   const [loading, setLoading] = useState(false);
@@ -27,9 +40,9 @@ export default function UserEditPage() {
         const found = Array.isArray(users) ? users.find((u: any) => u._id === userId) : null;
         if (found) {
           setUser(found);
-          setNom(found.nom || '');
-          setPrenom(found.prenom || '');
-          setEmail(found.email || '');
+          fv.setField('nom', found.nom || '');
+          fv.setField('prenom', found.prenom || '');
+          fv.setField('email', found.email || '');
           setTelephone(found.telephone || '');
           setRole(found.role || 'patient');
         } else {
@@ -47,10 +60,8 @@ export default function UserEditPage() {
   }, [userId]);
 
   const handleSave = async () => {
-    if (!nom.trim() || !prenom.trim() || !email.trim()) {
-      Alert.alert('Erreur', 'Tous les champs sont requis');
-      return;
-    }
+    fv.markAllTouched();
+    if (!fv.isValid) { Alert.alert('Erreur', 'Veuillez corriger les erreurs.'); return; }
 
     try {
       setSaving(true);
@@ -58,14 +69,15 @@ export default function UserEditPage() {
       
       // Préparer les données à mettre à jour
       const updateData: any = {
-        nom: nom.trim(),
-        prenom: prenom.trim(),
-        email: email.trim(),
+        nom: String(fv.values.nom).trim(),
+        prenom: String(fv.values.prenom).trim(),
+        email: String(fv.values.email).trim(),
         role,
       };
       
-      if (telephone.trim()) {
-        updateData.telephone = parseInt(telephone.trim());
+      if (String(telephone).trim()) {
+        const digits = normalizePhone(telephone);
+        if (digits) updateData.telephone = parseInt(digits);
       }
       
       // Mettre à jour l'utilisateur
@@ -102,50 +114,62 @@ export default function UserEditPage() {
       <View style={styles.formGroup}>
         <Text style={styles.label}>Prénom</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, fv.getError('prenom') && { borderColor: '#dc2626' }]}
           placeholder="Prénom"
-          value={prenom}
-          onChangeText={setPrenom}
+          value={fv.values.prenom}
+          onChangeText={(v) => fv.setField('prenom', v)}
           editable={!saving}
+          {...fv.getInputProps('prenom')}
         />
+        {fv.touched.prenom && fv.getError('prenom') ? (<Text style={styles.fieldError}>{fv.getError('prenom')}</Text>) : null}
       </View>
 
       {/* Nom */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Nom</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, fv.getError('nom') && { borderColor: '#dc2626' }]}
           placeholder="Nom"
-          value={nom}
-          onChangeText={setNom}
+          value={fv.values.nom}
+          onChangeText={(v) => fv.setField('nom', v)}
           editable={!saving}
+          {...fv.getInputProps('nom')}
         />
+        {fv.touched.nom && fv.getError('nom') ? (<Text style={styles.fieldError}>{fv.getError('nom')}</Text>) : null}
       </View>
 
       {/* Email */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, fv.getError('email') && { borderColor: '#dc2626' }]}
           placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
+          value={fv.values.email}
+          onChangeText={(v) => fv.setField('email', v)}
           keyboardType="email-address"
           editable={!saving}
+          autoCapitalize="none"
+          {...fv.getInputProps('email')}
         />
+        {fv.touched.email && fv.getError('email') ? (<Text style={styles.fieldError}>{fv.getError('email')}</Text>) : null}
       </View>
 
       {/* Téléphone */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Téléphone</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, fv.getError('telephone') && { borderColor: '#dc2626' }]}
           placeholder="Téléphone"
-          value={telephone}
-          onChangeText={setTelephone}
+          value={formatPhone(telephone)}
+          selection={nextSelectionAtEnd(formatPhone(telephone))}
+          onChangeText={(v) => setTelephone(formatPhone(v))}
           keyboardType="phone-pad"
           editable={!saving}
+          maxLength={12}
+          {...fv.getInputProps('telephone')}
+          onBlur={() => fv.setField('telephone', telephone)}
         />
+        {fv.touched.telephone && fv.getError('telephone') ? (<Text style={styles.fieldError}>{fv.getError('telephone')}</Text>) : null}
       </View>
 
       {/* Rôle */}
@@ -209,6 +233,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  fieldError: { color: '#dc2626', fontSize: 12, marginTop: 6 },
 
   roleButtons: { flexDirection: 'row', gap: 8 },
   roleBtn: {

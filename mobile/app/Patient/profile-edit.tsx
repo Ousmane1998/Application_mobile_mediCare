@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Activi
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getProfile, updateProfile, updatePhoto, type UserProfile } from '../../utils/api';
+import { formatPhone, normalizePhone, isPhone, nextSelectionAtEnd } from '../../utils/phone';
 import Snackbar from '../../components/Snackbar';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { sanitize as s1, hasDanger, isEmailValid, phoneDigits, isPhoneDigitsValid, isName, isAgeValid } from '../../utils/validation';
 
 export default function PatientProfileEditScreen() {
   const router = useRouter();
@@ -30,31 +33,23 @@ export default function PatientProfileEditScreen() {
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | undefined>(undefined);
 
-  // Validation helpers
-  const sanitize = (s: string) => (s || '').replace(/[\t\n\r]+/g, ' ').trim();
-  const hasDanger = (s: string) => /[<>]/.test(s || '');
-  const isName = (s: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]{2,50}$/.test(s || '');
-  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s || '');
-  const normalizePhone = (s: string) => (s || '').replace(/\D+/g, '');
-  const isPhone = (digits: string) => /^7\d{8}$/.test(digits || '');
-  const isAge = (s: string) => /^\d{1,3}$/.test(s || '') && Number(s) >= 0 && Number(s) <= 120;
+  const fv = useFormValidation(
+    { nom: '', prenom: '', email: '', adresse: '', age: '', telephone: '' },
+    {
+      nom: (v) => (isName(String(v || '')) ? null : 'Nom invalide (2–50).'),
+      prenom: (v) => (isName(String(v || '')) ? null : 'Prénom invalide (2–50).'),
+      email: (v) => (isEmailValid(String(v || '')) ? null : 'Email invalide.'),
+      adresse: (v) => (!String(v || '').trim() ? 'Adresse requise.' : (String(v || '').length > 120 ? 'Adresse trop longue.' : null)),
+      age: (v) => (isAgeValid(String(v || '')) ? null : 'Âge invalide (0–120).'),
+      telephone: (v) => (isPhoneDigitsValid(phoneDigits(String(v || ''))) ? null : 'Téléphone invalide (7XXXXXXXX).'),
+    }
+  );
 
+  // Validation globale conservée si besoin
   const validate = (): string | null => {
-    const v = {
-      nom: sanitize(form.nom),
-      prenom: sanitize(form.prenom),
-      email: sanitize(form.email || ''),
-      adresse: sanitize(form.adresse || ''),
-      age: sanitize(form.age || ''),
-      telephone: normalizePhone(form.telephone || ''),
-    };
-    if (!v.nom || !v.prenom || !v.email || !v.adresse || !v.age || !v.telephone) return 'Tous les champs sont requis.';
-    if ([v.nom, v.prenom, v.adresse].some(hasDanger)) return 'Caractères interdits détectés (<, >).';
-    if (!isName(v.nom) || !isName(v.prenom)) return 'Nom/Prénom: 2–50 lettres (accents autorisés).';
-    if (!isEmail(v.email) || v.email.length > 100) return 'Email invalide.';
-    if (!isPhone(v.telephone)) return 'Téléphone invalide (7XXXXXXXX).';
-    if (v.adresse.length > 120) return 'Adresse trop longue (max 120).';
-    if (!isAge(v.age)) return 'Âge invalide (0–120).';
+    const v = fv.values;
+    if (!String(v.nom).trim() || !String(v.prenom).trim() || !String(v.email).trim() || !String(v.adresse).trim() || !String(v.age).trim() || !String(v.telephone).trim()) return 'Tous les champs sont requis.';
+    if ([v.nom, v.prenom, v.adresse].some((x) => hasDanger(String(x || '')))) return 'Caractères interdits détectés (<, >).';
     return null;
   };
 
@@ -63,13 +58,18 @@ export default function PatientProfileEditScreen() {
       try {
         const data = await getProfile();
         const u = data.user as UserProfile;
-        setForm({
+        const next = {
           nom: u.nom || '',
           prenom: u.prenom || '',
           email: u.email || '',
           adresse: u.adresse || '',
           age: u.age ? String(u.age) : '',
           telephone: u.telephone || '',
+        };
+        setForm(next);
+        (Object.keys(next) as Array<keyof typeof next>).forEach((k) => {
+          // @ts-ignore
+          fv.setField(k, next[k]);
         });
         if (u.photo) setPhotoPreview(u.photo);
       } catch (e: any) {
@@ -81,18 +81,20 @@ export default function PatientProfileEditScreen() {
   }, []);
 
   const onSave = async () => {
+    fv.markAllTouched();
+    if (!fv.isValid) { setSnack({ visible: true, message: 'Veuillez corriger les erreurs.', type: 'error' }); return; }
     const vmsg = validate();
     if (vmsg) { setSnack({ visible: true, message: vmsg, type: 'error' }); return; }
     try {
       setSaving(true);
       setError(null);
       await updateProfile({
-        nom: sanitize(form.nom),
-        prenom: sanitize(form.prenom),
-        email: sanitize(form.email || ''),
-        adresse: sanitize(form.adresse || ''),
-        age: Number(sanitize(form.age || '')),
-        telephone: normalizePhone(form.telephone || ''),
+        nom: s1(String(fv.values.nom)),
+        prenom: s1(String(fv.values.prenom)),
+        email: s1(String(fv.values.email || '')),
+        adresse: s1(String(fv.values.adresse || '')),
+        age: Number(s1(String(fv.values.age || ''))),
+        telephone: normalizePhone(fv.values.telephone || ''),
       });
       setSnack({ visible: true, message: 'Profil modifié avec succès.', type: 'success' });
       setTimeout(() => router.back(), 800);
@@ -169,16 +171,16 @@ export default function PatientProfileEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput ref={register('nom')} onFocus={() => scrollIntoView('nom')} style={styles.input} value={form.nom} onChangeText={(v) => setForm((f) => ({ ...f, nom: v }))} maxLength={50} /></View>
-      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput ref={register('prenom')} onFocus={() => scrollIntoView('prenom')} style={styles.input} value={form.prenom} onChangeText={(v) => setForm((f) => ({ ...f, prenom: v }))} maxLength={50} /></View>
-      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput ref={register('email')} onFocus={() => scrollIntoView('email')} style={styles.input} value={form.email} onChangeText={(v) => setForm((f) => ({ ...f, email: v }))} keyboardType="email-address" autoCapitalize="none" maxLength={100} /></View>
-      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput ref={register('adresse')} onFocus={() => scrollIntoView('adresse')} style={styles.input} value={form.adresse} onChangeText={(v) => setForm((f) => ({ ...f, adresse: v }))} maxLength={120} /></View>
-      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput ref={register('age')} onFocus={() => scrollIntoView('age')} style={styles.input} value={form.age} onChangeText={(v) => setForm((f) => ({ ...f, age: v }))} keyboardType="numeric" maxLength={3} /></View>
-      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput ref={register('telephone')} onFocus={() => scrollIntoView('telephone')} style={styles.input} value={form.telephone} onChangeText={(v) => setForm((f) => ({ ...f, telephone: v }))} keyboardType="phone-pad" maxLength={16} /></View>
+      <View style={styles.group}><Text style={styles.label}>Nom</Text><TextInput ref={register('nom')} onFocus={() => scrollIntoView('nom')} style={[styles.input, fv.getError('nom') && { borderColor: '#dc2626' }]} value={fv.values.nom} onChangeText={(v) => fv.setField('nom', v)} maxLength={50} {...fv.getInputProps('nom')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Prénom</Text><TextInput ref={register('prenom')} onFocus={() => scrollIntoView('prenom')} style={[styles.input, fv.getError('prenom') && { borderColor: '#dc2626' }]} value={fv.values.prenom} onChangeText={(v) => fv.setField('prenom', v)} maxLength={50} {...fv.getInputProps('prenom')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Email</Text><TextInput ref={register('email')} onFocus={() => scrollIntoView('email')} style={[styles.input, fv.getError('email') && { borderColor: '#dc2626' }]} value={fv.values.email} onChangeText={(v) => fv.setField('email', v)} keyboardType="email-address" autoCapitalize="none" maxLength={100} {...fv.getInputProps('email')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Adresse</Text><TextInput ref={register('adresse')} onFocus={() => scrollIntoView('adresse')} style={[styles.input, fv.getError('adresse') && { borderColor: '#dc2626' }]} value={fv.values.adresse} onChangeText={(v) => fv.setField('adresse', v)} maxLength={120} {...fv.getInputProps('adresse')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Âge</Text><TextInput ref={register('age')} onFocus={() => scrollIntoView('age')} style={[styles.input, fv.getError('age') && { borderColor: '#dc2626' }]} value={fv.values.age} onChangeText={(v) => fv.setField('age', v)} keyboardType="numeric" maxLength={3} {...fv.getInputProps('age')} /></View>
+      <View style={styles.group}><Text style={styles.label}>Téléphone</Text><TextInput ref={register('telephone')} onFocus={() => scrollIntoView('telephone')} style={[styles.input, fv.getError('telephone') && { borderColor: '#dc2626' }]} value={formatPhone(fv.values.telephone || '')} selection={nextSelectionAtEnd(formatPhone(fv.values.telephone || ''))} onChangeText={(v) => fv.setField('telephone', formatPhone(v))} keyboardType="phone-pad" maxLength={12} placeholder="7X XXX XX XX" {...fv.getInputProps('telephone')} /></View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={[styles.primaryBtn, (saving || !!validate()) && { opacity: 0.7 }]} disabled={saving || !!validate()} onPress={onSave}>
+      <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.7 }]} disabled={saving} onPress={onSave}>
         <Text style={styles.primaryBtnText}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
       </TouchableOpacity>
       <Snackbar visible={snack.visible} message={snack.message} type={snack.type} onHide={() => setSnack((s) => ({ ...s, visible: false }))} />
